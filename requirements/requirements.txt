@@ -1,4 +1,5 @@
 numpy
+quantities
 pydot
 prov>=2.0.0
 networkx>=2.5
