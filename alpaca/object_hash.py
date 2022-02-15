@@ -83,12 +83,9 @@ class FileHash(object):
             self._hash_type = 'attribute'
             self._hash = self._get_attribute_file_hash(file_path)
 
-    def __hash__(self):
-        return self._hash
-
     def __eq__(self, other):
         if isinstance(other, FileHash):
-            return hash(self) == hash(other) and \
+            return self._hash == other._hash and \
                    self._hash_type == other._hash_type
         raise TypeError("Can compare only two FileHash objects")
 
