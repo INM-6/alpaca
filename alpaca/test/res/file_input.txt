@@ -1,0 +1,1 @@
+This is an example file used as input for the tests.
