@@ -52,7 +52,10 @@ class FileHashTestCase(unittest.TestCase):
         self.assertFalse(file_hash_3 == file_hash_1)
 
     def test_repr(self):
-        pass
+        file_hash = FileHash(self.file_path)
+        expected_str = "file_input.txt: [sha256] 96ccc1380e069667069acece" \
+                       "a3e2ab559441657807e0a86d14f49028710ddb3a"
+        self.assertEqual(str(file_hash), expected_str)
 
 
 class ObjectHasherTestCase(unittest.TestCase):
