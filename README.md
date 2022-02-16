@@ -2,6 +2,8 @@
 
 ## Automated Light-weight Provenance Capture
 
+[![tests](https://github.com/INM-6/alpaca/actions/workflows/CI.yml/badge.svg)](https://github.com/INM-6/alpaca/actions/workflows/CI.yml)
+
 A Python package for the capture of provenance information during the execution
 of data analysis workflows based on Python scripts and Jupyter notebooks.
 
