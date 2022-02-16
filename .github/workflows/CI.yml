@@ -1,6 +1,6 @@
 # This workflow will setup GitHub-hosted runners
 
-name: alpaca_tests
+name: tests
 # Define the events that trigger the workflow
 on:
   # Run on pull requests to main branch
