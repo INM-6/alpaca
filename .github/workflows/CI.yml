@@ -1,0 +1,81 @@
+# This workflow will setup GitHub-hosted runners
+
+name: alpaca_tests
+# Define the events that trigger the workflow
+on:
+  # Run on pull requests to master branch
+  pull_request:
+    branches: [master]
+    types: [synchronize, opened, reopened, ready_for_review]
+
+  # Run on pushes to master branch
+  push:
+    branches: [master]
+
+jobs:
+  # Run unit tests in all relevant versions
+  tests_with_pip:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        # OS [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest]
+        # Relevant Python versions
+        python-version: [3.6, 3.7, 3.8, 3.9, 3.10]
+
+      # Do not cancel all in-progress jobs if any matrix job fails
+      fail-fast: false
+
+    steps:
+      # Used to reset cache every month
+      - name: Get current year-month
+        id: date
+        run: echo "::set-output name=date::$(date +'%Y-%m')"
+      - uses: actions/checkout@v2
+
+      - name: Cache test_env
+        uses: actions/cache@v2
+        with:
+          path: ~/test_env
+          # Look to see if there is a cache hit for the corresponding
+          # requirements files. The cache will be reset on changes to
+          # any requirements or every month
+          key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements.txt') }}
+            -${{ hashFiles('**/requirements-tests.txt') }}-${{ hashFiles('setup.py') }}
+            -${{ steps.date.outputs.date }}
+
+      # Install required Python version
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+        python-version: ${{ matrix.python-version }}
+
+      # Create an environment and install everything
+      # Add coveralls later pip install pytest-cov coveralls
+      - name: Install dependencies
+        run: |
+          python -m venv ~/test_env
+          source ~/test_env/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r requirements/requirements-tests.txt
+          pip install -r requirements/requirements.txt
+          pip install -e .
+
+      # Build Alpaca
+      - name: Build
+        run: |
+          source ~/test_env/bin/activate
+          python setup.py install
+
+      # Output the Python version and environment information
+      - name: List packages
+        run: |
+          source ~/test_env/bin/activate
+          pip list
+          python --version
+
+      # Run unit tests with Pytest
+      - name: Test with pytest
+        run: |
+          source ~/test_env/bin/activate
+          pytest

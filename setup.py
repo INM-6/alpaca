@@ -16,7 +16,7 @@ with open('requirements/requirements.txt') as fp:
 setup(
     name="alpaca",
     version=version,
-    packages=['alpaca'],
+    packages=['alpaca', 'alpaca.utils'],
     include_package_data=True,
     install_requires=install_requires,
     author="Alpaca authors and contributors",
