@@ -3,14 +3,14 @@
 name: alpaca_tests
 # Define the events that trigger the workflow
 on:
-  # Run on pull requests to master branch
+  # Run on pull requests to main branch
   pull_request:
-    branches: [master]
+    branches: [main]
     types: [synchronize, opened, reopened, ready_for_review]
 
-  # Run on pushes to master branch
+  # Run on pushes to main branch
   push:
-    branches: [master]
+    branches: [main]
 
 jobs:
   # Run unit tests in all relevant versions
