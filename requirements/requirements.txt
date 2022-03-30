@@ -5,3 +5,4 @@ prov>=2.0.0
 networkx>=2.5
 dill==0.3.3
 joblib==1.0.1
+rdflib>=6.0
