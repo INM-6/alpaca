@@ -24,6 +24,7 @@ NSS_FUNCTION = "function"             # Functions executed
 NSS_FILE = "file"                     # Files accessed
 NSS_DATA = "object"                   # Data objects (input/outputs/containers)
 NSS_SCRIPT = "script"                 # The execution script
+
 NSS_PARAMETER = "parameter"           # Function parameter
 NSS_ATTRIBUTE = "attribute"           # Data object attribute (i.e., class)
 NSS_ANNOTATION = "annotation"         # Data object annotation (e.g., Neo)
@@ -32,6 +33,9 @@ NSS_CONTAINER = "container"           # For storing container membership access 
 
 ALL_NSS = [NSS_FUNCTION, NSS_FILE, NSS_DATA, NSS_SCRIPT, NSS_PARAMETER,
            NSS_ATTRIBUTE, NSS_ANNOTATION, NSS_CONTAINER]
+
+NAMESPACES = [Namespace(namespace, f"urn:{NID_ALPACA}:{namespace}:")
+              for namespace in ALL_NSS]
 
 
 # Other namespaces used
@@ -103,6 +107,7 @@ def _get_entity_uri(object_info):
 
 def _get_entity_attributes(object_info):
     attributes = {}
+
     if isinstance(object_info, ObjectInfo):
         package_name = object_info.type.split(".")[0]
         for name, value in object_info.details.items():
@@ -151,6 +156,9 @@ def _get_entity_attributes(object_info):
                 attr_key = f"{NSS_ATTRIBUTE}:{name}"
                 attributes[attr_key] = value
 
+    elif isinstance(object_info, FileInfo):
+        attributes["rdfs:label"] = object_info.path
+
     return attributes
 
 
@@ -162,24 +170,26 @@ def _get_activity_uri(function_info):
     return activity_uri
 
 
-def _get_activity_params(function_params):
+def _get_activity_params(step):
     params = {}
-    for name, value in function_params.items():
+    for name, value in step.params.items():
         value = _ensure_type(value)
         param_key = f"{NSS_PARAMETER}:{name}"
         params[param_key] = value
+
+    # Add the execution order and the code statement
+    params["prov:value"] = step.order
+    params["rdfs:comment"] = step.code_statement
     return params
 
 
 def _get_membership_params(function_params):
     params = {}
     for name, value in function_params.items():
-        if name == "index":
-            param_key = f"{NSS_CONTAINER}:index"
-        elif name == "slice":
-            param_key = f"{NSS_CONTAINER}:slice"
-        elif name == "name":
+        if name == "name":
             param_key = f"{NSS_CONTAINER}:attribute"
+        else:
+            param_key = f"{NSS_CONTAINER}:{name}"
         params[param_key] = value
     return params
 
@@ -189,10 +199,9 @@ class ProvenanceDocument(ProvDocument):
     def __init__(self, script_file_name):
         super().__init__(records=None, namespaces=None)
 
-        # Set default namespace to avoid repetitions of the prefix
-        for namespace in ALL_NSS:
-            self.add_namespace(Namespace(namespace,
-                                         f"urn:{NID_ALPACA}:{namespace}:"))
+        # # Set default namespace to avoid repetitions of the prefix
+        for namespace in NAMESPACES:
+            self.add_namespace(namespace)
 
         # Add other namespaces
         self.add_namespace(RDFS)
@@ -209,20 +218,13 @@ class ProvenanceDocument(ProvDocument):
 
     def _create_entity(self, info):
         # Create a PROV Entity based on ObjectInfo/FileInfo information
-
-        if isinstance(info, VarArgs):
-            # If this is a VarArgs, several objects are inside.
-            # Process recursively
-            for var_arg in info:
-                self._create_entity(var_arg)
-        else:
-            uri = _get_entity_uri(info)
-            if uri:
-                metadata = _get_entity_attributes(info)
-                try:
-                    return self.entity(identifier=uri, other_attributes=metadata)
-                except Exception as e:
-                    print(e)
+        uri = _get_entity_uri(info)
+        if uri:
+            metadata = _get_entity_attributes(info)
+            try:
+                return self.entity(identifier=uri, other_attributes=metadata)
+            except Exception as e:
+                print(e)
 
     def _add_analysis_step(self, step):
 
@@ -246,7 +248,7 @@ class ProvenanceDocument(ProvDocument):
         else:
             # This is a function execution
             activity_uri = _get_activity_uri(function)
-            activity_params = _get_activity_params(step.params)
+            activity_params = _get_activity_params(step)
             cur_activity = self.activity(identifier=activity_uri)
 
             step_time = step.time_stamp_end
@@ -257,12 +259,21 @@ class ProvenanceDocument(ProvDocument):
             # together with the timestamp
             input_entities = []
             for key, value in step.input.items():
-                cur_entity = self._create_entity(value)
-                input_entities.append(cur_entity)
-                self.used(activity=cur_activity,
-                          entity=cur_entity,
-                          time=step_time,
-                          other_attributes=activity_params)
+                cur_entities = []
+
+                if isinstance(value, VarArgs):
+                    # If this is a VarArgs, several objects are inside.
+                    for var_arg in value.args:
+                        cur_entities.append(self._create_entity(var_arg))
+                else:
+                    cur_entities.append(self._create_entity(value))
+
+                input_entities.extend(cur_entities)
+                for cur_entity in cur_entities:
+                    self.used(activity=cur_activity,
+                              entity=cur_entity,
+                              time=step_time,
+                              other_attributes=activity_params)
 
             # Add all the outputs as entities, and create the `wasGenerated`
             # relationship. This is a qualified relationship, as the attributes

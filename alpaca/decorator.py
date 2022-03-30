@@ -312,8 +312,8 @@ class Provenance(object):
                                         function=function_info.name,
                                         time_stamp=time_stamp_start)
 
-        # 8. Increment the call counter
-        self.call_count += 1
+        # 8. Increment the global call counter
+        Provenance.call_count += 1
 
         # 9. Create tuple with the analysis step information and return.
         return AnalysisStep(function=function_info,
@@ -327,7 +327,7 @@ class Provenance(object):
                             time_stamp_start=time_stamp_start,
                             time_stamp_end=time_stamp_end,
                             return_targets=return_targets,
-                            order=self.call_count)
+                            order=Provenance.call_count)
 
     def _get_calling_line_number(self, frame):
         # Get the line number of the current call.
