@@ -13,7 +13,7 @@ def get_file_name(source, output_dir=None, extension=None):
 
     Parameters
     ----------
-    source : str
+    source : str or Path-like
         Source path or file name to generate the new file name. The base name
         will be considered.
     output_dir : str, optional
@@ -30,14 +30,16 @@ def get_file_name(source, output_dir=None, extension=None):
         File name, according to the parameters selected. If both `output_dir`
         and `extension` are None, the result will be equal to `source`.
     """
-    source_file = Path(source)
+    if not isinstance(source, Path):
+        source = Path(source)
+
     if extension is not None:
         if not extension.startswith("."):
             extension = "." + extension
-        base_name = Path(source_file.stem + extension)
+        base_name = source.with_suffix(extension)
     else:
-        base_name = source_file
+        base_name = source
 
     if output_dir is not None:
-        return str(Path(output_dir) / base_name)
+        base_name = Path(output_dir).with_name(base_name.name)
     return str(base_name)
