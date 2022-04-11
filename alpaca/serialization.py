@@ -10,6 +10,7 @@ from prov.model import ProvDocument, PROV, PROV_TYPE, Namespace
 
 from alpaca.object_hash import FileHash
 from alpaca.types import ObjectInfo, FileInfo, VarArgs
+from alpaca.utils.files import _get_prov_file_format
 
 import quantities as pq
 
@@ -298,7 +299,7 @@ class ProvenanceDocument(ProvDocument):
             self.wasAttributedTo(entity=cur_activity, agent=self._script_agent)
 
     @classmethod
-    def read_records(cls, file_name, file_format='rdf'):
+    def read_records(cls, file_name, file_format='ttl'):
         """
         Reads PROV data that was previously serialized.
 
@@ -310,7 +311,7 @@ class ProvenanceDocument(ProvDocument):
             Format used in the file that is being read.
             Turtle files (*.ttl) are treated as RDF files.
             If None, the format will be inferred from the extension.
-            Default: None
+            Default: 'ttl'
 
         Returns
         -------
@@ -325,18 +326,10 @@ class ProvenanceDocument(ProvDocument):
             the format.
             If `file_format` is not 'rdf', 'ttl', 'json', 'prov', or 'xml'.
         """
-        file_location = pathlib.Path(file_name)
-
         if file_format is None:
-            extension = file_location.suffix
-            if not extension.startswith('.'):
-                raise ValueError("File has no extension and no format was "
-                                 "provided")
-            file_format = extension[1:]
+            file_format = _get_prov_file_format(file_name)
 
-        if file_format == 'ttl':
-            file_format = 'rdf'
-        elif file_format not in ['rdf', 'json', 'provn', 'xml']:
+        if file_format not in ['rdf', 'json', 'provn', 'xml']:
             raise ValueError("Unsupported serialization format")
 
         with open(file_name, "r") as source:

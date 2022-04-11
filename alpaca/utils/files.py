@@ -43,3 +43,17 @@ def get_file_name(source, output_dir=None, extension=None):
     if output_dir is not None:
         base_name = Path(output_dir).with_name(base_name.name)
     return str(base_name)
+
+
+def _get_prov_file_format(file_name):
+    file_location = Path(file_name)
+
+    extension = file_location.suffix
+    if not extension.startswith('.'):
+        raise ValueError("File has no extension. No format can be inferred")
+    file_format = extension[1:]
+
+    if file_format == 'ttl':
+        file_format = 'rdf'
+
+    return file_format
