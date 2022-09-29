@@ -37,7 +37,8 @@ AnalysisStep = namedtuple('AnalysisStep', ('function',
                                            'time_stamp_start',
                                            'time_stamp_end',
                                            'return_targets',
-                                           'order')
+                                           'order',
+                                           'execution_id')
                           )
 
 

@@ -8,6 +8,7 @@ the child/parent relationships between the objects.
 
 import ast
 from alpaca.types import AnalysisStep, FunctionInfo
+import uuid
 
 
 class _StaticStep(object):
@@ -97,6 +98,8 @@ class _StaticStep(object):
             else None
         output_object = self.object_hash
 
+        execution_id = str(uuid.uuid4())
+
         return AnalysisStep(
             function=FunctionInfo(name=self._operation,
                                   module="",
@@ -111,7 +114,8 @@ class _StaticStep(object):
             time_stamp_start=self.time_stamp,
             time_stamp_end=self.time_stamp,
             return_targets=[],
-            order=None)
+            order=None,
+            execution_id=execution_id)
 
 
 class _NameStep(_StaticStep):

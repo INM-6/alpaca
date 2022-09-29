@@ -9,9 +9,10 @@ import inspect
 import ast
 import datetime
 import logging
+import uuid
 
 from .types import AnalysisStep, FunctionInfo, VarArgs
-from .object_hash import ObjectHasher, FileHash
+from .hash import ObjectHasher, FileHash
 from .ast_analysis import _CallAST
 from .code_lines import _CodeAnalyzer
 from .serialization import ProvenanceDocument
@@ -96,6 +97,7 @@ class Provenance(object):
     history = []
     source_file = None
     calling_frame = None
+    session_id = None
 
     call_count = 0
 
@@ -129,7 +131,8 @@ class Provenance(object):
                                function=function, time_stamp=time_stamp)
         ast_visitor.visit(tree)
 
-    def _process_input_arguments(self, function, args, kwargs):
+    @staticmethod
+    def _process_input_arguments(function, args, kwargs):
         # Inspect the arguments to extract the ones defined as inputs.
         # Values are stored in a dictionary with the argument name as key.
         # If signature inspection is not possible, the inputs are stored by
@@ -315,6 +318,9 @@ class Provenance(object):
         # 8. Increment the global call counter
         Provenance.call_count += 1
 
+        # 9. Create execution ID
+        execution_id = str(uuid.uuid4())
+
         # 9. Create tuple with the analysis step information and return.
         return AnalysisStep(function=function_info,
                             input=inputs,
@@ -327,7 +333,8 @@ class Provenance(object):
                             time_stamp_start=time_stamp_start,
                             time_stamp_end=time_stamp_end,
                             return_targets=return_targets,
-                            order=Provenance.call_count)
+                            order=Provenance.call_count,
+                            execution_id = execution_id)
 
     def _get_calling_line_number(self, frame):
         # Get the line number of the current call.
@@ -456,6 +463,10 @@ class Provenance(object):
         cls.code_analyzer = _CodeAnalyzer(cls.source_code,
                                           cls.frame_ast,
                                           cls.source_lineno)
+
+        # Create a unique identifier for the session and store script info
+        cls.session_id = str(uuid.uuid4())
+        cls.script_info = FileHash(cls.source_file).info()
 
     @classmethod
     def get_prov_info(cls):
