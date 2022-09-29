@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from alpaca.object_hash import FileHash, FileInfo, ObjectHasher, ObjectInfo
+from alpaca.hash import FileHash, FileInfo, ObjectHasher, ObjectInfo
 from pathlib import Path
 import joblib
 import uuid
