@@ -1,0 +1,150 @@
+@prefix : <http://https://github.com/INM-6/alpaca/ontology/alpaca.owl#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xml: <http://www.w3.org/XML/1998/namespace> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@base <http://https://github.com/INM-6/alpaca/ontology/alpaca.owl#> .
+
+<http://https://github.com/INM-6/alpaca/ontology/alpaca.owl#> rdf:type owl:Ontology ;
+                                                               owl:imports <http://www.w3.org/ns/prov-o-20130430> .
+
+#################################################################
+#    Object Properties
+#################################################################
+
+###  http://https://github.com/INM-6/alpaca/ontology/alpaca.owl#byFunctionExecution
+:byFunctionExecution rdf:type owl:ObjectProperty ;
+                     rdfs:domain :DataUsage ;
+                     rdfs:range :FunctionExecution .
+
+
+###  http://https://github.com/INM-6/alpaca/ontology/alpaca.owl#fromFunctionExecution
+:fromFunctionExecution rdf:type owl:ObjectProperty ;
+                       rdfs:subPropertyOf owl:topObjectProperty ;
+                       rdfs:domain :DataGeneration ;
+                       rdfs:range :FunctionExecution .
+
+
+###  http://https://github.com/INM-6/alpaca/ontology/alpaca.owl#hasAnnotation
+:hasAnnotation rdf:type owl:ObjectProperty ;
+               rdfs:subPropertyOf owl:topObjectProperty ;
+               rdfs:domain :DataObjectEntity ;
+               rdfs:range :NameValuePair .
+
+
+###  http://https://github.com/INM-6/alpaca/ontology/alpaca.owl#hasAttribute
+:hasAttribute rdf:type owl:ObjectProperty ;
+              rdfs:subPropertyOf owl:topObjectProperty ;
+              rdfs:domain :DataObjectEntity ;
+              rdfs:range :NameValuePair .
+
+
+###  http://https://github.com/INM-6/alpaca/ontology/alpaca.owl#hasParameter
+:hasParameter rdf:type owl:ObjectProperty ;
+              rdfs:subPropertyOf owl:topObjectProperty ;
+              rdfs:domain :FunctionExecution ;
+              rdfs:range :NameValuePair .
+
+
+#################################################################
+#    Data properties
+#################################################################
+
+###  http://https://github.com/INM-6/alpaca/ontology/alpaca.owl#codeStatement
+:codeStatement rdf:type owl:DatatypeProperty ;
+               rdfs:domain :FunctionExecution ;
+               rdfs:range xsd:string .
+
+
+###  http://https://github.com/INM-6/alpaca/ontology/alpaca.owl#containerIndex
+:containerIndex rdf:type owl:DatatypeProperty ;
+                rdfs:domain :DataObjectEntity ;
+                rdfs:range rdfs:Literal .
+
+
+###  http://https://github.com/INM-6/alpaca/ontology/alpaca.owl#containerSlice
+:containerSlice rdf:type owl:DatatypeProperty ;
+                rdfs:domain :DataObjectEntity ;
+                rdfs:range rdfs:Literal .
+
+
+###  http://https://github.com/INM-6/alpaca/ontology/alpaca.owl#executionOrder
+:executionOrder rdf:type owl:DatatypeProperty ;
+                rdfs:domain :FunctionExecution ;
+                rdfs:range xsd:int .
+
+
+###  http://https://github.com/INM-6/alpaca/ontology/alpaca.owl#filePath
+:filePath rdf:type owl:DatatypeProperty ;
+          rdfs:domain :FileEntity ;
+          rdfs:range xsd:string .
+
+
+###  http://https://github.com/INM-6/alpaca/ontology/alpaca.owl#fromAttribute
+:fromAttribute rdf:type owl:DatatypeProperty ;
+               rdfs:domain :DataObjectEntity ;
+               rdfs:range xsd:string .
+
+
+###  http://https://github.com/INM-6/alpaca/ontology/alpaca.owl#pairName
+:pairName rdf:type owl:DatatypeProperty ;
+          rdfs:domain :NameValuePair ;
+          rdfs:range xsd:string .
+
+
+###  http://https://github.com/INM-6/alpaca/ontology/alpaca.owl#pairValue
+:pairValue rdf:type owl:DatatypeProperty ;
+           rdfs:domain :NameValuePair ;
+           rdfs:range rdfs:Literal .
+
+
+###  http://https://github.com/INM-6/alpaca/ontology/alpaca.owl#sourceCode
+:sourceCode rdf:type owl:DatatypeProperty ;
+            rdfs:domain :Function ;
+            rdfs:range xsd:string .
+
+
+#################################################################
+#    Classes
+#################################################################
+
+###  http://https://github.com/INM-6/alpaca/ontology/alpaca.owl#DataGeneration
+:DataGeneration rdf:type owl:Class ;
+                rdfs:subClassOf <http://www.w3.org/ns/prov#Generation> .
+
+
+###  http://https://github.com/INM-6/alpaca/ontology/alpaca.owl#DataObjectEntity
+:DataObjectEntity rdf:type owl:Class ;
+                  rdfs:subClassOf <http://www.w3.org/ns/prov#Entity> .
+
+
+###  http://https://github.com/INM-6/alpaca/ontology/alpaca.owl#DataUsage
+:DataUsage rdf:type owl:Class ;
+           rdfs:subClassOf <http://www.w3.org/ns/prov#Usage> .
+
+
+###  http://https://github.com/INM-6/alpaca/ontology/alpaca.owl#FileEntity
+:FileEntity rdf:type owl:Class ;
+            rdfs:subClassOf <http://www.w3.org/ns/prov#Entity> .
+
+
+###  http://https://github.com/INM-6/alpaca/ontology/alpaca.owl#Function
+:Function rdf:type owl:Class ;
+          rdfs:subClassOf <http://www.w3.org/ns/prov#Activity> .
+
+
+###  http://https://github.com/INM-6/alpaca/ontology/alpaca.owl#FunctionExecution
+:FunctionExecution rdf:type owl:Class .
+
+
+###  http://https://github.com/INM-6/alpaca/ontology/alpaca.owl#NameValuePair
+:NameValuePair rdf:type owl:Class .
+
+
+###  http://https://github.com/INM-6/alpaca/ontology/alpaca.owl#ScriptAgent
+:ScriptAgent rdf:type owl:Class ;
+             rdfs:subClassOf <http://www.w3.org/ns/prov#SoftwareAgent> .
+
+
+###  Generated by the OWL API (version 4.5.9.2019-02-01T07:24:44Z) https://github.com/owlcs/owlapi
