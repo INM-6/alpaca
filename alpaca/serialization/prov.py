@@ -121,7 +121,7 @@ class AlpacaProvDocument(object):
         # Adds a FileEntity from the Alpaca PROV model
         uri = URIRef(file_identifier(info))
         self.graph.add((uri, RDF.type, ALPACA.FileEntity))
-        self.graph.add((uri, ALPACA.fileType,
+        self.graph.add((uri, ALPACA.filePath,
                         Literal(info.path, datatype=XSD.string)))
         return uri
 
