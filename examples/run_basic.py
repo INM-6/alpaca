@@ -11,13 +11,12 @@ The session file to be used is passed as a parameter when running the script:
 This scripts uses the Elephant toolbox for analysis (www.python-elephant.org).
 """
 
-import os
 import sys
+from pathlib import Path
 
 import numpy as np
 import logging
 
-from reachgraspio import ReachGraspIO
 from elephant.statistics import isi, mean_firing_rate
 
 from alpaca import Provenance, activate, save_provenance
@@ -53,7 +52,7 @@ np.array = Provenance(inputs=[0])(np.array)
 @Provenance(inputs=[], file_input=['session_filename'])
 def load_data(session_filename):
     """
-    Loads Reach2Grasp data using the custom BlackRockIO object ReachGraspIO.
+    Loads Reach2Grasp data in the NIX format.
 
     Parameters
     ----------
@@ -64,18 +63,10 @@ def load_data(session_filename):
     -------
     neo.Block
         Block container with the session data.
-
     """
-    file, ext = os.path.splitext(session_filename)
-    file_path = os.path.dirname(session_filename)
-
-    session = ReachGraspIO(file, odml_directory=file_path,
-                           verbose=False)
-
-    block = session.read_block(load_waveforms=False, nsx_to_load=None,
-                               load_events=True, lazy=False, channels=[10],
-                               units='all')
-
+    path = Path(session_filename).expanduser().absolute()
+    session = neo.NixIO(str(path))
+    block = session.read_block()
     return block
 
 
@@ -101,8 +92,7 @@ def main(session_filename):
     prov_file_format = "ttl"
     prov_file = get_file_name(__file__, extension=prov_file_format)
 
-    save_provenance(prov_file, file_format=prov_file_format, plot=True,
-                    show_element_attributes=False)
+    save_provenance(prov_file, file_format=prov_file_format)
 
 
 if __name__ == "__main__":
