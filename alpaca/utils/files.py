@@ -9,7 +9,8 @@ from pathlib import Path
 def get_file_name(source, output_dir=None, extension=None):
     """
     Function that generates a file name with extension `extension` and the
-    same base name as in `source`. The full path is based on `output_dir`.
+    same base name as in `source`. The full path is based on `output_dir` if
+    specified. Otherwise, it will be the same path as `source`.
 
     Parameters
     ----------
@@ -45,7 +46,10 @@ def get_file_name(source, output_dir=None, extension=None):
     return str(base_name)
 
 
-def _get_prov_file_format(file_name):
+def _get_file_format(file_name):
+    # Returns a string describing the file format based on the extension in
+    # `file_name`. Turtle files are described as RDF.
+
     file_location = Path(file_name)
 
     extension = file_location.suffix
