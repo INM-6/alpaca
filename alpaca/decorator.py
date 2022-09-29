@@ -15,7 +15,7 @@ from .types import AnalysisStep, FunctionInfo, VarArgs
 from .hash import ObjectHasher, FileHash
 from .ast_analysis import _CallAST
 from .code_lines import _CodeAnalyzer
-from .serialization import ProvenanceDocument
+from .serialization import AlpacaProvDocument
 
 from pprint import pprint
 
@@ -479,8 +479,10 @@ class Provenance(object):
         ProvenanceDocument
         """
 
-        prov_document = ProvenanceDocument(cls.source_file)
-        prov_document.process_analysis_steps(cls.history)
+        prov_document = AlpacaProvDocument()
+        prov_document.add_analysis_steps(script_info=cls.script_info,
+                                         session_id=cls.session_id,
+                                         analysis_steps=cls.history)
         return prov_document
 
     @classmethod
@@ -531,7 +533,7 @@ def print_history():
     pprint(Provenance.history)
 
 
-def save_provenance(filename=None, file_format='rdf', plot=False, **kwargs):
+def save_provenance(filename=None, file_format='ttl'):
     """
     Serialized provenance information according to the W3C Provenance Data
     Model (PROV).
@@ -544,18 +546,17 @@ def save_provenance(filename=None, file_format='rdf', plot=False, **kwargs):
         information in the specified format.
         Default: None
     file_format : {'json', 'rdf', 'prov', 'xml'}, optional
-        Serialization format. Formats currently supported are:
+        Serialization format (for RDF files). Formats currently supported are:
         * 'json' : PROV-JSON
-        * 'rdf'/'ttl' : PROV-O
-        * 'prov' : PROV-N
+        * 'turtle' : PROV-O
         * 'xml : PROV-XML
-        Default: 'rdf'
-    plot : bool, optional
-        If True, plot the resulting PROV graph.
-        Default: False
-    **kwargs : dict, optional
-        Plotting parameters passed to the :meth:`prov.ProvDocument.plot` from
-        `prov.ProvDocument`.
+        * 'n3'
+        * 'pretty-xml'
+        * 'trix'
+        * 'trig'
+        * 'nquads'
+        "xml", "n3", "turtle", "nt", "pretty-xml", "trix", "trig" and "nquads"
+        Default: 'ttl'
 
     Returns
     -------
@@ -570,9 +571,7 @@ def save_provenance(filename=None, file_format='rdf', plot=False, **kwargs):
 
     """
     prov_document = Provenance.get_prov_info()
-    if file_format == 'ttl':
-        file_format = 'rdf'
+    if file_format in ('ttl', 'rdf'):
+        file_format = 'turtle'
     prov_data = prov_document.serialize(filename, format=file_format)
-    if plot:
-        prov_document.plot(**kwargs)
     return prov_data
