@@ -74,14 +74,14 @@ class FileHash(object):
         return file_hash.hexdigest()
 
     def __init__(self, file_path, use_content=True):
-        self.file_path = file_path
+        self.file_path = Path(file_path).expanduser().absolute()
 
         if use_content:
             self._hash_type = 'sha256'
-            self._hash = self._get_content_file_hash(file_path)
+            self._hash = self._get_content_file_hash(self.file_path)
         else:
             self._hash_type = 'attribute'
-            self._hash = self._get_attribute_file_hash(file_path)
+            self._hash = self._get_attribute_file_hash(self.file_path)
 
     def __eq__(self, other):
         if isinstance(other, FileHash):
@@ -90,7 +90,7 @@ class FileHash(object):
         raise TypeError("Can compare only two FileHash objects")
 
     def __repr__(self):
-        return f"{Path(self.file_path).name}: " \
+        return f"{self.file_path.name}: " \
                f"[{self._hash_type}] {self._hash}"
 
     def info(self):
