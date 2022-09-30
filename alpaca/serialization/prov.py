@@ -149,15 +149,15 @@ class AlpacaProvDocument(object):
     def _add_membership(self, container, child, params):
         # Add membership relationships according to the standard PROV model
         # and properties specific to the Alpaca PROV model
-        sp_pairs = {
-            'name': (container, ALPACA.fromAttribute),
-            'index': (child, ALPACA.containerIndex),
-            'slice': (child, ALPACA.containerSlice)
+        predicates = {
+            'name': ALPACA.fromAttribute,
+            'index': ALPACA.containerIndex,
+            'slice': ALPACA.containerSlice,
         }
 
         for name, value in params.items():
-            sp = sp_pairs[name]
-            self.graph.add(sp + (Literal(value),))
+            predicate = predicates[name]
+            self.graph.add((child, predicate, Literal(value)))
         self.graph.add((container, PROV.hadMember, child))
 
     def _create_entity(self, info):
