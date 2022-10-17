@@ -12,6 +12,8 @@ contribution, and may not be the current affiliation of a contributor.
 * Danylo Ulianych (orcid: 0000-0003-3489-0542) [1]
 * Michael Denker (orcid: 0000-0003-1255-7300) [1]
 
+Alpaca logo designed by Angela Fischer (orcid: 0000-0002-9600-2646) [1].
+
 1. Institute of Neuroscience and Medicine (INM-6) and Institute for Advanced Simulation (IAS-6) and JARA-Institute Brain Structure-Function Relationships (INM-10), Jülich Research Centre, Jülich, Germany
 
 If we have somehow missed you off the list, we are very sorry. Please, let us
