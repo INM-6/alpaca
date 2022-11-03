@@ -1,0 +1,10 @@
+recursive-include alpaca *.py
+include requirements/*
+include README.md
+include LICENSE.txt
+include alpaca/VERSION
+include alpaca/ontology/*.owl
+recursive-include doc *
+prune doc/_build
+prune doc/tutorials/.ipynb_checkpoints
+recursive-exclude * *~

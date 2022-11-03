@@ -16,7 +16,8 @@ with open('requirements/requirements.txt') as fp:
 setup(
     name="alpaca",
     version=version,
-    packages=['alpaca', 'alpaca.utils'],
+    packages=['alpaca', 'alpaca.utils', 'alpaca.serialization',
+              'alpaca.ontology'],
     include_package_data=True,
     install_requires=install_requires,
     author="Alpaca authors and contributors",
