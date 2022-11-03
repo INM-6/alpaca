@@ -265,7 +265,7 @@ class AlpacaProvDocument(object):
             self._add_analysis_step(step, script_agent, script_info,
                                     session_id)
 
-    def read_records(self, file_name, file_format='ttl'):
+    def read_records(self, file_name, file_format='turtle'):
         """
         Reads PROV data that was previously serialized.
 
@@ -273,23 +273,22 @@ class AlpacaProvDocument(object):
         ----------
         file_name : str or path-like
             Location of the file with PROV data to be read.
-        file_format : {'json', 'rdf', 'ttl', 'xml'}
+        file_format : {'json', 'rdf', 'turtle', 'xml'}
             Format used in the file that is being read.
-            Turtle files (*.ttl) are treated as RDF files.
             If None, the format will be inferred from the extension.
-            Default: 'ttl'
+            Default: 'turtle'
 
         Raises
         ------
         ValueError
             If `file_format` is None and `file_name` has no extension to infer
             the format.
-            If `file_format` is not 'rdf', 'ttl', 'json', or 'xml'.
+            If `file_format` is not 'rdf', 'turtle', 'json', or 'xml'.
         """
         if file_format is None:
             file_format = _get_file_format(file_name)
 
-        if file_format not in ['rdf', 'json', 'xml', 'ttl']:
+        if file_format not in ['rdf', 'json', 'xml', 'turtle']:
             raise ValueError("Unsupported serialization format")
 
         with open(file_name, "r") as source:
