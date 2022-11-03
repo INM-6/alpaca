@@ -30,7 +30,7 @@ the user, but are used internally by the `decorator.Provenance` decorator.
 import ast
 import itertools
 
-from .static_code import (_AttributeStep, _NameStep, _SubscriptStep)
+from alpaca.static_code import (_AttributeStep, _NameStep, _SubscriptStep)
 
 
 class _NameAST(ast.NodeTransformer):

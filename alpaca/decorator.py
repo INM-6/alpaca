@@ -11,11 +11,11 @@ import datetime
 import logging
 import uuid
 
-from .types import AnalysisStep, FunctionInfo, VarArgs
-from .hash import ObjectHasher, FileHash
-from .ast_analysis import _CallAST
-from .code_lines import _CodeAnalyzer
-from .serialization import AlpacaProvDocument
+from alpaca.types import AnalysisStep, FunctionInfo, VarArgs
+from alpaca.hash import ObjectHasher, FileHash
+from alpaca.ast_analysis import _CallAST
+from alpaca.code_lines import _CodeAnalyzer
+from alpaca.serialization import AlpacaProvDocument
 
 from pprint import pprint
 
