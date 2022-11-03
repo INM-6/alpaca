@@ -1,37 +1,64 @@
+"""
+This module implements functionality to generate and manipulate graphs for
+visualizing provenance data stored in files using the W3C PROV standard and
+Alpaca ontology. The NetworkX library is used for handling the graphs.
+"""
+
+
 import re
+from itertools import chain
+from collections import defaultdict
 
-from prov.model import *
-from prov.graph import prov_to_graph
 import networkx as nx
+from networkx.algorithms.summarization import (_snap_eligible_group,
+                                               _snap_split)
 
-from alpaca.serialization import (ProvenanceDocument, NID_ALPACA, NSS_FUNCTION,
-                                  NSS_FILE, NSS_DATA, NSS_SCRIPT,
-                                  NSS_PARAMETER, NSS_ATTRIBUTE, NSS_ANNOTATION,
-                                  NSS_CONTAINER, ALL_NSS, NAMESPACES)
-from alpaca.utils.files import _get_prov_file_format
+from rdflib.namespace import RDF, PROV
 
-
-# Utility functions for graph conversion
-
-def _find_namespace(uri):
-    for ns in NAMESPACES:
-        parts = uri.split(ns.uri)
-        if len(parts) > 1:
-            return ns.prefix, parts[1]
-    return None
+from alpaca.ontology import ALPACA
+from alpaca.serialization import AlpacaProvDocument
+from alpaca.serialization.identifiers import (NSS_FUNCTION, NSS_FILE,
+                                              entity_info, activity_info)
+from alpaca.utils.files import _get_file_format
 
 
-def _get_id(uri):
-    node_id = str(uri)
-    namespace = _find_namespace(node_id)
-    if namespace:
-        return ":".join(namespace)
-    return node_id
+# String constants to use in the output
+# These may be added to the names of NameValuePair information
+PREFIX_ATTRIBUTE = "attribute"
+PREFIX_ANNOTATION = "annotation"
+PREFIX_PARAMETER = "parameter"
+
+
+# Mapping of ontology predicates to the prefixes
+ATTR_NAMES = {ALPACA.hasAttribute: PREFIX_ATTRIBUTE,
+              ALPACA.hasAnnotation: PREFIX_ANNOTATION,
+              ALPACA.hasParameter: PREFIX_PARAMETER}
+
+
+def _add_gephi_interval(data, order):
+    if not "gephi_interval" in data:
+        data["gephi_interval"] = []
+    data["gephi_interval"].append((order, order))
+
+
+def _get_function_call_data(activity, execution_order, params,
+                            use_name_in_parameter=True):
+
+    data = activity_info(activity)
+    data["execution_order"] = execution_order
+
+    prefix = "parameter" if not use_name_in_parameter else data["label"]
+    for param, value in params.items():
+        data[f"{prefix}:{param}"] = value
+
+    _add_gephi_interval(data, data["execution_order"])
+
+    return data
 
 
 def _add_attribute(data, attr_name, attr_type, attr_value, strip_namespace):
     if not strip_namespace:
-        attr_name = f"{attr_type}:{attr_name}"
+        attr_name = f"{ATTR_NAMES[attr_type]}:{attr_name}"
 
     if attr_name in data:
         raise ValueError(
@@ -39,8 +66,15 @@ def _add_attribute(data, attr_name, attr_type, attr_value, strip_namespace):
     data[attr_name] = attr_value
 
 
-def _get_data(node, node_id, annotations=None, attributes=None,
-              array_annotations=None, strip_namespace=True):
+def _get_name_value_pair(graph, bnode):
+    # Read name and value from the NameValuePair blank node
+    attr_name = str(list(graph.objects(bnode, ALPACA.pairName))[0])
+    attr_value = str(list(graph.objects(bnode, ALPACA.pairValue))[0])
+    return attr_name, attr_value
+
+
+def _get_entity_data(graph, entity, annotations=None, attributes=None,
+                     array_annotations=None, strip_namespace=True):
     filter_map = defaultdict(list)
 
     # Array annotations is a special attribute that stores a dictionary
@@ -50,115 +84,47 @@ def _get_data(node, node_id, annotations=None, attributes=None,
         attributes = attributes + tuple(array_annotations.keys())
 
     filter_map.update(
-        {NSS_ANNOTATION: annotations, NSS_ATTRIBUTE: attributes})
+        {ALPACA.hasAnnotation: annotations,
+         ALPACA.hasAttribute: attributes})
 
-    data = {"gephi_interval": []}
-    namespace, local_part = node_id.split(":", 1)
-    data['type'] = "activity" if namespace == NSS_FUNCTION else namespace
+    data = entity_info(entity)
+    data["gephi_interval"] = []
 
-    info = local_part.split(":")
-    data['data_hash'] = info[-1]
-    if namespace == NSS_FILE:
-        data['label'] = "File"
-        data['hash_type'] = info[-2]
-    elif namespace == NSS_DATA:
-        data['label'] = info[-2].split(".")[-1]
-        data['Python_name'] = info[-2]
+    if annotations or attributes or array_annotations:
+        for attr_type in (ALPACA.hasAttribute, ALPACA.hasAnnotation):
+            for name_value_bnode in graph.objects(entity, attr_type):
+                attr_name, attr_value = _get_name_value_pair(graph,
+                                                             name_value_bnode)
+                if attr_name in filter_map[attr_type]:
 
-    for attr in node.attributes:
-        attr_type = str(attr[0].namespace.prefix)
-        attr_name = attr[0].localpart
-        attr_value = attr[1]
+                    if attr_name in array_annotations:
+                        # Extract the relevant keys from the array annotations
+                        # string
+                        for annotation in array_annotations[attr_name]:
+                            search_annotation = re.compile(
+                                fr"'({annotation})':\s([\w\s()\/\-.*\[\]'\,=<>]+)(,\s'.+':|,*\}})")
 
-        if annotations or attributes or array_annotations:
-            if attr_name in filter_map[attr_type]:
-                if attr_name in array_annotations:
-                    # Extract the relevant keys from the array annotations string
-                    for annotation in array_annotations[attr_name]:
-                        search_annotation = re.compile(
-                            fr"'({annotation})':\s([\w\s()\/\-.*\[\]'\,=<>]+)(,\s'.+':|,*\}})")
+                            match = search_annotation.search(attr_value)
 
-                        match = search_annotation.search(attr_value)
+                            if match:
+                                if match.group(1) == annotation:
+                                    value = str(match.group(2))
+                                    value = re.sub(r"\s+", " ", value)
+                                else:
+                                    value = "<could not fetch annotation value>"
 
-                        if match:
-                            if match.group(1) == annotation:
-                                value = str(match.group(2))
-                                value = re.sub(r"\s+", " ", value)
-                            else:
-                                value = "<could not fetch annotation value>"
+                                _add_attribute(data, annotation, attr_type,
+                                               value, strip_namespace)
 
-                            _add_attribute(data, annotation, attr_type,
-                                           value, strip_namespace)
+                    else:
+                        _add_attribute(data, attr_name, attr_type, attr_value,
+                                       strip_namespace)
 
-                else:
-                    _add_attribute(data, attr_name, attr_type, attr_value,
-                                   strip_namespace)
-
-        if namespace == NSS_FILE and attr_type in (
-                "rdfs", "prov") and attr_name == "label":
-            data["File_path"] = attr_value
+    if data['type'] == NSS_FILE:
+        file_path = str(list(graph.objects(entity, ALPACA.filePath))[0])
+        data["File_path"] = file_path
 
     return data
-
-
-def _add_gephi_interval(data, order):
-    if not "gephi_interval" in data:
-        data["gephi_interval"] = []
-    data["gephi_interval"].append((order, order))
-
-
-def _get_function_call_node(u_id, v_id, relation,
-                            use_name_in_parameter=True):
-    node_id = v_id if isinstance(relation, ProvUsage) else u_id
-
-    data = {
-        "Python_name": node_id.split(":")[-1],
-        "type": NSS_FUNCTION
-    }
-    data["label"] = data["Python_name"].split(".")[-1]
-
-    for attr in relation.attributes:
-        attr_type = str(attr[0].namespace.prefix)
-        attr_name = attr[0].localpart
-        attr_value = attr[1]
-
-        if attr_type == "prov" and attr_name == "value":
-            data["execution_order"] = attr_value
-        elif attr_type == NSS_PARAMETER:
-            prefix = attr_type if not use_name_in_parameter else data[
-                "label"]
-            data[f"{prefix}:{attr_name}"] = attr_value
-
-    _add_gephi_interval(data, data["execution_order"])
-    node_hash = hash((node_id, data["execution_order"]))
-
-    return node_hash, data
-
-
-def _get_membership_relation(relation, graph):
-    # Retrieve the relevant parameter (index/slice, attribute)
-    # The entity that is inside the collection has an attribute
-    # with the namespace `container:`, with the index/slice or
-    # attribute name information
-
-    member = None
-    for attr in relation.attributes:
-        if str(attr[0]) == "prov:entity":
-            member = attr[1].uri
-
-    for node in graph.nodes:
-        if node.identifier.uri == member:
-            # ProvEntity object of the collection's member
-            for attr in node.attributes:
-                container_attribute = str(attr[0])
-                if container_attribute.startswith(f"{NSS_CONTAINER}:"):
-                    # This is the membership ProvEntity attribute
-                    # Get the attribute name or index/slice value
-                    member_type = container_attribute.split(":")[-1]
-                    if member_type == "attribute":
-                        return f".{attr[1]}"
-                    else:
-                        return f"[{attr[1]}]"
 
 
 # Main graph class
@@ -214,22 +180,13 @@ class ProvenanceGraph:
 
         # Load PROV records and filter only the relevant for the construction
         # of the graph
-        file_format = _get_prov_file_format(prov_file)
-        doc = ProvDocument.deserialize(prov_file, format=file_format)
-        filtered_doc = ProvDocument()
-        for record in doc.get_records((ProvEntity, ProvActivity,
-                                       ProvGeneration, ProvUsage,
-                                       ProvMembership)):
-            filtered_doc.add_record(record)
+        doc = AlpacaProvDocument()
+        doc.read_records(prov_file, file_format=None)
 
-        prov_graph = prov_to_graph(filtered_doc)
-
-        # Reverse direction of edges, as PROV format is from bottom to top
-        reversed_prov_graph = prov_graph.reverse(copy=False)
-
-        # Simplify the graph for visualization. The parameters passed to
-        # the class initialization will control the graph output
-        self.graph = self._transform_graph(reversed_prov_graph,
+        # Transform RDFlib graph to NetworkX and simplify the graph for
+        # visualization. The parameters passed to the class initialization
+        # will control the graph output
+        self.graph = self._transform_graph(doc.graph,
                                            annotations=annotations,
                                            attributes=attributes,
                                            array_annotations=array_annotations,
@@ -251,6 +208,7 @@ class ProvenanceGraph:
         # We will have all the spots where the execution counter was not set.
         # Then we build, for each path from the bottom to the top, the full
         # list with intervals at each node.
+
         processed_nodes = []
         subgraph_nodes = []
         for u, v, data in graph.edges(data=True):
@@ -280,6 +238,10 @@ class ProvenanceGraph:
 
     @staticmethod
     def _generate_interval_strings(graph):
+        # Create a Gephi interval string (e.g. "<[start:end];[start:end]>")
+        # for each node in `graph`, and add as additional node data, using
+        # the "Time Interval" label.
+
         for node, data in graph.nodes(data=True):
             data["gephi_interval"].sort(key=lambda tup: tup[0])
             segments = ";".join([f"[{start:.1f},{stop:.1f}]" for start, stop in
@@ -291,8 +253,8 @@ class ProvenanceGraph:
     @staticmethod
     def _transform_graph(graph, annotations=None, attributes=None,
                          array_annotations=None, strip_namespace=True,
-                         remove_none=True):
-        # Transform a NetworkX graph obtained from the PROV data, so that the
+                         remove_none=True, use_name_in_parameter=True):
+        # Transform a RDFlib graph obtained from the PROV data, so that the
         # visualization is simplified. A new `nx.DiGraph` object is created
         # and returned. Annotations and attributes of the entities stored in
         # the PROV file can be filtered.
@@ -300,62 +262,96 @@ class ProvenanceGraph:
         transformed = nx.DiGraph()
         none_nodes = []
 
-        print("Transforming nodes")
-        # Copy all the nodes, changing the URI to string and extracting the
-        # requested attributes/annotations as node data.
-        for node in graph.nodes:
-            node_id = _get_id(node.identifier.uri)
+        print("Creating nodes")
+
+        # Copy all the Entity nodes, while adding the requested attributes and
+        # annotations as node data.
+        for entity in chain(graph.subjects(RDF.type, ALPACA.DataObjectEntity),
+                            graph.subjects(RDF.type, ALPACA.FileEntity)):
+            node_id = str(entity)
             if remove_none and "builtins.NoneType" in node_id:
-                none_nodes.append(node)
+                none_nodes.append(node_id)
                 continue
-            data = _get_data(node, node_id,
-                             annotations=annotations,
-                             attributes=attributes,
-                             array_annotations=array_annotations,
-                             strip_namespace=strip_namespace)
+            data = _get_entity_data(graph, entity,
+                                    annotations=annotations,
+                                    attributes=attributes,
+                                    array_annotations=array_annotations,
+                                    strip_namespace=strip_namespace)
             transformed.add_node(node_id, **data)
 
-        print("Transforming edges")
+        print("Creating edges")
         # Add all the edges.
-        # If membership, the direction must be reversed.
         # If usage/generation, create additional nodes for the function call,
         # with the parameters as node data.
-        # A membership flag is created, as this will be used.
-        for u, v, data in graph.edges(data=True):
+        # If membership, membership flag is set to True, as this will be used.
+
+        for s, bnode in graph.subject_objects(PROV.qualifiedGeneration):
+
+            target = str(s)
             if remove_none and len(none_nodes) > 0:
-                if u in none_nodes or v in none_nodes:
+                if target in none_nodes:
                     continue
 
-            u_id = _get_id(u.identifier.uri)
-            v_id = _get_id(v.identifier.uri)
+            # Get the function execution associated with the generation
+            function_execution = list(
+                graph.objects(bnode, ALPACA.fromFunctionExecution))[0]
+            activity = list(graph.objects(bnode, PROV.activity))[0]
 
-            relation = data['relation']
-            if isinstance(relation, ProvMembership):
-                membership_relation = _get_membership_relation(relation, graph)
-                transformed.add_edge(v_id, u_id, membership=True,
-                                     label=membership_relation)
-            elif isinstance(relation, (ProvUsage, ProvGeneration)):
-                node_id, node_data = _get_function_call_node(u_id, v_id,
-                                                             relation)
-                if not node_id in graph.nodes:
-                    transformed.add_node(node_id, **node_data)
+            # Extract all the parameters of the function execution
+            params = dict()
+            for parameter in graph.objects(function_execution,
+                                           ALPACA.hasParameter):
+                name, value = _get_name_value_pair(graph, parameter)
+                params[name] = value
 
-                if isinstance(relation, ProvUsage):
-                    transformed.add_edge(u_id, node_id, membership=False)
-                    _add_gephi_interval(transformed.nodes[u_id],
-                                        node_data['execution_order'])
-                else:
-                    transformed.add_edge(node_id, v_id, membership=False)
-                    _add_gephi_interval(transformed.nodes[v_id],
-                                        node_data['execution_order'])
+            # Execution order
+            execution_order = list(
+                graph.objects(function_execution,
+                              ALPACA.executionOrder))[0].value
 
-        print("Removing activities")
-        # Remove old ProvActivity nodes that are not needed anymore
-        # (unconnected). They were set with the `type` as `activity` in the
-        # node data dictionary.
-        filter_nodes = [node for node, data in transformed.nodes(data=True) if
-                        data['type'] == "activity"]
-        transformed.remove_nodes_from(filter_nodes)
+            # Get the entity(ies) used for this generation
+            source_entities = list()
+            for usage_bnode in graph.subjects(ALPACA.byFunctionExecution,
+                                              function_execution):
+                entity = list(graph.objects(usage_bnode, PROV.entity))[0]
+                source_entities.append(str(entity))
+
+            node_data = _get_function_call_data(activity=activity,
+                execution_order=execution_order, params=params,
+                use_name_in_parameter=use_name_in_parameter)
+
+            # Add a new node for the function execution, with the activity
+            # data
+            node_id = str(function_execution)
+            if not node_id in transformed.nodes:
+                transformed.add_node(node_id, **node_data)
+
+            # Add all the edges from sources to activity and from activity
+            # to targets
+            for source in source_entities:
+                transformed.add_edge(source, node_id, membership=False)
+                _add_gephi_interval(transformed.nodes[source],
+                                    node_data['execution_order'])
+
+            transformed.add_edge(node_id, target, membership=False)
+            _add_gephi_interval(transformed.nodes[target],
+                                node_data['execution_order'])
+
+        for container, member in graph.subject_objects(PROV.hadMember):
+
+            membership_relation = None
+            for predicate, object in graph.predicate_objects(member):
+                if predicate in [ALPACA.containerIndex, ALPACA.containerSlice]:
+                    membership_relation = f".{str(object)}"
+                elif predicate == ALPACA.fromAttribute:
+                    membership_relation = f"[{str(object)}"
+
+            if membership_relation is None:
+                raise ValueError("Membership information not found for"
+                                 f"{container}->{member} relation.")
+
+            transformed.add_edge(str(container), str(member), membership=True,
+                                 label=membership_relation)
 
         return transformed
 
