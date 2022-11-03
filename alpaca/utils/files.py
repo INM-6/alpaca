@@ -58,6 +58,6 @@ def _get_file_format(file_name):
     file_format = extension[1:]
 
     if file_format == 'ttl':
-        file_format = 'rdf'
+        file_format = 'turtle'
 
     return file_format
