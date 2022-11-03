@@ -61,3 +61,36 @@ def execution_identifier(info, session_id, execution_id):
     urn = f"{BASE_URN}:{NSS_EXECUTION}:Python:{info.hash}:{session_id}" \
           f"#{execution_id}"
     return urn
+
+
+# Functions to extract information from identifiers
+
+def _strip_local_part(identifier):
+    return identifier.split(f"{BASE_URN}:")[1]
+
+
+def entity_info(identifier):
+    local_part = _strip_local_part(identifier)
+    info = local_part.split(":")
+
+    entity_type = info[0]
+    data = {'type': entity_type,
+            'data_hash': info[-1]}
+
+    if entity_type == NSS_FILE:
+        data['label'] = "File"
+        data['hash_type'] = info[-2]
+    elif entity_type == NSS_DATA:
+        data['label'] = info[-2].split(".")[-1]  # label is the class name
+        data['Python_name'] = info[-2]           # store full path to class
+
+    return data
+
+
+def activity_info(identifier):
+    data = {
+        "Python_name": identifier.split(":")[-1],
+        "type": NSS_FUNCTION
+    }
+    data["label"] = data["Python_name"].split(".")[-1]
+    return data
