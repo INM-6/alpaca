@@ -1,6 +1,6 @@
 """
-This module contains utility functions to generate file names.
-
+This module contains utility functions to generate or get information
+from file names.
 """
 
 from pathlib import Path
@@ -10,7 +10,8 @@ def get_file_name(source, output_dir=None, extension=None):
     """
     Function that generates a file name with extension `extension` and the
     same base name as in `source`. The full path is based on `output_dir` if
-    specified. Otherwise, it will be the same path as `source`.
+    specified. Otherwise, it will be the same path as `source`. User and
+    relative paths are expanded.
 
     Parameters
     ----------
@@ -29,7 +30,8 @@ def get_file_name(source, output_dir=None, extension=None):
     -------
     str
         File name, according to the parameters selected. If both `output_dir`
-        and `extension` are None, the result will be equal to `source`.
+        and `extension` are None, the result will be equal to `source`. The
+        result path is absolute, with user and relative paths expanded.
     """
     if not isinstance(source, Path):
         source = Path(source)
@@ -42,22 +44,31 @@ def get_file_name(source, output_dir=None, extension=None):
         base_name = source
 
     if output_dir is not None:
-        base_name = Path(output_dir).with_name(base_name.name)
-    return str(base_name)
+        base_name = Path(output_dir) / base_name.name
+    return str(base_name.expanduser().resolve().absolute())
 
 
-def _get_file_format(file_name):
+def _get_prov_file_format(file_name):
     # Returns a string describing the file format based on the extension in
-    # `file_name`. Turtle files are described as RDF.
+    # `file_name`. `.rdf` files are described as XML, `.ttl` files are
+    # described as Turtle, and `.json` are described as JSON-LD. Other
+    # extensions are returned as provided. The return value is compatible with
+    # RDFLib serialization format strings. Returns None if no extension.
 
     file_location = Path(file_name)
 
     extension = file_location.suffix
     if not extension.startswith('.'):
-        raise ValueError("File has no extension. No format can be inferred")
+        return None
     file_format = extension[1:]
 
-    if file_format == 'ttl':
-        file_format = 'turtle'
+    file_format_map = {
+        'ttl': 'turtle',
+        'rdf': 'xml',
+        'json': 'json-ld',
+    }
+
+    if file_format in file_format_map:
+        return file_format_map[file_format]
 
     return file_format
