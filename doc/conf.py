@@ -47,6 +47,7 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.doctest',
     'sphinx.ext.viewcode',
+    'sphinx_tabs.tabs',
     'numpydoc',
 ]
 

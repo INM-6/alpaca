@@ -9,8 +9,8 @@ Alpaca provides a simple API for capturing the details of the functions being
 executed, together with the description of the data and parameters used.
 This is accomplished with minimal code instrumentation and user intervention.
 
-Provenance information is structured and serialized according to the `W3C PROV
-format <https://www.w3.org/TR/prov-overview/>`_.
+Provenance information is structured and serialized according to a model
+based on the `W3C PROV format <https://www.w3.org/TR/prov-overview/>`_.
 
 Examples are provided for the analysis of electrophysiology data, using the
 open source packages `Neo <https://neuralensemble.org/neo>`_ and
@@ -26,8 +26,10 @@ Table of Contents
 .. toctree::
    :maxdepth: 1
 
+   install
    examples
    authors
+   release_notes
    acknowledgments
 
 
