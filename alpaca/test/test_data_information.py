@@ -2,7 +2,8 @@ import unittest
 
 import numpy as np
 
-from alpaca.hash import FileHash, FileInfo, ObjectHasher, ObjectInfo
+from alpaca.types import File, DataObject
+from alpaca.data_information import (_FileInformation, _ObjectInformation)
 from pathlib import Path
 import joblib
 import uuid
@@ -17,48 +18,48 @@ class ObjectClass(object):
         self.attribute = "an object class"
 
 
-class FileHashTestCase(unittest.TestCase):
+class FileInformationTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
         cls.file_path = Path(__file__).parent.absolute() / ("res/file_input.txt")
 
-    def test_file_hash_sha256(self):
-        file_hash = FileHash(self.file_path)
-        info = file_hash.info()
-        self.assertIsInstance(info, FileInfo)
+    def test_file_info_sha256(self):
+        file_info = _FileInformation(self.file_path)
+        info = file_info.info()
+        self.assertIsInstance(info, File)
         self.assertEqual(info.hash_type, "sha256")
         self.assertEqual(info.hash, "96ccc1380e069667069acecea3e2ab559441657807e0a86d14f49028710ddb3a")
         self.assertEqual(info.path, self.file_path)
 
-    def test_file_hash_attribute(self):
-        file_hash = FileHash(self.file_path, use_content=False)
-        info = file_hash.info()
-        self.assertIsInstance(info, FileInfo)
+    def test_file_info_attribute(self):
+        file_info = _FileInformation(self.file_path, use_content=False)
+        info = file_info.info()
+        self.assertIsInstance(info, File)
         self.assertEqual(info.hash_type, "attribute")
         self.assertEqual(info.hash, 0)
         self.assertEqual(info.path, self.file_path)
 
-    def test_file_hash_comparison(self):
-        file_hash_1 = FileHash(self.file_path)
-        file_hash_2 = FileHash(self.file_path)
-        file_hash_3 = FileHash(self.file_path, use_content=False)
+    def test_file_info_comparison(self):
+        file_info_1 = _FileInformation(self.file_path)
+        file_info_2 = _FileInformation(self.file_path)
+        file_info_3 = _FileInformation(self.file_path, use_content=False)
 
-        self.assertTrue(file_hash_1 == file_hash_2)
+        self.assertTrue(file_info_1 == file_info_2)
 
         with self.assertRaises(TypeError):
-            comparison = file_hash_1 == "other type"
+            comparison = file_info_1 == "other type"
 
-        self.assertFalse(file_hash_3 == file_hash_1)
+        self.assertFalse(file_info_3 == file_info_1)
 
     def test_repr(self):
-        file_hash = FileHash(self.file_path)
+        file_info = _FileInformation(self.file_path)
         expected_str = "file_input.txt: [sha256] 96ccc1380e069667069acece" \
                        "a3e2ab559441657807e0a86d14f49028710ddb3a"
-        self.assertEqual(str(file_hash), expected_str)
+        self.assertEqual(str(file_info), expected_str)
 
 
-class ObjectHasherTestCase(unittest.TestCase):
+class ObjectInformationTestCase(unittest.TestCase):
 
     def test_numpy_array(self):
         numpy_array_int = np.array([[1, 2, 3, 4],
@@ -68,12 +69,12 @@ class ObjectHasherTestCase(unittest.TestCase):
                                       [5, 6, 7, 8],
                                       [9, 10, 11, 12]], dtype=np.float64)
 
-        object_hasher = ObjectHasher()
-        info_int = object_hasher.info(numpy_array_int)
-        info_float = object_hasher.info(numpy_array_float)
+        object_info = _ObjectInformation()
+        info_int = object_info.info(numpy_array_int)
+        info_float = object_info.info(numpy_array_float)
 
-        self.assertIsInstance(info_int, ObjectInfo)
-        self.assertIsInstance(info_float, ObjectInfo)
+        self.assertIsInstance(info_int, DataObject)
+        self.assertIsInstance(info_float, DataObject)
 
         self.assertEqual(info_int.type, "numpy.ndarray")
         self.assertEqual(info_float.type, "numpy.ndarray")
@@ -90,20 +91,20 @@ class ObjectHasherTestCase(unittest.TestCase):
 
     def test_memoization(self):
         array = np.array([1, 2, 3])
-        object_hasher = ObjectHasher()
+        object_info = _ObjectInformation()
         array_id = id(array)
 
-        self.assertDictEqual(object_hasher._hash_memoizer, {})
-        self.assertFalse(array_id in object_hasher._hash_memoizer)
-        info_pre = object_hasher.info(array)
+        self.assertDictEqual(object_info._hash_memoizer, {})
+        self.assertFalse(array_id in object_info._hash_memoizer)
+        info_pre = object_info.info(array)
 
-        self.assertTrue(array_id in object_hasher._hash_memoizer)
-        info_post = object_hasher.info(array)
+        self.assertTrue(array_id in object_info._hash_memoizer)
+        info_post = object_info.info(array)
         self.assertEqual(info_pre, info_post)
 
     def test_none(self):
-        object_hasher = ObjectHasher()
-        info = object_hasher.info(None)
+        object_info = _ObjectInformation()
+        info = object_info.info(None)
         self.assertIsInstance(info.hash, uuid.UUID)
         self.assertEqual(info.type, "builtins.NoneType")
         self.assertDictEqual(info.details, {})
@@ -111,21 +112,21 @@ class ObjectHasherTestCase(unittest.TestCase):
     def test_custom_class(self):
         custom_object_1 = ObjectClass(param=4)
         custom_object_2 = ObjectClass(param=3)
-        object_hasher = ObjectHasher()
+        object_info = _ObjectInformation()
 
-        info_1 = object_hasher.info(custom_object_1)
+        info_1 = object_info.info(custom_object_1)
         self.assertEqual(info_1.details['param'], 4)
         self.assertEqual(info_1.details['attribute'], "an object class")
         self.assertEqual(info_1.id, id(custom_object_1))
-        self.assertEqual(info_1.type, "test_object_hash.ObjectClass")
+        self.assertEqual(info_1.type, "test_data_information.ObjectClass")
         self.assertEqual(info_1.hash, joblib.hash(custom_object_1,
                                                   hash_name='sha1'))
 
-        info_2 = object_hasher.info(custom_object_2)
+        info_2 = object_info.info(custom_object_2)
         self.assertEqual(info_2.details['param'], 3)
         self.assertEqual(info_2.details['attribute'], "an object class")
         self.assertEqual(info_2.id, id(custom_object_2))
-        self.assertEqual(info_2.type, "test_object_hash.ObjectClass")
+        self.assertEqual(info_2.type, "test_data_information.ObjectClass")
         self.assertEqual(info_2.hash, joblib.hash(custom_object_2,
                                                   hash_name='sha1'))
 
