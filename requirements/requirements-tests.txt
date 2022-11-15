@@ -1,1 +1,3 @@
+neo
+quantities
 pytest

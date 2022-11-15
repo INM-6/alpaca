@@ -1,8 +1,5 @@
 numpy
-quantities
-pydot
-networkx>=2.8
-scipy>=1.8
+networkx>=2.6
 dill==0.3.3
 joblib==1.0.1
 rdflib>=6.0
