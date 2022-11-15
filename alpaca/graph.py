@@ -108,7 +108,7 @@ def _get_entity_data(graph, entity, annotations=None, attributes=None,
                                                              name_value_bnode)
                 if attr_name in filter_map[attr_type]:
 
-                    if attr_name in array_annotations:
+                    if array_annotations and attr_name in array_annotations:
                         # Extract the relevant keys from the array annotations
                         # string
                         for annotation in array_annotations[attr_name]:
@@ -395,9 +395,9 @@ class ProvenanceGraph:
             membership_relation = None
             for predicate, object in graph.predicate_objects(member):
                 if predicate in [ALPACA.containerIndex, ALPACA.containerSlice]:
-                    membership_relation = f".{str(object)}"
+                    membership_relation = f"[{str(object)}]"
                 elif predicate == ALPACA.fromAttribute:
-                    membership_relation = f"[{str(object)}"
+                    membership_relation = f".{str(object)}"
 
             if membership_relation is None:
                 raise ValueError("Membership information not found for"
