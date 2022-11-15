@@ -57,7 +57,20 @@ templates_path = ['_templates']
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ['_build',
+                    '**.ipynb_checkpoints',
+                    'Thumbs.db',
+                    '.DS_Store']
+
+# The name of the Pygments (syntax highlighting) style to use.
+pygments_style = 'sphinx'
+
+# Required to automatically create a summary page for each function listed in
+# the autosummary fields of each module.
+autosummary_generate = True
+
+# Set to False to not overwrite our custom toctree/*.rst
+autosummary_generate_overwrite = True
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -66,16 +79,13 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # a list of builtin themes.
 #
 html_theme = 'alabaster'
+
 html_theme_options = {
     'font_family': 'Arial',
     'page_width': '1200px',  # default is 940
     'sidebar_width': '280px',  # default is 220
-    'logo': 'alpaca_logo.png',
+    'logo': 'images/alpaca_logo.png',
 }
-
-# The name of an image file (relative to this directory) to place at the top
-# of the sidebar.
-#html_logo = 'images/alpaca_logo.png'
 
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
@@ -85,7 +95,14 @@ html_theme_options = {
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['images']
+html_static_path = ['_static']
+
+
+# CSS file to customize and tweak display
+html_css_files = [
+    'css/style.css',
+]
+
 
 # Suppresses wrong numpy doc warnings
 # see here https://github.com/phn/pytpm/issues/3#issuecomment-12133978

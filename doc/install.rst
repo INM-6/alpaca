@@ -8,7 +8,6 @@ The easiest way to install Alpaca is by creating a
 `conda <https://conda.io/>`_ environment, followed by install using `pip`.
 Below is the explanation of how to proceed with these two steps.
 
-.. _prerequisites:
 
 Prerequisites
 =============
@@ -41,8 +40,6 @@ Alpaca requires `Python <http://python.org/>`_ 3.8 or higher.
 
            sudo apt-get install python-pip
 
-
-.. _installation:
 
 Installation
 ============
@@ -93,6 +90,7 @@ Installation
               pip install -e .
 
 
+.. _visualization:
 External tools for provenance visualization
 -------------------------------------------
 

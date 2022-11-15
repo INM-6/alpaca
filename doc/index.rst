@@ -26,8 +26,10 @@ Table of Contents
 .. toctree::
    :maxdepth: 1
 
+   introduction
    install
    examples
+   api
    authors
    release_notes
    acknowledgments
