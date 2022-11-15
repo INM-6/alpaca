@@ -625,5 +625,5 @@ def save_provenance(file_name=None, file_format='ttl'):
         file_format = RDF_FILE_FORMAT_MAP[file_format]
 
     prov_document = Provenance.get_prov_info()
-    prov_data = prov_document.serialize(file_name, format=file_format)
+    prov_data = prov_document.serialize(file_name, file_format=file_format)
     return prov_data
