@@ -499,6 +499,207 @@ class ProvenanceGraph:
         """
         self._condense_memberships(self.graph, preserve=preserve)
 
+    @staticmethod
+    def _snap_build_graph(graph, groups, neighbor_info):
+        # Function modified from NetworkX 2.6, to build the aggregated graph
+        # after SNAP aggregation.
+        #
+        # Please refer to the `Acknowledgements and open source software`
+        # section for copyright and license information.
+
+        def _aggregate_attributes(source, group_iterator):
+            raw_attributes = defaultdict(set)
+            for member in group_iterator:
+                for attr, value in source[member].items():
+                    raw_attributes[attr].add(value)
+
+            # Transform all elements values to strings
+            attributes = {
+                key: str(next(iter(value)))
+                if len(value) == 1 else ";".join(map(str, sorted(list(value))))
+                for key, value in raw_attributes.items()
+            }
+
+            # Organize time intervals
+            intervals = re.findall(r"(\[[\d+.,]+\])",
+                                   attributes['Time Interval'])
+            intervals.sort()
+            intervals_str = ";".join(intervals)
+            attributes['Time Interval'] = f"<{intervals_str}>"
+
+            return attributes
+
+        output = nx.DiGraph()
+        prefix = "Step"
+        node_label_lookup = dict()
+
+        for index, group_id in enumerate(groups):
+            group_set = groups[group_id]
+            supernode = f"{prefix} {index}"
+            node_label_lookup[group_id] = supernode
+
+            # We sumarize all possible values for all attributes in the nodes
+            # from the group
+            supernode_attributes = _aggregate_attributes(graph.nodes,
+                                                         group_set)
+
+            # Save a string with the identifiers of all member nodes
+            members = ";".join(group_set)
+
+            output.add_node(supernode, members=members, **supernode_attributes)
+
+        for group_id in groups:
+            group_set = groups[group_id]
+            source_supernode = node_label_lookup[group_id]
+            for other_group, group_edge_types in neighbor_info[
+                next(iter(group_set))
+            ].items():
+                if group_edge_types:
+                    target_supernode = node_label_lookup[other_group]
+                    summary_graph_edge = (source_supernode, target_supernode)
+
+                    # TODO: add edge weight and summarize attributes
+                    superedge_attributes = {}
+                    output.add_edge(*summary_graph_edge,
+                                    **superedge_attributes)
+
+        return output
+
+    def aggregate(self, group_node_attributes, use_function_parameters=True,
+                  output_file=None):
+        """
+        Creates a summary graph based on a selection of attributes of the
+        nodes in the graph.
+
+        The attributes can be individualized for each
+        node label (as defined by the `Label` node attribute), so that
+        different levels of aggregation are possible. Therefore, it is
+        possible to generate visualizations with different levels of detail
+        to progressively inspect the provenance trace.
+
+        Parameters
+        ----------
+        group_node_attributes : dict
+            Dictionary selecting which attributes are used in the aggregation.
+            The keys are the possible labels in the graph, and the values
+            are tuples of the node attributes used for determining supernodes.
+            For example, to aggregate `Quantity` nodes based on different
+            `shape` attribute values, `group_node_attributes` would be
+            `{'Quantity': ('shape',)}`. If passing an empty dictionary, no
+            attributes will be considered, and the aggregation will be based
+            on the topology (i.e., nodes at similar levels will be grouped
+            according to the connectivity).
+        use_function_parameters : bool, optional
+            If True, the parameters of function nodes in the graph will be
+            considered in the aggregation, i.e., if the same function is called
+            with different parameters, different supernodes will be generated.
+            If False, a single supernode will be produced, regardless of the
+            different parameters used.
+            Default: True
+        output_file : str or Path-like
+            If None, a `nx.DiGraph` object will be returned. If not None, the
+            graph will be saved in the provided path, and the function will
+            return None. The file must have either the `.gexf` or the
+            `.graphml` extension, to save as either GEXF or GraphML formats
+            respectively.
+
+        Returns
+        -------
+        nx.DiGraph or None
+            If an output file was not specified in `output_file`, returns the
+            aggregated graph as a NetworkX object. The original graph stored
+            in :attr:`graph` is not modified.
+            If an output file was specified, returns None.
+
+        Raises
+        ------
+        ValueError
+            If 'output_file` is not None and the file does not have either
+            '.gexf' or '.graphml' as extension.
+
+        Notes
+        -----
+        This function is an adaptation of the `snap_aggregation` function
+        included in NetworkX 2.6, which implemented the SNAP algorithm based on
+        [1]_.
+
+        The function was modified to group the nodes based on different
+        attributes  (using a dictionary based on the labels) instead of a
+        single attribute that is common to all nodes.
+
+        During the summary graph generation, the attribute values are also
+        summarized, so that the user has an idea of all the possible values in
+        the group.
+
+        Please refer to the :ref:`acknowledgments` section for copyright and
+        license information.
+
+        References
+        ----------
+        .. [1] Y. Tian, R. A. Hankins, and J. M. Patel. Efficient aggregation
+           for graph summarization. In Proc. 2008 ACM-SIGMOD Int. Conf.
+           Management of Data (SIGMOD’08), pages 567–580, Vancouver, Canada,
+           June 2008.
+        """
+
+        def _fetch_group_tuple(data, label, data_attributes,
+                               use_function_params):
+            group_info = [label]
+
+            # If function, we use all the parameters
+            if data['type'] == NSS_FUNCTION and use_function_params:
+                parameters = [name for name in data.keys()
+                              if name.startswith("parameter:") or
+                              name.startswith(f"{label}:")]
+                parameters.sort()
+                for attr in parameters:
+                    group_info.append(data[attr])
+            else:
+                if data_attributes is not None:
+                    # We have requested grouping for this object based on
+                    # selected attributes. Otherwise, we will use the label
+                    for attr in data_attributes:
+                        group_info.append(data[attr])
+            return tuple(group_info)
+
+        # We don't consider edges
+        edge_types = {edge: () for edge in self.graph.edges}
+
+        # Create the groups based on the selected conditions
+        group_lookup = {
+            node: _fetch_group_tuple(attrs, attrs['label'],
+                group_node_attributes.get(attrs['label'], None),
+                use_function_parameters)
+            for node, attrs in self.graph.nodes.items()
+        }
+
+        groups = defaultdict(set)
+        for node, node_type in group_lookup.items():
+            groups[node_type].add(node)
+
+        eligible_group_id, neighbor_info = _snap_eligible_group(
+            self.graph, groups, group_lookup, edge_types=edge_types)
+        while eligible_group_id:
+            groups = _snap_split(groups, neighbor_info, group_lookup,
+                                 eligible_group_id)
+            eligible_group_id, neighbor_info = _snap_eligible_group(
+                self.graph, groups, group_lookup, edge_types=edge_types)
+
+        aggregated = self._snap_build_graph(self.graph, groups, neighbor_info)
+
+        if output_file is None:
+            return aggregated
+
+        file_format = _get_file_format(output_file)
+        if file_format == "gexf":
+            nx.write_gexf(aggregated, output_file)
+        elif file_format == "graphml":
+            nx.write_graphml(aggregated, output_file)
+        else:
+            raise ValueError("Unknown graph format. Please provide an output"
+                             "file with either '.gexf' or '.graphml'"
+                             "extension")
+
     def save_gexf(self, file_name):
         """
         Writes the current provenance graph as a GEXF file.
