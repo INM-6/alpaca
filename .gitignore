@@ -134,3 +134,8 @@ dmypy.json
 
 # sphinx build directory
 doc/_build
+
+# Output files
+/examples/*.ttl
+/examples/*.png
+*.gexf

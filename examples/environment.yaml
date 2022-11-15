@@ -1,11 +1,12 @@
-name: alpaca
+name: alpaca_examples
 dependencies:
-  - python >= 3.7
+  - python >= 3.8
   - scipy
   - numpy
   - matplotlib
   - pip
   - pip:
+    - nixio
     - neo==0.9.0
     - odml
     - elephant>=0.10.0

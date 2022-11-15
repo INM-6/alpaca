@@ -1,32 +1,40 @@
 """
 Example showing the basic usage for provenance tracking using Alpaca.
-This example is based on the publicly available Reach2Grasp dataset, that
-must be downloaded from the repository together with the supporting code.
-Details for setting the environment can be found in the documentation.
+This example is based on the publicly available Reach2Grasp dataset (in NIX
+format) that must be downloaded from the repository. The details for setting
+the environment can be found in the documentation.
 
 The session file to be used is passed as a parameter when running the script:
 
-    run_basic.py [path_to_file.nsX]
+    run_basic.py [path_to_file.nix]
 
 This scripts uses the Elephant toolbox for analysis (www.python-elephant.org).
+
+It produces the interspike interval (ISI) histogram of the first spiketrain in
+the dataset.
 """
 
 import sys
 from pathlib import Path
-
-import numpy as np
 import logging
 
-from elephant.statistics import isi, mean_firing_rate
+import numpy as np
+import matplotlib.pyplot as plt
+
+import quantities as pq
+import neo
+
+from elephant.statistics import isi
 
 from alpaca import Provenance, activate, save_provenance
 from alpaca.utils.files import get_file_name
-import neo
+
 
 # Set the logging up, if desired
 # With DEBUG, helpful messages will be displayed during tracking
 
 logging.basicConfig(level=logging.INFO)
+
 
 # We need to apply the decorator to functions from other modules
 # A list with the name of the function arguments that are inputs must be
@@ -34,13 +42,6 @@ logging.basicConfig(level=logging.INFO)
 # The names in the list are according to the function definition.
 
 isi = Provenance(inputs=['spiketrain'])(isi)
-mean_firing_rate = Provenance(inputs=['spiketrain'])(mean_firing_rate)
-
-# The `np.array` function does not have named arguments. Therefore, the
-# `inputs` argument to the constructor is the integer that corresponds to the
-# input argument order.
-
-np.array = Provenance(inputs=[0])(np.array)
 
 
 # User-defined functions in the script can be decorated using the @ syntax
@@ -51,23 +52,39 @@ np.array = Provenance(inputs=[0])(np.array)
 
 @Provenance(inputs=[], file_input=['session_filename'])
 def load_data(session_filename):
-    """
-    Loads Reach2Grasp data in the NIX format.
-
-    Parameters
-    ----------
-    session_filename : str
-        Full path to the dataset file.
-
-    Returns
-    -------
-    neo.Block
-        Block container with the session data.
-    """
     path = Path(session_filename).expanduser().absolute()
     session = neo.NixIO(str(path))
     block = session.read_block()
     return block
+
+
+@Provenance(inputs=['isi_times'])
+def isi_histogram(isi_times, bin_size=2*pq.ms, max_time=500*pq.ms):
+    upper_bound = max_time.rescale(bin_size.units).magnitude.item()
+    step = bin_size.magnitude.item()
+    edges = np.arange(0, upper_bound, step)
+
+    if isinstance(isi_times, pq.Quantity):
+        times = isi_times.rescale(bin_size.units).magnitude
+    elif isinstance(isi_times, np.ndarray):
+        times = isi_times
+    else:
+        raise TypeError("ISI is not `pq.Quantity` or `np.ndarray`!")
+
+    counts, edges = np.histogram(times, bins=edges)
+    return counts, (edges * bin_size.units)
+
+
+@Provenance(inputs=['counts', 'edges'], file_output=['plot_file'])
+def plot_isi_histogram(plot_file, counts, edges, title=None):
+    fig, ax = plt.subplots()
+    bar_widths = np.diff(edges)
+    ax.bar(edges[:-1].magnitude, height=counts, align='edge', width=bar_widths)
+    ax.set_xlabel(f"Inter-spike interval ({edges.dimensionality.string})")
+    ax.set_ylabel("Count")
+    if title is not None:
+        ax.set_title(title)
+    fig.savefig(plot_file)
 
 
 def main(session_filename):
@@ -76,23 +93,21 @@ def main(session_filename):
     # Load the data
     block = load_data(session_filename)
 
-    # Compute some statistics using the first spiketrain in the segment
-    isi_times = isi(block.segments[0].spiketrains[0], axis=0)
-    firing_rate = mean_firing_rate(block.segments[0].spiketrains[0])
+    # Compute the ISI of the first spiketrain in the segment
+    isi_times = isi(block.segments[0].spiketrains[0])
 
-    isi_times = isi(block.segments[0].spiketrains[1], axis=0)
+    unit_name = block.segments[0].spiketrains[0].name
 
-    # Generate an array representing artificial spike times and compute
-    # statistics
-    generated_spike_times = np.array([0.001, 0.202, 0.405, 0.607, 0.904, 1.1])
-    isi_times = isi(generated_spike_times)
-    firing_rate = mean_firing_rate(generated_spike_times)
+    # Compute the histogram of the ISIs
+    isi_counts, isi_edges = isi_histogram(isi_times)
 
-    # Save the provenance as PROV, with optional plotting
-    prov_file_format = "ttl"
-    prov_file = get_file_name(__file__, extension=prov_file_format)
+    # Plot the histogram
+    plot_isi_histogram("isi_plot.png", isi_counts, isi_edges,
+                       title=f"Unit: {unit_name}")
 
-    save_provenance(prov_file, file_format=prov_file_format)
+    # Save the provenance as PROV
+    prov_file = get_file_name(__file__, extension='ttl')
+    save_provenance(prov_file)
 
 
 if __name__ == "__main__":
