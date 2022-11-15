@@ -1,8 +1,12 @@
 """
-This module implements classes for hashing Python objects and files, that is
-used by the `decorator.Provenance` class decorator to track unique objects
-during the script execution.
+This module implements classes for getting the relevance provenance
+information from Python objects and files (e.g., hashes and metadata).
+They are used by the `decorator.Provenance` class decorator to track unique
+objects during the script execution, and also to represent the objects in the
+PROV files generated with the Alpaca model (identifiers).
 
+The classes defined in this module are not intended to be used directly by
+the user, but are used internally by the `decorator.Provenance` decorator.
 """
 
 import hashlib
@@ -16,7 +20,7 @@ import joblib
 import numpy as np
 from dill._dill import save_function
 
-from alpaca.types import ObjectInfo, FileInfo
+from alpaca.types import DataObject, File
 
 # Need to use `dill` pickling function to support lambdas.
 # Some objects may have attributes that are lambdas. One example is the
@@ -36,14 +40,14 @@ logger.addHandler(log_handler)
 logger.propagate = False
 
 
-class FileHash(object):
+class _FileInformation(object):
     """
-    Class for hashing files.
+    Class for getting information from files.
 
     The SHA256 hash and file path are captured.
 
     The method `info` is called to obtain these provenance information as the
-    `FileInfo` named tuple.
+    `File` named tuple.
 
     Easy comparison between files can be done using the equality operator.
 
@@ -84,10 +88,10 @@ class FileHash(object):
             self._hash = self._get_attribute_file_hash(self.file_path)
 
     def __eq__(self, other):
-        if isinstance(other, FileHash):
+        if isinstance(other, _FileInformation):
             return self._hash == other._hash and \
                    self._hash_type == other._hash_type
-        raise TypeError("Can compare only two FileHash objects")
+        raise TypeError("Can compare only two `_FileInformation` objects")
 
     def __repr__(self):
         return f"{self.file_path.name}: " \
@@ -99,7 +103,7 @@ class FileHash(object):
 
         Returns
         -------
-        FileInfo
+        types.File
             A named tuple with the following attributes:
             * hash : int
                 Hash of the file. If hashing is done using the content, this
@@ -110,14 +114,15 @@ class FileHash(object):
             * path : str or path-like
                 The path to the file that was hashed.
         """
-        return FileInfo(hash=self._hash,
-                        hash_type=self._hash_type,
-                        path=self.file_path)
+        return File(hash=self._hash,
+                    hash_type=self._hash_type,
+                    path=self.file_path)
 
 
-class ObjectHasher(object):
+class _ObjectInformation(object):
     """
-    Class for hashing Python objects, supporting memoization.
+    Class for hashing Python objects and getting their information, supporting
+    memoization.
 
     The object hash is the SHA1 hash of its value.
 
@@ -128,18 +133,16 @@ class ObjectHasher(object):
     matplotlib objects.
 
     The method `info` is called to obtain the provenance information
-    associated with the object during tracking, as the `ObjectInfo` named
+    associated with the object during tracking, as the `DataObject` named
     tuple. The relevant metadata attributes are also stored in the tuple.
 
     As the same object may be hashed several times during a single analysis
     step, a builtin memoizer stores all hashes that are computed by object ID
     (according to :func:`id`).
-
     """
 
     # This is a list of object attributes that provide relevant provenance
-    # information. Whether the object has one defined, it will be captured
-    # together with the hash
+    # information. Whether the object has one defined, it will be captured.
     _metadata_attributes = ('units', 'shape', 'dtype', 't_start', 't_stop',
                             'id', 'nix_name', 'dimensionality', 'pid',
                             'create_time')
@@ -150,7 +153,7 @@ class ObjectHasher(object):
     @staticmethod
     def _get_object_package(obj):
         # Returns the string with the name of the package where the object
-        # is defined (e.g., neo.core.SpikeTrain -> 'neo`)
+        # is defined (e.g., neo.core.SpikeTrain -> 'neo')
         module = inspect.getmodule(obj)
         package = ""
         if module is not None:
@@ -193,8 +196,6 @@ class ObjectHasher(object):
             # Other objects, like Neo, Quantity and NumPy arrays, use joblib
             object_hash = joblib.hash(obj, hash_name='sha1')
 
-        # object_hash = hash((obj_type, value_hash))
-
         # Memoize the hash
         self._hash_memoizer[obj_id] = object_hash
 
@@ -202,7 +203,7 @@ class ObjectHasher(object):
 
     def info(self, obj):
         """
-        Returns provenance information for the object, as the `ObjectInfo`
+        Returns provenance information for the object, as the `DataObject`
         named tuple.
 
         Metadata (e.g., annotations in Neo objects) is also captured. Any
@@ -218,7 +219,7 @@ class ObjectHasher(object):
 
         Returns
         -------
-        ObjectInfo
+        types.DataObject
             A named tuple with the following attributes:
             * hash : int
                 Hash of the object.
@@ -236,7 +237,7 @@ class ObjectHasher(object):
         # All Nones will have the same hash. Use UUID instead
         if obj is None:
             unique_id = uuid.uuid4()
-            return ObjectInfo(hash=unique_id, type=obj_type, id=obj_id,
+            return DataObject(hash=unique_id, type=obj_type, id=obj_id,
                               details={})
 
         # Here we can extract specific metadata to record
@@ -258,5 +259,5 @@ class ObjectHasher(object):
         obj_hash = self._get_object_hash(obj=obj, obj_type=obj_type,
                                          obj_id=obj_id, package=package)
 
-        return ObjectInfo(hash=obj_hash, type=obj_type, id=obj_id,
+        return DataObject(hash=obj_hash, type=obj_type, id=obj_id,
                           details=details)

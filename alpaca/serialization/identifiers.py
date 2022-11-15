@@ -63,7 +63,8 @@ def execution_identifier(info, session_id, execution_id):
     return urn
 
 
-# Functions to extract information from identifiers
+# Functions to extract information from identifiers, used when generating
+# visualizations with NetworkX graphs.
 
 def _strip_local_part(identifier):
     return identifier.split(f"{BASE_URN}:")[1]

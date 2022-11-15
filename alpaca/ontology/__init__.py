@@ -1,7 +1,7 @@
 """
 This module contains the OWL ontology based on the PROV-O model from W3C, that
 is used to represent provenance information captured by Alpaca.
-An RDFLib namespace is provided, to be used in the other modules.
+An RDFLib namespace is provided, to be used in other modules.
 """
 
 from rdflib import Graph, Namespace
@@ -20,4 +20,5 @@ def get_alpaca_namespace():
     raise ValueError("Could not get Alpaca ontology namespace.")
 
 
+# Namespace object to be used with RDFLib graphs
 ALPACA = get_alpaca_namespace()

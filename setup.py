@@ -17,7 +17,7 @@ setup(
     name="alpaca",
     version=version,
     packages=['alpaca', 'alpaca.utils', 'alpaca.serialization',
-              'alpaca.ontology'],
+              'alpaca.ontology', 'alpaca.code_analysis'],
     include_package_data=True,
     install_requires=install_requires,
     author="Alpaca authors and contributors",

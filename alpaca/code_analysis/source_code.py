@@ -7,41 +7,76 @@ the call to a tracked function.
 
 The class defined in this module is not intended to be used directly by
 the user, but is used internally by the `decorator.Provenance` decorator.
-
 """
 
-import numpy as np
+import inspect
 import ast
+import numpy as np
 
 
-class _CodeAnalyzer(object):
+class _SourceCode(object):
     """
     Stores the source code of the frame that activated provenance tracking,
     and provides methods for retrieving execution statements by line number.
 
     Parameters
     ----------
-    source_code : list
-        Extracted source code from the frame that activated provenance.
-    ast_tree : ast.Module
-        Abstract Syntax Tree of the source code.
-    start_line : int
-        Line from the source file where the code starts.
+    frame : inspect.frame
+        The frame of the scope where provenance tracking was activated,
+        from which the source code will be fetched.
+
+    Attributes
+    ----------
+    source_name : str
+        Name of the function that has the source code from `frame`.
+        If this is the main script, the value will be '<module>'.
+    source_lineno : str
+        Absolute line number in the script file where the code starts.
+    ast_tree : ast.Node
+        Parsed AST tree of the source code from `frame`.
+    source_code : np.ndarray
+        Lines of the code from `frame`.
     """
 
-    def __init__(self, source_code, ast_tree, start_line):
-        self.source_code = np.array(source_code)
-        self.start_line = start_line
-        self.ast_tree = ast_tree
-        # self.iteration_blocks = IterationBlocks()
-        self.statement_lines, self.source_lines = \
-            self._build_line_map(ast_tree)
+    def __init__(self, frame):
 
-    def _build_line_map(self, ast_tree):
-        # This function analyzes the AST structure to fetch the start and end
-        # lines of each statement, while also fetching loops and conditional
-        # blocks. A mapping of each script line to the actual code is also
-        # returned, that is used later when fetching the full statements.
+        self.source_name = inspect.getframeinfo(frame).function
+
+        # Set code start line. If the `provenance.activate` function was
+        # called in the main script body, the name will be <module> and code
+        # starts at line 1. If it was called inside a function (e.g. `main`),
+        # we need to get the start line from the frame.
+        if self.source_name == '<module>':
+            self.source_lineno = 1
+        else:
+            self.source_lineno = inspect.getlineno(frame)
+
+        # Get the list with all the lines of the code being tracked
+        code_lines = inspect.getsourcelines(frame)[0]
+
+        # Clean any decorators (this happens when we are tracking inside a
+        # function like `main`).
+        cur_line = 0
+        while code_lines[cur_line].strip().startswith('@'):
+            cur_line += 1
+        self.start_line = cur_line
+
+        # Store the source code lines and its AST. Source code is stored as
+        # NumPy array to facilitate slicing
+        source_code = code_lines[cur_line:]
+        self.ast_tree = ast.parse("".join(source_code).strip())
+        self.source_code = np.array(source_code)
+
+        self._statement_lines, self._source_lines = \
+            self._build_line_map(self.ast_tree, self.start_line,
+                                 self.source_code)
+
+    @staticmethod
+    def _build_line_map(ast_tree, start_line, source_code):
+        # This function analyzes the AST structure of the code to fetch the
+        # start and end lines of each statement. A mapping of each script line
+        # to the actual code is also returned, that is used later when
+        # fetching the full statements.
 
         # We extract a stack with all nodes in the script/function body. To
         # correct the starting line if provenance is tracked inside a function
@@ -57,14 +92,13 @@ class _CodeAnalyzer(object):
             code_nodes = ast_tree.body
 
         # Build the list with line numbers of each main node in the
-        # script/function body. These are stored in `statement_lines` array,
+        # script/function body. These are stored in `_statement_lines` array,
         # where column 0 is the starting line of the statement, and column 1
         # the end line. The line information from the AST is relative to the
         # scope of code, i.e., for code inside a function, the first line
         # after `def` is line 2. We correct this later after having the full
         # array.
         statement_lines = list()
-        iteration_nodes = list()   # WIP; to fetch flow control
 
         # We process node by node. Whenever code blocks are identified, all
         # nodes in its body are pushed to the `code_nodes` stack
@@ -79,10 +113,6 @@ class _CodeAnalyzer(object):
                 if hasattr(node, 'orelse') and node.orelse:
                     code_nodes.extend(node.orelse)
 
-                if hasattr(node, 'iter'):
-                    # This is an iteration node. Store it in the list to
-                    # get information later
-                    iteration_nodes.append(node)
             else:
                 # A statement. Find the maximum line number
                 end_lines = [child.lineno for child in ast.walk(node) if
@@ -94,21 +124,17 @@ class _CodeAnalyzer(object):
         statement_lines = np.asarray(statement_lines)
 
         # Create an array with the line number of each line in the source code
-        source_lines = np.arange(self.start_line,
-                                 self.start_line + self.source_code.shape[0])
+        source_lines = np.arange(start_line,
+                                 start_line + source_code.shape[0])
 
         # Correct the line numbers. If in a function, the `def` line is 1, and
         # the code starts on line 2 of the function body. The code in
         # `self.source_code` also starts one line before the number stored in
         # `self.start_line`.
         if is_function:
-            offset = self.start_line - 2
+            offset = start_line - 2
             statement_lines += offset
             source_lines -= 1
-
-        # If any iteration block was found, process it and prepare to retrieve
-        # the relevant objects later (WIP)
-        # self.iteration_blocks.add(iteration_nodes, offset)
 
         return statement_lines, source_lines
 
@@ -126,19 +152,18 @@ class _CodeAnalyzer(object):
         -------
         str
             The code corresponding to the full statement.
-
         """
         # Find the start and end line of the statement identified by
         # `line_number`
-        line_diff = self.statement_lines[:, 0] - line_number
+        line_diff = self._statement_lines[:, 0] - line_number
         nearest_number_index = np.argmax(line_diff[line_diff <= 0])
         statement_start, statement_end = \
-            self.statement_lines[nearest_number_index, :]
+            self._statement_lines[nearest_number_index, :]
 
         # Obtain the mask to get the source code between the start and end
         # lines
-        line_mask = np.logical_and(self.source_lines >= statement_start,
-                                   self.source_lines <= statement_end)
+        line_mask = np.logical_and(self._source_lines >= statement_start,
+                                   self._source_lines <= statement_end)
 
         # Retrieve the lines and join in a single string
         return "".join(

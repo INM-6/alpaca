@@ -6,6 +6,13 @@ from file names.
 from pathlib import Path
 
 
+RDF_FILE_FORMAT_MAP = {
+    'ttl': 'turtle',
+    'rdf': 'xml',
+    'json': 'json-ld',
+}
+
+
 def get_file_name(source, output_dir=None, extension=None):
     """
     Function that generates a file name with extension `extension` and the
@@ -48,13 +55,9 @@ def get_file_name(source, output_dir=None, extension=None):
     return str(base_name.expanduser().resolve().absolute())
 
 
-def _get_prov_file_format(file_name):
+def _get_file_format(file_name):
     # Returns a string describing the file format based on the extension in
-    # `file_name`. `.rdf` files are described as XML, `.ttl` files are
-    # described as Turtle, and `.json` are described as JSON-LD. Other
-    # extensions are returned as provided. The return value is compatible with
-    # RDFLib serialization format strings. Returns None if no extension.
-
+    # `file_name`. Returns None if no extension.
     file_location = Path(file_name)
 
     extension = file_location.suffix
@@ -62,13 +65,19 @@ def _get_prov_file_format(file_name):
         return None
     file_format = extension[1:]
 
-    file_format_map = {
-        'ttl': 'turtle',
-        'rdf': 'xml',
-        'json': 'json-ld',
-    }
+    return file_format
 
-    if file_format in file_format_map:
-        return file_format_map[file_format]
+
+def _get_prov_file_format(file_name):
+    # Returns a string describing the file format based on the extension in
+    # `file_name`. `.rdf` files are described as XML, `.ttl` files are
+    # described as Turtle, and `.json` are described as JSON-LD. Other
+    # extensions are returned as provided. The return value is compatible with
+    # RDFLib serialization format strings. Returns None if no extension.
+
+    file_format = _get_file_format(file_name)
+
+    if file_format and file_format in RDF_FILE_FORMAT_MAP:
+        return RDF_FILE_FORMAT_MAP[file_format]
 
     return file_format

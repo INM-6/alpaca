@@ -1,8 +1,12 @@
 """
-This module implements functionality to serialize the provenance track using
-the W3C Provenance Data Model (PROV). A derived model is defined in an
-ontology and is used to serialize the provenance information captured by
-Alpaca.
+This class provides functionality to serialize/deserialize the provenance
+track using the W3C Provenance Data Model (PROV). A derived model is defined
+in an ontology and is used to serialize the provenance information captured by
+Alpaca as RDF files.
+
+.. autoclass:: AlpacaProvDocument
+    :members:
+
 """
 
 from itertools import product
@@ -19,8 +23,8 @@ from alpaca.serialization.identifiers import (data_object_identifier,
 from alpaca.serialization.converters import _ensure_type
 from alpaca.serialization.neo import _neo_object_metadata
 
-from alpaca.utils.files import _get_file_format
-from alpaca.types import ObjectInfo, FileInfo, VarArgs
+from alpaca.utils.files import _get_prov_file_format
+from alpaca.types import DataObject, File, Container
 
 
 def _add_name_value_pair(graph, uri, predicate, name, value):
@@ -34,6 +38,24 @@ def _add_name_value_pair(graph, uri, predicate, name, value):
 
 
 class AlpacaProvDocument(object):
+    """
+    Generates a W3C PROV file from history records captured by Alpaca during
+    the execution of a Python script, or reads a serialized file into an RDF
+    graph object.
+
+    Attributes
+    ----------
+    graph : rdflib.Graph
+        Provenance data represented as an RDF graph, using the Alpaca ontology
+        based on PROV.
+
+    Notes
+    -----
+    For convenience, you can serialize the active history easily by just using
+    the :func:`save_provenance` in :ref:`interface`. This class should
+    be used only if you want to access the data as an RDF graph or to manually
+    control the serialization.
+    """
 
     def __init__(self):
         self.graph = Graph()
@@ -78,6 +100,7 @@ class AlpacaProvDocument(object):
     # Agent methods
 
     def _add_ScriptAgent(self, script_info, session_id):
+        # Adds a ScriptAgent record from the Alpaca PROV model
         uri = URIRef(script_identifier(script_info, session_id))
         self.graph.add((uri, RDF.type, ALPACA.ScriptAgent))
         return uri
@@ -85,12 +108,14 @@ class AlpacaProvDocument(object):
     # Activity methods
 
     def _add_Function(self, info):
+        # Adds a Function record from the Alpaca PROV model
         uri = URIRef(function_identifier(info))
         self.graph.add((uri, RDF.type, ALPACA.Function))
         return uri
 
     def _add_FunctionExecution(self, script_info, session_id, execution_id,
                                params, execution_order, code_statement):
+        # Adds a FunctionExecution record from the Alpaca PROV model
         uri = URIRef(execution_identifier(
             script_info, session_id, execution_id))
         self.graph.add((uri, RDF.type, ALPACA.FunctionExecution))
@@ -161,17 +186,18 @@ class AlpacaProvDocument(object):
         self.graph.add((container, PROV.hadMember, child))
 
     def _create_entity(self, info):
-        # Create an Alpaca PROV Entity based on ObjectInfo/FileInfo information
-        if isinstance(info, ObjectInfo):
+        # Create an Alpaca PROV Entity based on DataObject/File information
+        if isinstance(info, DataObject):
             return self._add_DataObjectEntity(info)
-        elif isinstance(info, FileInfo):
+        elif isinstance(info, File):
             return self._add_FileEntity(info)
         raise ValueError("Invalid entity!")
 
     # Interface methods
 
-    def _add_analysis_step(self, step, script_agent, script_info, session_id):
-        # Add one `AnalysisStep` record to the file, generate all the
+    def _add_function_execution(self, step, script_agent, script_info,
+                                session_id):
+        # Add one `FunctionExecution` record to the file, and generate all the
         # provenance semantic relationships
 
         def _is_membership(function_info):
@@ -208,10 +234,10 @@ class AlpacaProvDocument(object):
             for key, value in step.input.items():
                 cur_entities = []
 
-                if isinstance(value, VarArgs):
-                    # If this is a VarArgs, several objects are inside.
-                    for var_arg in value.args:
-                        cur_entities.append(self._create_entity(var_arg))
+                if isinstance(value, Container):
+                    # If this is a Container, several objects are inside.
+                    for element in value.elements:
+                        cur_entities.append(self._create_entity(element))
                 else:
                     cur_entities.append(self._create_entity(value))
 
@@ -246,53 +272,80 @@ class AlpacaProvDocument(object):
             # Attribute the activity to the script
             self._wasAttributedTo(activity=cur_activity, agent=script_agent)
 
-    def add_analysis_steps(self, script_info, session_id, analysis_steps):
+    def add_history(self, script_info, session_id, history):
         """
-        Adds a history of `AnalysisStep` records captured by Alpaca to a PROV
-        document.
+        Adds a history of `FunctionExecution` records captured by Alpaca to a
+        PROV document using the Alpaca PROV model. The script is added as
+        a `ScriptAgent` agent.
 
         Parameters
         ----------
-        script_info : FileInfo
-            Information on the script being tracked (hash and file path).
+        script_info : types.File
+            Named tuple with the information on the script being tracked
+            (hash and file path).
         session_id : str
             Unique identifier for this script execution.
-        analysis_steps : list of AnalysisStep
+        history : list of FunctionExecution
             Provenance history to be serialized as PROV.
         """
         script_agent = self._add_ScriptAgent(script_info, session_id)
-        for step in analysis_steps:
-            self._add_analysis_step(step, script_agent, script_info,
-                                    session_id)
+        for execution in history:
+            self._add_function_execution(execution, script_agent, script_info,
+                                         session_id)
 
     def read_records(self, file_name, file_format='turtle'):
         """
-        Reads PROV data that was previously serialized.
+        Reads PROV data that was previously serialized as RDF.
 
         Parameters
         ----------
-        file_name : str or path-like
+        file_name : str or Path-like
             Location of the file with PROV data to be read.
-        file_format : {'json', 'rdf', 'turtle', 'xml'}
-            Format used in the file that is being read.
-            If None, the format will be inferred from the extension.
-            Default: 'turtle'
+        file_format : {'json-ld', 'n3', 'nquads', 'nt', 'hext', 'pretty-xml', 'trig', 'trix', 'turtle', 'longturtle', 'xml', 'ttl', 'rdf', 'json'}
+            Format used to serialize the file that is being read. If None, the
+            format will be inferred from the extension. The formats are
+            the ones accepted by RDFLib. Some shortucts are defined for common
+            file extensions:
+
+            * 'ttl': Turtle
+            * 'rdf': RDF-XML
+            * 'json': JSON-LD
 
         Raises
         ------
         ValueError
             If `file_format` is None and `file_name` has no extension to infer
-            the format.
-            If `file_format` is not 'rdf', 'turtle', 'json', or 'xml'.
+            the format, if it could not be inferred, or if the format is
+            invalid.
         """
         if file_format is None:
-            file_format = _get_file_format(file_name)
+            file_format = _get_prov_file_format(file_name)
 
-        if file_format not in ['rdf', 'json', 'xml', 'turtle']:
+        if file_format is None:
+            raise ValueError("Could not infer serialization format. Please,"
+                             "provide it explicitly using `file_format`.")
+
+        if file_format not in ['json-ld', 'n3', 'nquads', 'nt', 'hext',
+                               'pretty-xml', 'trig', 'trix', 'turtle',
+                               'longturtle', 'xml']:
             raise ValueError("Unsupported serialization format")
 
         with open(file_name, "r") as source:
             self.graph.parse(source, format=file_format)
 
-    def serialize(self, file_name, format='turtle'):
-        self.graph.serialize(file_name, format=format)
+    def serialize(self, file_name, file_format='turtle'):
+        """
+        Writes PROV data to a file or gets an in-memory string.
+
+        Parameters
+        ----------
+        file_name : str or Path-like
+            Location of the file with PROV data to be read.
+        file_format : {'json-ld', 'n3', 'nquads', 'nt', 'hext', 'pretty-xml', 'trig', 'trix', 'turtle', 'longturtle', 'xml'}
+            Format used in the file that is being read. The format strings are
+            the ones supported by RDFLib.
+            If None, the format will be inferred from the extension.
+            Default: 'turtle'
+
+        """
+        return self.graph.serialize(file_name, format=file_format)

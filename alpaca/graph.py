@@ -1,7 +1,18 @@
 """
-This module implements functionality to generate and manipulate graphs for
-visualizing provenance data stored in files using the W3C PROV standard and
-Alpaca ontology. The NetworkX library is used for handling the graphs.
+This class reads a file with serialized provenance data into a NetworkX graph.
+
+It provides functionality for manipulating the graph to simplify the
+visualization, and also to select which details of the captured information
+will be displayed as node attributes. Finally, it allows saving the graph in
+formats used by graph visualization software, such as GEXF or GraphML.
+
+See the :ref:`visualization` section on the `Installation` section,
+for instructions on how to download and setup Gephi that can be used to
+visualize GEXF files.
+
+.. autoclass:: ProvenanceGraph
+    :members:
+
 """
 
 
@@ -132,26 +143,68 @@ def _get_entity_data(graph, entity, annotations=None, attributes=None,
 class ProvenanceGraph:
     """
     Directed Acyclic Graph representing the provenance history stored in a
-    W3C PROV file.
+    PROV file with the Alpaca model.
+
+    The visualization is based on NetworkX, and the graph can be accessed
+    through the :attr:`graph` attribute.
+
+    `DataObjectEntity` and `FileEntity` individuals are nodes, identified with
+    the respective persistent identifiers. `Function` activities are also
+    loaded as nodes. Each of the three node types is identified by the `type`
+    node attribute. Interval strings for timeline visualization in Gephi are
+    provided as the `Time Interval` node attribute.
+
+    Each node has an attributes dictionary with general description:
+
+    * for `DataObjectEntity`, the `Label` node attribute contains the Python
+      class name of the object (e.g., `ndarray`). The `Python_name` node
+      attribute contains the full path to the class in the package (e.g.,
+      `numpy.ndarray`);
+    * for `FileEntity`, the `Label` node attribute is `File`;
+    * for `Function` activities, the `Label` will be the function name (e.g.
+      `mean`), and the `Python_name` node attribute will be the full path to
+      the function in the package (e.g., `numpy.mean`).
+
+    Each node may also have additional attributes in the dictionary, with
+    extended information:
+
+    * for `DataObjectEntity`, it contains the Python object attributes and
+      annotations that were saved as metadata in the PROV file;
+    * for `FileEntity`, it contains the file information such as path and hash;
+    * for `Function` activities, it contains the values of the parameters
+      used to call the function.
+
+    The attributes to be included are selected by the `annotations`,
+    `attributes`, and `array_annotations` parameters during the initialization.
+
+    Finally, the graph can be simplified using methods for condensing
+    memberships (e.g., elements inside lists) and simplification (e.g.,
+    repeated operation in tracks generated from loops).
 
     Parameters
     ----------
     prov_file : str or Path-like
-        Source file with provenance data in W3C PROV format.
+        Source file with provenance data in the Alpaca format based on W3C
+        PROV.
     annotations : tuple of str, optional
         Names of all annotations of the objects to display in the graph as
-        node attributes.
+        node attributes. Annotations are defined as values of an annotation
+        dictionary that might be present in the object (e.g., Neo objects).
+        In the PROV file, they are identified with the `hasAnnotation`
+        property in individuals of the `DataObjectEntity` class.
         Default: None
     attributes : tuple of str, optional
         Names of all attributes of the objects to display in the graph as
-        node attributes.
+        node attributes. Attributes are regular Python object attributes.
+        In the PROV file, they are identified with the `hasAttribute`
+        property in individuals of the `DataObjectEntity` class.
         Default: None
     array_annotations : dict, optional
         For objects that have array annotations, select which arrays to be
         displayed in the graph as node attributes. The keys of the
-        `array_annotations` parameter is the name of the object attribute
-        that contains the array annotations dictionary. The values are which
-        array annotations to display.
+        `array_annotations` dictionary is the name of the Python object
+        attribute that contains the array annotations dictionary.
+        The values of the dictionary are which array annotations to display.
         Default: None
     strip_namespace : bool, optional
         If True, the namespaces (e.g. `attribute` in `'attribute:name'`) will
@@ -171,6 +224,7 @@ class ProvenanceGraph:
     graph : nx.DiGraph
         The NetworkX graph object representing the provenance read from the
         PROV file.
+
     """
 
     def __init__(self, prov_file, annotations=None, attributes=None,
@@ -178,8 +232,7 @@ class ProvenanceGraph:
                  remove_none=True, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        # Load PROV records and filter only the relevant for the construction
-        # of the graph
+        # Load PROV records from the file
         doc = AlpacaProvDocument()
         doc.read_records(prov_file, file_format=None)
 
@@ -254,7 +307,7 @@ class ProvenanceGraph:
     def _transform_graph(graph, annotations=None, attributes=None,
                          array_annotations=None, strip_namespace=True,
                          remove_none=True, use_name_in_parameter=True):
-        # Transform a RDFlib graph obtained from the PROV data, so that the
+        # Transform an RDFlib graph obtained from the PROV data, so that the
         # visualization is simplified. A new `nx.DiGraph` object is created
         # and returned. Annotations and attributes of the entities stored in
         # the PROV file can be filtered.
@@ -433,6 +486,10 @@ class ProvenanceGraph:
         node. This operation is done in-place, i.e., the graph stored as
         :attr:`graph` will be modified.
 
+        Membership relationships are used to describe relationships such as
+        attributes (e.g. `block.segments`) or membership in containers (e.g.,
+        `spiketrains[0]`).
+
         Parameters
         ----------
         preserve : tuple of str, optional
@@ -443,7 +500,13 @@ class ProvenanceGraph:
         self._condense_memberships(self.graph, preserve=preserve)
 
     def save_gexf(self, file_name):
+        """
+        Writes the current provenance graph as a GEXF file.
+        """
         nx.write_gexf(self.graph, file_name)
 
     def save_graphml(self, file_name):
+        """
+        Writes the current provenance graph as a GraphML file.
+        """
         nx.write_graphml(self.graph, file_name)

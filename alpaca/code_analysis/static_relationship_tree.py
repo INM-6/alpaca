@@ -4,20 +4,39 @@ of nodes from an Abstract Syntax Tree, and generates the relationships
 between them. The classes support building a hierarchical tree describing
 the child/parent relationships between the objects.
 
+Example
+-------
+
+For `spiketrains[0]`, the object `spiketrains[0]` is
+represented by an `ast.Subscript` AST node. Its information is retrieved by a
+`_SubscriptRelationship` object in this module. This will provide the actual
+`spiketrains[0]` Python object and an `DataObject` tuple with the index
+information (i.e., `0`).
+
+The `spiketrains` container is represented by an `ast.Name` AST node,
+whose information is retrieved by the `_NameRelationship` object.
+When creating `_NameRelationship`, the `child` parameter will be the
+`_SubscriptRelationship` obtained previously for the indexing operation (i.e.,
+`spiketrains[0]`).
+
+Therefore, the object tree is created. After the tree is created, the
+appropriate `FunctionExecution` named tuples to express those relationships
+in the provenance history are created through the `get_function_execution`
+method.
 """
 
 import ast
-from alpaca.types import AnalysisStep, FunctionInfo
+from alpaca.types import FunctionExecution, FunctionInfo
 import uuid
 
 
-class _StaticStep(object):
+class _StaticRelationship(object):
     """
-    Base class for analysis steps extracted from static code analysis.
+    Base class for relationships extracted through static code analysis.
 
     The information from a single Abstract Syntax Tree node is extracted and
     the reference to the actual Python object that the node represents is
-    stored, as well as the hash.
+    stored, as well as its information as the `DataObject` named tuple.
 
     Parameters
     ----------
@@ -26,38 +45,43 @@ class _StaticStep(object):
         The subclass varies for each operation.
     time_stamp : datetime
         Time stamp associated with this operation.
-    child : _StaticStep, optional
-        A `_StaticStep` object that is owned by the one being created. If a
-        node in the Abstract Syntax Tree contains other nodes that describe a
-        Python object being tracked, this node is the parent.
+    child : _StaticRelationship, optional
+        A `_StaticRelationship` object that is owned by the one being created.
+        If a node in the Abstract Syntax Tree contains other nodes that
+        describe a Python object being tracked, the `_StaticRelationship`
+        object obtained from this node is the parent.
 
-        Example: for `spiketrains[0]`, the object `spiketrains[0]` is
-        represented by an `ast.Subscript` AST node. Its information is
-        retrieved by a `_SubscriptStep` object in this module. The
-        `spiketrains` container is represented by an `ast.Name` AST node,
-        whose information is retrieved by the `_NameStep` object. When creating
-        `_NameStep`, the `child` parameter will be the `_SubscriptStep`
-        obtained for the indexing operation. Therefore, the object tree is
-        created.
-
+        Example: for `spiketrains[0]`, the `_SubscriptRelationship` associated
+        with `ast.Subscript` that represents `spiketrains[0]` is the child of
+        the `_NameRelationship` associated with the `ast.Name` that represents
+        `spiketrains`. In this `ast.Name`, `ast.Subscript` is a value of the
+        `
         Default: None.
 
     Attributes
     ----------
-    object_hash : ObjectInfo
+    object_info : types.DataObject
         Named tuple describing the Python object associated with this
-        `_StaticStep` instance.
-    parent : _StaticStep
-        `_StaticStep` object that owns this instance.
+        `_StaticRelationship` instance.
+    parent : _StaticRelationship
+        `_StaticRelationship` object that owns this instance.
     value : object
         Reference to the actual Python object associated with this
-        `_StaticStep` instance.
+        `_StaticRelationship` instance.
 
     Raises
     ------
     TypeError
         If `node` is not of the type describing the operation represented
-        by the `_StaticStep` object.
+        by the `_StaticRelationship` object.
+
+    Example
+    -------
+    For `spiketrains[0]`, a `_SubscriptRelationship` object will have
+    :attr:`value` pointing to `spiketrains[0]`, and a :attr:`parent` pointing
+    to a `_NameRelationship` object whose :attr:`value` points to
+    `spiketrains`. For `_NameRelationship`, :attr:`parent` is None as this is
+    the root of the relationships.
     """
 
     _operation = None
@@ -71,7 +95,7 @@ class _StaticStep(object):
         self._node = node
         if child is not None:
             child.set_parent(self)
-        self.object_hash = None
+        self.object_info = None
         self.time_stamp = time_stamp
 
     def set_parent(self, parent):
@@ -87,20 +111,24 @@ class _StaticStep(object):
     def _get_params(self):
         raise NotImplementedError
 
-    def get_analysis_step(self):
+    def get_function_execution(self):
         """
-        Returns an `AnalysisStep` named tuple describing the relationships
-        between parent and child nodes.
+        Returns a `FunctionExecution` named tuple describing the relationships
+        between parent and child nodes. The `params` element will contain the
+        relevant information of the relationship (e.g., slice range, index
+        number, or attribute name). The function name in the `FunctionInfo`
+        named tuple will be the operation name (e.g., 'attribute',
+        'subscript', or 'variable'.
         """
 
         params = self._get_params()
-        input_object = self.parent.object_hash if self.parent is not None \
+        input_object = self.parent.object_info if self.parent is not None \
             else None
-        output_object = self.object_hash
+        output_object = self.object_info
 
         execution_id = str(uuid.uuid4())
 
-        return AnalysisStep(
+        return FunctionExecution(
             function=FunctionInfo(name=self._operation,
                                   module="",
                                   version=""),
@@ -118,25 +146,25 @@ class _StaticStep(object):
             execution_id=execution_id)
 
 
-class _NameStep(_StaticStep):
+class _NameRelationship(_StaticRelationship):
     """
-    Analysis step that represents an `ast.Name` Abstract Syntax Tree node.
+    Static relationship that represents an `ast.Name` Abstract Syntax Tree
+    node.
 
-    This step is supposed to be the first level of a tree describing the
+    This is supposed to be the first level of a tree describing the
     dependencies between the objects, and maps to a variable in the script.
 
     The node must be previously modified to include the reference to the
-    Python object associated with the variable, and a `ObjectInfo` named tuple
+    Python object associated with the variable, and a `DataObject` named tuple
     with the information from the object.
-
     """
 
     _operation = 'variable'
     _node_type = ast.Name
 
     def __init__(self, node, time_stamp, child=None):
-        super(_NameStep, self).__init__(node, time_stamp, child)
-        self.object_hash = node.object_hash
+        super(_NameRelationship, self).__init__(node, time_stamp, child)
+        self.object_info = node.object_info
 
     @property
     def value(self):
@@ -146,25 +174,27 @@ class _NameStep(_StaticStep):
         return None
 
 
-class _SubscriptStep(_StaticStep):
+class _SubscriptRelationship(_StaticRelationship):
     """
-    Analysis step that represents an `ast.Subscript` Abstract Syntax Tree node.
+    Static relationship that represents an `ast.Subscript` Abstract Syntax
+    Tree node.
 
-    This step represents a subscripting operation in the script.
+    This represents a subscripting operation in the script.
     """
 
     _operation = 'subscript'
     _node_type = ast.Subscript
 
     def __init__(self, node, time_stamp, child):
-        super(_SubscriptStep, self).__init__(node, time_stamp, child)
+        super(_SubscriptRelationship, self).__init__(node, time_stamp, child)
         self._slice = self._get_slice(node.slice)
 
     @staticmethod
     def _get_slice(slice_node):
         # Extracts index or slice information from an `ast.Slice` or
         # `ast.Index` nodes that are the `slice` attribute of `ast.Subscript`.
-        # Returns the slice/index value.
+        # Returns the slice/index value, that will be used to fetch the
+        # actual Python object returned by the subscript operation.
 
         if isinstance(slice_node, ast.Index):
 
@@ -175,7 +205,7 @@ class _SubscriptStep(_StaticStep):
                 index_value = slice_node.value.s
             elif isinstance(slice_node.value, ast.Name):
                 from alpaca.decorator import Provenance
-                index_value = Provenance.get_script_variable(slice_node.value.id)
+                index_value = Provenance._get_script_variable(slice_node.value.id)
             else:
                 raise TypeError("Operation not supported")
 
@@ -188,7 +218,7 @@ class _SubscriptStep(_StaticStep):
 
         if isinstance(slice_node, ast.Name):
             from alpaca.decorator import Provenance
-            index_value = Provenance.get_script_variable(slice_node.id)
+            index_value = Provenance._get_script_variable(slice_node.id)
             return index_value
 
         if isinstance(slice_node, ast.Slice):
@@ -224,20 +254,20 @@ class _SubscriptStep(_StaticStep):
         return self.parent.value[self._slice]
 
 
-class _AttributeStep(_StaticStep):
+class _AttributeRelationship(_StaticRelationship):
     """
-    Analysis step that represents an `ast.Attribute` Abstract Syntax Tree
-    node.
+    Static relationship that represents an `ast.Attribute` Abstract Syntax
+    Tree node.
 
-    This step represents accessing an object attribute using dot '.' operation
-    in the script.
+    This represents accessing an object attribute using dot '.' operation in
+    the script.
     """
 
     _operation = 'attribute'
     _node_type = ast.Attribute
 
     def __init__(self, node, time_stamp, child=None):
-        super(_AttributeStep, self).__init__(node, time_stamp, child)
+        super(_AttributeRelationship, self).__init__(node, time_stamp, child)
 
     def _get_params(self):
         return {'name': self._node.attr}

@@ -1,21 +1,23 @@
 """
 This module implements a function decorator to support provenance capture
 during the execution of analysis scripts in Python.
-
 """
 
 from functools import wraps
+from collections import Iterable
+from importlib.metadata import version, PackageNotFoundError
 import inspect
 import ast
 import datetime
 import logging
 import uuid
 
-from alpaca.types import AnalysisStep, FunctionInfo, VarArgs
-from alpaca.hash import ObjectHasher, FileHash
-from alpaca.ast_analysis import _CallAST
-from alpaca.code_lines import _CodeAnalyzer
+from alpaca.types import FunctionExecution, FunctionInfo, Container
+from alpaca.data_information import _ObjectInformation, _FileInformation
+from alpaca.code_analysis.ast import _CallAST
+from alpaca.code_analysis.source_code import _SourceCode
 from alpaca.serialization import AlpacaProvDocument
+from alpaca.utils.files import RDF_FILE_FORMAT_MAP
 
 from pprint import pprint
 
@@ -55,6 +57,16 @@ class Provenance(object):
     file_output : list of str, optional
         Names of the arguments that represent file(s) write to the disk by
         the function. The hashes will be computed and stored.
+    container_input : list of str, optional
+        Names of the arguments that are containers of data (e.g., a list with
+        data structures used by the function). Alpaca will track and identify
+        the elements inside the container, instead of the container itself.
+        Default: None
+    container_output : bool, optional
+        The function outputs data inside a container (e.g., a list). Alpaca
+        will track and identify the elements inside the container, instead of
+        the container itself.
+        Default: False
 
     Attributes
     ----------
@@ -63,16 +75,17 @@ class Provenance(object):
         If False, provenance tracking is suspended.
         This attribute is set using the :func:`activate`/:func:`deactivate`
         interface functions.
-    history : list of AnalysisStep
+    history : list of FunctionExecution
         All events that were tracked. Each function call is structured in a
-        named tuple `AnalysisStep` that stores:
+        named tuple `FunctionExecution` that stores:
+
         * 'function': `FunctionInfo` named tuple;
-        * 'inputs': `dict` with the `ObjectInfo` or `FileInfo` named tuples
+        * 'inputs': `dict` with the `DataObject` or `File` named tuples
           associated with every input value to the function;
         * 'params': `dict` with the positional/keyword argument names that are
           not data/file input/file output as keys. Values are the value of each
           argument as passed to the function call;
-        * 'output': `dict` with the `ObjectInfo` or `FileInfo` named tuples
+        * 'output': `dict` with the `DataObject` or `File` named tuples
           associated with the values returned by the function or files written
           to the disk;
         * 'arg_map': names of the positional arguments;
@@ -86,6 +99,23 @@ class Provenance(object):
           output(s) in the source code;
         * 'order': integer defining the order of this function call in the
            whole tracking history.
+        * 'execution_id': `str` with the UUID of the particular function
+           execution tracked.
+    source_file : str
+        Path to the script file being tracked.
+    session_id : str
+        Unique identifier (UUID) for this script execution.
+    inputs : list
+        Names of the function arguments that are considered inputs.
+    file_inputs : list
+        Names of the function arguments that are considered file inputs.
+    file_outputs : list
+        Names of the function arguments that are considered file outputs.
+    container_inputs : list
+        Names of the function arguments that are considered containers of
+        data.
+    container_output : bool
+        True if the function outputs data in a container.
 
     Raises
     ------
@@ -95,39 +125,51 @@ class Provenance(object):
 
     active = False
     history = []
+    session_id = None
+    script_info = None
+
     source_file = None
     calling_frame = None
-    session_id = None
 
-    call_count = 0
+    _call_count = 0
 
-    def __init__(self, inputs, file_input=None, file_output=None):
+    def __init__(self, inputs, file_input=None, file_output=None,
+                 container_input=None, container_output=False):
         if inputs is None:
             inputs = []
         if file_input is None:
             file_input = []
         if file_output is None:
             file_output = []
+        if container_input is None:
+            container_input = []
 
         if not isinstance(inputs, list):
             raise ValueError("`inputs` must be a list")
 
-        # Store the arguments that are file input/outputs
+        # Store the names of the arguments that are file input/outputs
+        # or container inputs
         self.file_inputs = [f_input for f_input in file_input
                             if f_input is not None]
         self.file_outputs = [f_output for f_output in file_output
                              if f_output is not None]
+        self.container_inputs = [c_input for c_input in container_input
+                                 if c_input is not None]
 
-        # Store the list of arguments that are inputs
+        # Store the names of arguments that are inputs
         self.inputs = inputs
 
-    def _insert_static_information(self, tree, hasher, function, time_stamp):
-        # Use a NodeVisitor to find the Call node that corresponds to the
-        # current AnalysisStep. It will fetch static relationships between
-        # variables and attributes, and link to the inputs and outputs of the
-        # function. The hasher object is passed, to use hash memoization in
-        # case the hash of some object is already computed
-        ast_visitor = _CallAST(provenance_tracker=self, hasher=hasher,
+        self.container_output = container_output
+
+    def _insert_static_information(self, tree, data_info, function,
+                                   time_stamp):
+        # Use an `ast.NodeVisitor` to find the `Call` node that corresponds to
+        # the current `FunctionExecution`. It will fetch static relationships
+        # between variables and attributes, and link to the inputs and outputs
+        # of the function. The `data_info` object is passed, to use hash
+        # memoization in case the hash of some object is already computed for
+        # this call.
+        ast_visitor = _CallAST(provenance_tracker=self, data_info=data_info,
                                function=function, time_stamp=time_stamp)
         ast_visitor.visit(tree)
 
@@ -136,7 +178,9 @@ class Provenance(object):
         # Inspect the arguments to extract the ones defined as inputs.
         # Values are stored in a dictionary with the argument name as key.
         # If signature inspection is not possible, the inputs are stored by
-        # order in the function call, with the index as keys.
+        # order in the function call, with the index as keys. The function
+        # also returns the parameters (arguments that are not inputs), with
+        # their default values.
 
         # Initialize dictionaries and lists
         input_data = {}
@@ -168,16 +212,16 @@ class Provenance(object):
                 if arg_name in default_args:
                     default_args.pop(arg_name)
 
-                # If the argument is variable positional, i.e., *arg, we will
-                # store its tuple in the dictionary as the VarArgs named tuple.
-                # This signals that this argument's value is multiple.
-                # Otherwise, we just store the value
+                # If the argument is variable positional (i.e., *arg) we will
+                # store its value in the input dictionary as the Container
+                # named tuple. This signals that this argument's value is
+                # multiple. Otherwise, we just store the argument value.
                 if cur_parameter.kind != VAR_POSITIONAL:
                     input_data[arg_name] = arg_value
                 else:
                     # Variable positional arguments are stored as
-                    # the namedtuple VarArgs.
-                    input_data[arg_name] = VarArgs(arg_value)
+                    # the named tuple Container.
+                    input_data[arg_name] = Container(arg_value)
 
                 # Store the argument name in the appropriate list
                 if arg_name in kwargs:
@@ -206,6 +250,17 @@ class Provenance(object):
 
         return input_data, input_args_names, input_kwargs_names, default_args
 
+    @staticmethod
+    def _get_module_version(module, function_name):
+        if not function_name.startswith("__main__"):
+            try:
+                return version(module)
+            except PackageNotFoundError:
+                # When running unit tests or using user-defined functions
+                # imported from a source file
+                return ""
+        return ""
+
     def _capture_provenance(self, lineno, function, args, kwargs,
                             function_output, time_stamp_start,
                             time_stamp_end):
@@ -213,9 +268,9 @@ class Provenance(object):
         # 1. Capture Abstract Syntax Tree (AST) of the call to the
         # function. We need to check the source code in case the
         # call spans multiple lines. In this case, we fetch the
-        # full statement.
+        # full statement using the code analyzer.
         source_line = \
-            self.code_analyzer.extract_multiline_statement(lineno)
+            self._code_analyzer.extract_multiline_statement(lineno)
         ast_tree = ast.parse(source_line)
         logger.info(f"Line {lineno} -> {source_line}")
 
@@ -237,11 +292,12 @@ class Provenance(object):
                 raise ValueError("Unknown assign target!")
 
         # 3. Extract function name and information
-        # TODO: fetch version information
-
         module = getattr(function, '__module__')
-        function_info = FunctionInfo(name=function.__name__,
-                                     module=module, version=None)
+        function_name = function.__name__
+        module_version = self._get_module_version(module=module,
+                                                  function_name=function_name)
+        function_info = FunctionInfo(name=function_name, module=module,
+                                     version=module_version)
 
         # 4. Extract the parameters passed to the function and store them in
         # the `input_data` dictionary.
@@ -255,15 +311,17 @@ class Provenance(object):
 
         # 5. Create parameters/input descriptions for the graph.
         # Here the inputs, but not the parameters passed to the function, are
-        # hashed using the `ObjectHasher` object.
+        # hashed using the `_ObjectInformation` object.
         # Inputs are defined by the parameter `inputs` when initializing the
         # decorator, and stored as the attribute `inputs`. If one parameter
         # is defined as a `file_input` in the initialization, a hash to the
-        # file is obtained using the `FileHash`.
-        # After this step, all hashes of input parameters/files are going to
-        # be stored in the dictionary `inputs`.
+        # file is obtained using the `_FileInformation` object. If one
+        # parameter is defined as `container_input` in the initialization, its
+        # elements are hashed and stored if the value is iterable.
+        # After this step, all hashes and metadata of input parameters/files
+        # are going to be stored in the dictionary `inputs`.
 
-        hasher = ObjectHasher()
+        data_info = _ObjectInformation()
 
         # Initialize parameter list with all default arguments that were not
         # passed to the function
@@ -272,69 +330,84 @@ class Provenance(object):
         inputs = {}
         for key, input_value in input_data.items():
             if key in self.inputs:
-                if isinstance(input_value, VarArgs):
-                    # If the argument is multiple, hash each value of the
-                    # tuple and store them inside a `VarArgs` namedtuple so
+                if isinstance(input_value, Container):
+                    # If the argument is multiple, hash each value
+                    # tuple and store them inside a `Container` namedtuple so
                     # that we know this is a multiple input
                     var_input_list = []
-                    for var_arg in input_value.args:
-                        var_input_list.append(hasher.info(var_arg))
-                    inputs[key] = VarArgs(tuple(var_input_list))
+                    for var_arg in input_value.elements:
+                        var_input_list.append(data_info.info(var_arg))
+                    inputs[key] = Container(tuple(var_input_list))
                 else:
-                    inputs[key] = hasher.info(input_value)
+                    inputs[key] = data_info.info(input_value)
+
             elif key in self.file_inputs:
-                # Input is from a file. Hash using `FileHash`
-                inputs[key] = FileHash(input_value).info()
+                # Input is from a file. Hash using `_FileInformation`
+                inputs[key] = _FileInformation(input_value).info()
+
+            elif key in self.container_inputs and \
+                    isinstance(input_value, Iterable):
+                # This is a container. Iterate over elements and store inside
+                # a `Container` namedtuple
+                container_elements = []
+                for element in input_value:
+                    container_elements.append(data_info.info(input_value))
+                inputs[key] = Container(tuple(container_elements))
+
             elif key not in self.file_outputs:
                 # The remainder argument is also not an output file, so this
-                # is an actual input to the function defined when initializing
-                # the decorator.
+                # is a parameter to the function.
                 parameters[key] = input_value
 
-        # 6. Create hash for the output using `ObjectHasher` to follow
+        # 6. Create hash for the output using `_ObjectInformation` to follow
         # individual returns. The hashes will be stored in the `outputs`
         # dictionary, with the index as the order of each returned object.
+        # If the decorator was initialized with `container_output=True`, the
+        # elements of the output will be hashed, if iterable.
         outputs = {}
         if len(return_targets) < 2:
             function_output = [function_output]
-        for index, item in enumerate(function_output):
-            outputs[index] = hasher.info(item)
+        # TODO
+        iterator = enumerate(function_output)
+
+        for index, item in iterator:
+            outputs[index] = data_info.info(item)
 
         # If there is a file output as defined in the decorator
         # initialization, create the hash and add as output using
-        # `FileHash`. These outputs will be identified by the key
+        # `_FileInformation`. These outputs will be identified by the key
         # `file.X`, where X is an integer with the order of the file output
         if self.file_outputs:
             for idx, file_output in enumerate(self.file_outputs):
                 outputs[f"file.{idx}"] = \
-                    FileHash(input_data[file_output]).info()
+                    _FileInformation(input_data[file_output]).info()
 
         # 7. Analyze AST and fetch static relationships in the
         # input/output and other variables/objects in the script
-        self._insert_static_information(tree=ast_tree, hasher=hasher,
+        self._insert_static_information(tree=ast_tree, data_info=data_info,
                                         function=function_info.name,
                                         time_stamp=time_stamp_start)
 
         # 8. Increment the global call counter
-        Provenance.call_count += 1
+        Provenance._call_count += 1
 
         # 9. Create execution ID
         execution_id = str(uuid.uuid4())
 
         # 9. Create tuple with the analysis step information and return.
-        return AnalysisStep(function=function_info,
-                            input=inputs,
-                            params=parameters,
-                            output=outputs,
-                            arg_map=input_args_names,
-                            kwarg_map=input_kwargs_names,
-                            call_ast=ast_tree,
-                            code_statement=source_line,
-                            time_stamp_start=time_stamp_start,
-                            time_stamp_end=time_stamp_end,
-                            return_targets=return_targets,
-                            order=Provenance.call_count,
-                            execution_id = execution_id)
+        return FunctionExecution(function=function_info,
+                                 input=inputs,
+                                 params=parameters,
+                                 output=outputs,
+                                 arg_map=input_args_names,
+                                 kwarg_map=input_kwargs_names,
+                                 call_ast=ast_tree,
+                                 code_statement=source_line,
+                                 time_stamp_start=time_stamp_start,
+                                 time_stamp_end=time_stamp_end,
+                                 return_targets=return_targets,
+                                 order=Provenance._call_count,
+                                 execution_id = execution_id)
 
     def _get_calling_line_number(self, frame):
         # Get the line number of the current call.
@@ -355,7 +428,7 @@ class Provenance(object):
                 frame_info = inspect.getframeinfo(frame)
                 function_name = frame_info.function
         elif function_name == 'wrapper':
-            # For the Elephant deprecations, we need to skip the decorator
+            # For functions with a decorator, we need to skip the decorator
             frame = frame.f_back
             frame_info = inspect.getframeinfo(frame)
             function_name = frame_info.function
@@ -363,7 +436,7 @@ class Provenance(object):
         # If the frame corresponds to the script file and the tracked function,
         # we get the line number
         if (frame_info.filename == self.source_file and
-                function_name == self.source_name):
+                function_name == self._code_analyzer.source_name):
             lineno = frame.f_lineno
 
         return lineno
@@ -394,7 +467,7 @@ class Provenance(object):
 
                 # Capture provenance information
                 if lineno is not None:
-                    # Get AnalysisStep tuple with provenance information
+                    # Get FunctionExecution tuple with provenance information
                     step = self._capture_provenance(
                         lineno=lineno,
                         function=function, args=args,
@@ -413,10 +486,22 @@ class Provenance(object):
         return wrapped
 
     @classmethod
-    def set_calling_frame(cls, frame):
+    def _get_script_variable(cls, name):
+        # Access to variable values in the tracked code by name.
+        return cls.calling_frame.f_locals[name]
+
+    @classmethod
+    def _set_calling_frame(cls, frame):
         """
         This method stores the frame of the code being tracked, and
-        extract several information that is needed for capturing provenance
+        extract several information that is needed for capturing provenance.
+
+        A `_SourceCode` object is created, to provide an interface to
+        retrieve information from the code (e.g., statements given a line
+        number).
+
+        It also initializes a unique ID for the script run, and stores the
+        information regarding the script file (`File` named tuple).
 
         Parameters
         ----------
@@ -424,7 +509,7 @@ class Provenance(object):
             Frame object returned by the `inspect` module. This must
             correspond to the namespace where provenance tracking was
             activated. This is automatically fetched by the interface function
-            :func:`activate` defined in this module.
+            :func:`activate`.
         """
 
         # Store the reference to the calling frame
@@ -432,41 +517,14 @@ class Provenance(object):
 
         # Get the file name and function associated with the frame
         cls.source_file = inspect.getfile(frame)
-        cls.source_name = inspect.getframeinfo(frame).function
 
-        # Set code start line. If the `provenance.activate` function was
-        # called in the main script body, the name will be <module> and code
-        # starts at line 1. If it was called inside a function (e.g. `main`),
-        # we need to get the start line from the frame.
-        if cls.source_name == '<module>':
-            cls.source_lineno = 1
-        else:
-            cls.source_lineno = inspect.getlineno(frame)
-
-        # Get the list with all the lines of the code being tracked
-        code_lines = inspect.getsourcelines(frame)[0]
-
-        # Clean any decorators (this happens when we are tracking inside a
-        # function like `main`).
-        cur_line = 0
-        while code_lines[cur_line].strip().startswith('@'):
-            cur_line += 1
-
-        # Store the source code lines
-        cls.source_code = code_lines[cur_line:]
-
-        # Get the AST of the code being tracked
-        cls.frame_ast = ast.parse("".join(cls.source_code).strip())
-
-        # Create a _CodeAnalyzer instance with the frame information,
+        # Create a _SourceCode instance with the frame information,
         # so that we can capture provenance information later
-        cls.code_analyzer = _CodeAnalyzer(cls.source_code,
-                                          cls.frame_ast,
-                                          cls.source_lineno)
+        cls._code_analyzer = _SourceCode(frame)
 
         # Create a unique identifier for the session and store script info
         cls.session_id = str(uuid.uuid4())
-        cls.script_info = FileHash(cls.source_file).info()
+        cls.script_info = _FileInformation(cls.source_file).info()
 
     @classmethod
     def get_prov_info(cls):
@@ -476,45 +534,46 @@ class Provenance(object):
 
         Returns
         -------
-        ProvenanceDocument
+        serialization.AlpacaProvDocument
         """
 
         prov_document = AlpacaProvDocument()
-        prov_document.add_analysis_steps(script_info=cls.script_info,
-                                         session_id=cls.session_id,
-                                         analysis_steps=cls.history)
+        prov_document.add_history(script_info=cls.script_info,
+                                  session_id=cls.session_id,
+                                  history=cls.history)
         return prov_document
 
     @classmethod
-    def get_script_variable(cls, name):
+    def clear(cls):
         """
-        Access to variable values in the tracked code by name.
-
-        Parameters
-        ----------
-        name : str
-            Name of the variable.
-
-        Returns
-        -------
-        object
-            Python object stored in variable `name`.
+        Clears all the history and reset the execution counter to zero.
         """
-        return cls.calling_frame.f_locals[name]
+        cls.history.clear()
+        cls._call_count = 0
 
 
 ##############################################################################
 # Interface functions
 ##############################################################################
 
-def activate():
+def activate(clear=False):
     """
-    Activates provenance tracking within Elephant.
+    Activates provenance tracking within the script.
+
+    Parameters
+    ----------
+    clear : bool, optional
+        If True, the history is cleared and execution counter is reset to
+        zero.
+        Default: False
     """
+    if clear:
+        Provenance.clear()
+
     # To access variables in the same namespace where the function is called,
-    # the previous frame in the stack need to be saved. We also extract
-    # extended information regarding the frame code.
-    Provenance.set_calling_frame(inspect.currentframe().f_back)
+    # and get information from the source code, the previous frame in the
+    # stack needs to be saved.
+    Provenance._set_calling_frame(inspect.currentframe().f_back)
     Provenance.active = True
 
 
@@ -528,50 +587,43 @@ def deactivate():
 
 def print_history():
     """
-    Print all steps in the provenance track.
+    Print all executions in the provenance track history.
     """
     pprint(Provenance.history)
 
 
-def save_provenance(filename=None, file_format='ttl'):
+def save_provenance(file_name=None, file_format='ttl'):
     """
-    Serialized provenance information according to the W3C Provenance Data
-    Model (PROV).
+    Serialize provenance information according to the Alpaca ontology based
+    on the W3C Provenance Data Model (PROV).
 
     Parameters
     ----------
-    filename : str or path-like, optional
+    file_name : str or Path-like, optional
         Destination file to serialize the provenance information.
         If None, the function will return a string containing the provenance
         information in the specified format.
         Default: None
-    file_format : {'json', 'rdf', 'prov', 'xml'}, optional
-        Serialization format (for RDF files). Formats currently supported are:
-        * 'json' : PROV-JSON
-        * 'turtle' : PROV-O
-        * 'xml : PROV-XML
-        * 'n3'
-        * 'pretty-xml'
-        * 'trix'
-        * 'trig'
-        * 'nquads'
-        "xml", "n3", "turtle", "nt", "pretty-xml", "trix", "trig" and "nquads"
+    file_format : {'json-ld', 'n3', 'nquads', 'nt', 'hext', 'pretty-xml', 'trig', 'trix', 'turtle', 'longturtle', 'xml', 'ttl', 'rdf', 'json'}
+        Format into which the provenance data is serialized. The formats are
+        the ones accepted by RDFLib. Some shortucts are defined for common
+        file extensions:
+
+        * 'ttl': Turtle
+        * 'rdf': RDF/XML
+        * 'json': JSON-LD
+
         Default: 'ttl'
 
     Returns
     -------
     str or None
-        If `filename` is None, the function returns the PROV information as
+        If `file_name` is None, the function returns the PROV information as
         a string. If a file destination was informed, the return is None.
-
-    Notes
-    -----
-    For details regarding the serialization formats, please check the
-    specification on the W3C website (https://www.w3.org/TR/prov-primer/).
-
     """
+    if file_format in RDF_FILE_FORMAT_MAP:
+        file_format = RDF_FILE_FORMAT_MAP[file_format]
+
     prov_document = Provenance.get_prov_info()
-    if file_format in ('ttl', 'rdf'):
-        file_format = 'turtle'
-    prov_data = prov_document.serialize(filename, format=file_format)
+    prov_data = prov_document.serialize(file_name, format=file_format)
     return prov_data

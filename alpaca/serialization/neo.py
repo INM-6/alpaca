@@ -26,11 +26,13 @@ DISPLAYED_ATTRIBUTES = ('t_start', 't_stop', 'shape', 'dtype',
 
 
 def _neo_to_prov(value, displayed_attributes=DISPLAYED_ATTRIBUTES):
-    from alpaca.serialization.converters import _ensure_type
+    # For Neo objects, we create a lightweight representation as a string, to
+    # avoid dumping all the information such as SpikeTrain timestamps and
+    # Event times as the usual Neo string representation. `value` is a Neo
+    # object, and `displayed_attriutes` is a list with the Neo object
+    # attributes to be displayed in the result string.
 
-    # For Neo objects, we create a lightweight representation, to avoid
-    # dumping all the information such as SpikeTrain timestamps and Event
-    # times.
+    from alpaca.serialization.converters import _ensure_type
 
     type_information = type(value)
     neo_class = f"{type_information.__module__}.{type_information.__name__}"
@@ -54,6 +56,10 @@ def _neo_to_prov(value, displayed_attributes=DISPLAYED_ATTRIBUTES):
 
 
 def _neo_object_metadata(graph, uri, metadata):
+    # Adds metadata of a Neo object to an entity in the RDF graph `graph`.
+    # `uri` is the identifier of the object in the graph, and `metadata` is
+    # the dictionary of object metadata captured by Alpaca.
+
     from alpaca.serialization.converters import _ensure_type
     from alpaca.serialization.prov import _add_name_value_pair
 
@@ -64,7 +70,9 @@ def _neo_object_metadata(graph, uri, metadata):
 
             if isinstance(value, list):
                 # This is a collection of Neo objects. Extract the
-                # readable name of each Neo object in the list
+                # readable name of each Neo object in the list. They will be
+                # enclosed in brackets [] as the value stored in the
+                # serialized file.
                 attr_value = "["
                 counter = 0
                 for item in value:
@@ -78,7 +86,7 @@ def _neo_object_metadata(graph, uri, metadata):
                 # name of the object
                 attr_value = _neo_to_prov(value)
 
-            # Add the attribute relationship
+            # Add the attribute relationship to the object Entity
             _add_name_value_pair(graph,
                                  uri=uri,
                                  predicate=ALPACA.hasAttribute,
