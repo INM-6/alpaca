@@ -20,22 +20,8 @@ to download the data and code using the *gin* client are provided.
 Running the examples
 --------------------
 
-To use the experimental datasets to run the examples, you must first add the
-location of the *reachgraspio.py* file in your local computer to the
-*PYTHONPATH* environmental variable. This is located in the folder where you
-downloaded the Reach2Grasp dataset, in the subfolder *code/reachgraspio*.
-
-Assuming that the Reach2Grasp repository was downloaded to
-*/home/user/multielectrode_grasp*, the following will add it to the
-*PYTHONPATH* environmental variable:
-
-.. code-block:: sh
-
-    export PYTHONPATH="$PYTHONPATH:/home/user/multielectrode_grasp/code/reachgraspio"
-
-
 A suitable environment can be built using `conda <http://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html>`_
-with the *environment.yaml* file located in the *examples* subfolder.
+with the **environment.yaml** file located in the **examples** folder.
 
 If configuring your own environment, the following additional packages are
 required (Python 3.8+):

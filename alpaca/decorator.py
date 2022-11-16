@@ -529,8 +529,8 @@ class Provenance(object):
     @classmethod
     def get_prov_info(cls):
         """
-        Returns the W3C PROV representation of the captured provenance
-        information.
+        Returns the representation of the captured provenance information
+        according to the Alpaca ontology based on the W3C PROV-O.
 
         Returns
         -------
@@ -595,7 +595,7 @@ def print_history():
 def save_provenance(file_name=None, file_format='ttl'):
     """
     Serialize provenance information according to the Alpaca ontology based
-    on the W3C Provenance Data Model (PROV).
+    on the W3C PROV Ontology (PROV-O).
 
     Parameters
     ----------

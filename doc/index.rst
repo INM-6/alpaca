@@ -33,6 +33,7 @@ Table of Contents
    authors
    release_notes
    acknowledgments
+   open_software_licenses
 
 
 .. |date| date::

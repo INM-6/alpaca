@@ -5,7 +5,10 @@ It is supposed to work with the output of `run_basic.py`.
 
 Usage:
 
-visualize_prov <Alpaca_PROV_file> <output_file>
+    visualize_prov.py [Alpaca_PROV_file] [output_GEXF_file]
+
+This script is the basis for the "Visualize provenance data" page in the
+Examples section of the documentation.
 """
 
 import sys

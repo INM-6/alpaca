@@ -4,7 +4,7 @@
 Examples of usage
 *****************
 
-The folder *examples* contains scripts that show how Alpaca should be used
+The folder **examples** contains scripts that show how Alpaca should be used
 when implementing scripts with provenance tracking.
 
 The examples show simple analyses of electrophysiology data and utilize

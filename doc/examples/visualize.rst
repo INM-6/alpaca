@@ -42,14 +42,20 @@ to include in the visualization graph.
 Attributes
 ~~~~~~~~~~
 
-Attributes are the usual Python object attributes (e.g. `object.name`).
-To include attributes, we need a list/tuple like:
+Attributes are the usual Python object attributes (e.g. `object.name`). Alpaca
+stores attribute values when the data objects are tracked. In the PROV files,
+their values are stored with the `hasAttribute` property.
+
+For example, when working with NumPy arrays, it is useful to check the
+dimensions of the array (`shape` attribute), and also the data type stored
+(`dtype` attribute). To include these attributes, we need a list/tuple like:
 
 .. code-block:: python
 
     attributes = ['shape', 'dtype', 'name']
 
-Here we include the `shape`, `dtype` and `name` attributes.
+Here we also include the value of `name` if any object has it defined (e.g.,
+Neo objects).
 
 
 Annotations
@@ -59,7 +65,7 @@ Annotations are values stored inside a dictionary accessible by the
 `annotation` attribute of the Python object. These values are specially stored
 by Alpaca in PROV files, in the form of `hasAnnotation` properties.
 
-For example, the `neo.SpikeTrain` object may have a custom field called
+For example, the `neo.Block` object may have a custom field called
 `subject_name` to identify the name of the subject used in an
 electrophysiology recording. For a `neo.Block` loaded into variable `block`,
 this would be stored inside `block.annotations`. The dictionary would be
@@ -97,4 +103,4 @@ To save the graph as GEXF:
 Now, `output_file` is a GEXF file that can be read by Gephi to visualize a
 graph with the provenance history, the object details, and function parameters.
 For the output of the simple example (**run_basic.ttl**), you will have a file
-called **run_basic.ttl**.
+called **run_basic.gexf**.

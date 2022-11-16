@@ -1,6 +1,8 @@
 """
-This module contains utility functions to generate or get information
-from file names.
+This module contains utility functions to work with file names and extensions.
+
+.. autofunction:: alpaca.utils.get_file_name
+
 """
 
 from pathlib import Path

@@ -10,7 +10,7 @@ See the :ref:`visualization` section on the `Installation` section,
 for instructions on how to download and setup Gephi that can be used to
 visualize GEXF files.
 
-.. autoclass:: ProvenanceGraph
+.. autoclass:: alpaca.ProvenanceGraph
     :members:
 
 """
@@ -185,7 +185,7 @@ class ProvenanceGraph:
     ----------
     prov_file : str or Path-like
         Source file with provenance data in the Alpaca format based on W3C
-        PROV.
+        PROV-O.
     annotations : tuple of str, optional
         Names of all annotations of the objects to display in the graph as
         node attributes. Annotations are defined as values of an annotation
@@ -631,8 +631,8 @@ class ProvenanceGraph:
         summarized, so that the user has an idea of all the possible values in
         the group.
 
-        Please refer to the :ref:`acknowledgments` section for copyright and
-        license information.
+        Please refer to the :ref:`open_software_licenses` section for copyright
+        and license information.
 
         References
         ----------

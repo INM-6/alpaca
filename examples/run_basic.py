@@ -12,6 +12,9 @@ This scripts uses the Elephant toolbox for analysis (www.python-elephant.org).
 
 It produces the interspike interval (ISI) histogram of the first spiketrain in
 the dataset.
+
+This script is the basis for the "Simple example" page in the Examples section
+of the documentation.
 """
 
 import sys

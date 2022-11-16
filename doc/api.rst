@@ -5,7 +5,8 @@ API Reference
 .. toctree::
    :maxdepth: 1
 
-   reference/decorator
    reference/interface
-   reference/serialization
+   reference/decorator
    reference/graph
+   reference/serialization
+   reference/utility
