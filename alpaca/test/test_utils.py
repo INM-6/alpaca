@@ -1,6 +1,7 @@
 import unittest
 
-from alpaca.utils.files import get_file_name, _get_prov_file_format
+from alpaca.utils.files import _get_prov_file_format, _get_file_format
+from alpaca.utils import get_file_name
 from os.path import expanduser
 
 
@@ -87,6 +88,14 @@ class FileUtilsTestCase(unittest.TestCase):
     def test_get_prov_file_format_other(self):
         file_name = "/test_file.other"
         self.assertEqual(_get_prov_file_format(file_name), "other")
+
+    def test_get_file_format_no_ext(self):
+        file_name = "/home/test"
+        self.assertEqual(_get_file_format(file_name), None)
+
+    def test_get_file_format(self):
+        file_name = "/home/test.png"
+        self.assertEqual(_get_file_format(file_name), "png")
 
 
 if __name__ == "__main__":

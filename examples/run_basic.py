@@ -27,7 +27,7 @@ import neo
 from elephant.statistics import isi
 
 from alpaca import Provenance, activate, save_provenance
-from alpaca.utils.files import get_file_name
+from alpaca.utils import get_file_name
 
 
 # Set the logging up, if desired
