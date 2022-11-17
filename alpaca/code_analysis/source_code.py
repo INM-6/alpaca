@@ -206,9 +206,6 @@ class _SourceCode(object):
         line_mask = np.logical_and(self._source_lines >= statement_start,
                                    self._source_lines <= statement_end)
 
-        if not np.any(line_mask):
-            return None
-
         # Retrieve the lines and join in a single string
         lines = self.source_code_lines[line_mask]
         statement = "".join(lines).strip()
