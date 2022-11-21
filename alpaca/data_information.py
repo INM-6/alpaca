@@ -3,7 +3,7 @@ This module implements classes for getting the relevance provenance
 information from Python objects and files (e.g., hashes and metadata).
 They are used by the `decorator.Provenance` class decorator to track unique
 objects during the script execution, and also to represent the objects in the
-PROV files generated with the Alpaca model (identifiers).
+PROV files generated with the Alpaca ontology (identifiers).
 
 The classes defined in this module are not intended to be used directly by
 the user, but are used internally by the `decorator.Provenance` decorator.
@@ -35,7 +35,8 @@ joblib.hashing.Hasher.dispatch[type(save_function)] = save_function
 # Create logger and set configuration
 logger = logging.getLogger(__file__)
 log_handler = logging.StreamHandler()
-log_handler.setFormatter(logging.Formatter("[%(asctime)s] alpaca.hash -"
+log_handler.setFormatter(logging.Formatter("[%(asctime)s]"
+                                           " alpaca.data_information"
                                            " %(levelname)s: %(message)s"))
 logger.addHandler(log_handler)
 logger.propagate = False
@@ -84,7 +85,7 @@ class _FileInformation(object):
         return file_hash.hexdigest()
 
     def __init__(self, file_path, use_content=True):
-        self.file_path = Path(file_path).expanduser().absolute()
+        self.file_path = Path(file_path).expanduser().resolve().absolute()
 
         if use_content:
             self._hash_type = 'sha256'
