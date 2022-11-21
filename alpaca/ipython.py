@@ -2,8 +2,11 @@
 This module implements functions to activate provenance capture when using
 IPython (e.g., when running Jupyter Notebooks).
 """
+import inspect
+from alpaca import Provenance
 
-PROV_LINE = "alpaca.activate()\n"
+PROV_LINES = ["from alpaca.ipython import _set_ipython_frame\n",
+              "_set_ipython_frame()\n"]
 
 
 def _add_provenance_to_cell(lines):
@@ -12,9 +15,15 @@ def _add_provenance_to_cell(lines):
     # code. This ensures that the frame of that cell will be tracked.
 
     if lines:
-        if lines[0] != PROV_LINE:
-            return [PROV_LINE] + lines
+        if lines[0:2] != PROV_LINES:
+            return PROV_LINES + lines
     return lines
+
+
+def _set_ipython_frame():
+    # Hidden activate function. This is similar to `alpaca.activate()`.
+    Provenance._set_calling_frame_ipython(inspect.currentframe().f_back)
+    Provenance.active = True
 
 
 def activate_ipython():
@@ -43,6 +52,26 @@ def activate_ipython():
     try:
         ip = get_ipython()
         ip.input_transformers_cleanup.append(_add_provenance_to_cell)
+    except NameError:
+        print("You are running outside IPython. 'alpaca.activate()' should"
+              "be used.")
+
+
+def deactivate_ipython():
+    """
+    Deactivates Alpaca provenance tracking when using IPython.
+    """
+    try:
+        # Remove the cell transformer that adds the activation code
+        ip = get_ipython()
+        for index, transformer in enumerate(ip.input_transformers_cleanup):
+            if transformer == _add_provenance_to_cell:
+                ip.input_transformers_cleanup.pop(index)
+                break
+
+        # Deactivate decorator
+        Provenance.active = False
+
     except NameError:
         print("You are running outside IPython. 'alpaca.activate()' should"
               "be used.")
