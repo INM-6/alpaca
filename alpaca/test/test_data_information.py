@@ -3,7 +3,8 @@ import unittest
 import numpy as np
 
 from alpaca.types import File, DataObject
-from alpaca.data_information import (_FileInformation, _ObjectInformation)
+from alpaca.data_information import _FileInformation, _ObjectInformation
+
 from pathlib import Path
 import joblib
 import uuid
@@ -37,7 +38,7 @@ class FileInformationTestCase(unittest.TestCase):
         info = file_info.info()
         self.assertIsInstance(info, File)
         self.assertEqual(info.hash_type, "attribute")
-        self.assertEqual(info.hash, 0)
+        self.assertEqual(info.hash, "e2644ad2a7ff27ad7811d74d3df2b28f1f0b4373")
         self.assertEqual(info.path, self.file_path)
 
     def test_file_info_comparison(self):
@@ -84,6 +85,8 @@ class ObjectInformationTestCase(unittest.TestCase):
         self.assertEqual(info_float.details['dtype'], np.float64)
         self.assertEqual(info_int.id, id(numpy_array_int))
         self.assertEqual(info_float.id, id(numpy_array_float))
+        self.assertEqual(info_int.hash_method, "joblib")
+        self.assertEqual(info_float.hash_method, "joblib")
         self.assertEqual(info_int.hash, joblib.hash(numpy_array_int,
                                                     hash_name='sha1'))
         self.assertEqual(info_float.hash, joblib.hash(numpy_array_float,
@@ -107,6 +110,7 @@ class ObjectInformationTestCase(unittest.TestCase):
         info = object_info.info(None)
         self.assertIsInstance(info.hash, uuid.UUID)
         self.assertEqual(info.type, "builtins.NoneType")
+        self.assertEqual(info.hash_method, "None")
         self.assertDictEqual(info.details, {})
 
     def test_custom_class(self):
@@ -119,6 +123,7 @@ class ObjectInformationTestCase(unittest.TestCase):
         self.assertEqual(info_1.details['attribute'], "an object class")
         self.assertEqual(info_1.id, id(custom_object_1))
         self.assertEqual(info_1.type, "test_data_information.ObjectClass")
+        self.assertEqual(info_1.hash_method, "joblib")
         self.assertEqual(info_1.hash, joblib.hash(custom_object_1,
                                                   hash_name='sha1'))
 
@@ -127,8 +132,77 @@ class ObjectInformationTestCase(unittest.TestCase):
         self.assertEqual(info_2.details['attribute'], "an object class")
         self.assertEqual(info_2.id, id(custom_object_2))
         self.assertEqual(info_2.type, "test_data_information.ObjectClass")
+        self.assertEqual(info_2.hash_method, "joblib")
         self.assertEqual(info_2.hash, joblib.hash(custom_object_2,
                                                   hash_name='sha1'))
+
+    def test_use_builtin_hash_simple(self):
+        custom_object = ObjectClass(param=4)
+        object_info = _ObjectInformation(
+            use_builtin_hash=['test_data_information'])
+        info = object_info.info(custom_object)
+        self.assertEqual(info.details['param'], 4)
+        self.assertEqual(info.details['attribute'], "an object class")
+        self.assertEqual(info.id, id(custom_object))
+        self.assertEqual(info.type, "test_data_information.ObjectClass")
+        self.assertEqual(info.hash_method, "Python")
+        self.assertEqual(info.hash, hash(custom_object))
+
+    def test_use_builtin_hash_container_list(self):
+        custom_object_1 = ObjectClass(param=4)
+        custom_object_2 = ObjectClass(param=3)
+        object_info = _ObjectInformation(
+            use_builtin_hash=['test_data_information'])
+
+        container = [custom_object_1, custom_object_2]
+        info = object_info.info(container)
+        self.assertEqual(info.id, id(container))
+        self.assertEqual(info.type, "builtins.list")
+        self.assertEqual(info.hash_method, "Python")
+
+        expected_hashes = [hash(obj) for obj in container]
+
+        self.assertEqual(info.hash, joblib.hash(tuple(expected_hashes),
+                                                hash_name='sha1'))
+
+    def test_use_builtin_hash_container_numpy_array(self):
+        custom_object_1 = ObjectClass(param=4)
+        custom_object_2 = ObjectClass(param=3)
+        custom_object_3 = ObjectClass(param=7)
+        custom_object_4 = ObjectClass(param=5)
+        object_info = _ObjectInformation(
+            use_builtin_hash=['test_data_information'])
+
+        container = np.array([[custom_object_1, custom_object_2],
+                              [custom_object_3, custom_object_4]])
+        info = object_info.info(container)
+        self.assertEqual(info.id, id(container))
+        self.assertEqual(info.type, "numpy.ndarray")
+        self.assertEqual(info.hash_method, "Python")
+
+        expected_hashes = []
+        for row in container:
+            for element in row:
+                expected_hashes.append(hash(element))
+
+        self.assertEqual(info.hash,
+                         joblib.hash(tuple(expected_hashes), hash_name='sha1'))
+
+    def test_use_builtin_hash_container_numpy_array_multiple_types(self):
+        custom_object_1 = ObjectClass(param=4)
+        custom_object_2 = ObjectClass(param=3)
+        custom_object_3 = ObjectClass(param=7)
+        object_info = _ObjectInformation(
+            use_builtin_hash=['test_data_information'])
+
+        container = np.array([[custom_object_1, custom_object_2],
+                              [4, custom_object_3]])
+        info = object_info.info(container)
+        self.assertEqual(info.id, id(container))
+        self.assertEqual(info.type, "numpy.ndarray")
+        self.assertEqual(info.hash_method, "joblib")
+
+        self.assertEqual(info.hash, joblib.hash(container, hash_name='sha1'))
 
 
 if __name__ == "__main__":
