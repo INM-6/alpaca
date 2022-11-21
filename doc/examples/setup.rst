@@ -16,6 +16,9 @@ At this website, you can either download a large archive (.zip) or access
 the GIN repository where the data is hosted. In the latter case, instructions
 to download the data and code using the *gin* client are provided.
 
+The dataset that is used in the examples is **.nix**, and can be directly
+accessed at `the GIN repository [https://]`_.
+
 
 Running the examples
 --------------------

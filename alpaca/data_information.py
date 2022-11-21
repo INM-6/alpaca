@@ -15,6 +15,7 @@ import uuid
 from copy import copy
 from pathlib import Path
 import logging
+from collections.abc import Iterable
 
 import joblib
 import numpy as np
@@ -128,9 +129,10 @@ class _ObjectInformation(object):
 
     The type is a string produced by the combination of the module where it
     was defined plus the type name (both returned by :func:`type`).
-    Value hash is calculated using :func:`joblib.hash` for NumPy arrays and
-    other container types, or the builtin :func:`hash` function for
-    matplotlib objects.
+
+    Value hash is calculated using :func:`joblib.hash` or the builtin
+    :func:`hash` function, depending on the `use_builtin_hash` parameter set
+    during initialization.
 
     The method `info` is called to obtain the provenance information
     associated with the object during tracking, as the `DataObject` named
@@ -139,6 +141,13 @@ class _ObjectInformation(object):
     As the same object may be hashed several times during a single analysis
     step, a builtin memoizer stores all hashes that are computed by object ID
     (according to :func:`id`).
+
+    Parameters
+    ----------
+    use_builtin_hash : list, optional
+        List of package names whose object hashes will be computed using the
+        Python builtin `hash` function, instead of `joblib.hash` function.
+        Default: None
     """
 
     # This is a list of object attributes that provide relevant provenance
@@ -147,8 +156,10 @@ class _ObjectInformation(object):
                             'id', 'nix_name', 'dimensionality', 'pid',
                             'create_time')
 
-    def __init__(self):
+    def __init__(self, use_builtin_hash=None):
         self._hash_memoizer = dict()
+        self._use_builtin_hash = copy(use_builtin_hash) \
+            if use_builtin_hash is not None else []
 
     @staticmethod
     def _get_object_package(obj):
@@ -157,7 +168,7 @@ class _ObjectInformation(object):
         module = inspect.getmodule(obj)
         package = ""
         if module is not None:
-            package = module.__package__.split(".")[0]
+            package = module.__name__.split(".")[0]
         return package
 
     def _get_object_hash(self, obj, obj_type, obj_id, package):
@@ -174,32 +185,59 @@ class _ObjectInformation(object):
 
         logger.debug("Hashing")
 
-        # Check if the object is a NumPy array of matplotlib objects
-        array_of_matplotlib = False
-        if isinstance(obj, np.ndarray) and obj.dtype == np.dtype('object'):
-            is_matplotlib = lambda x: self._get_object_package(x) == \
-                                      'matplotlib'
-            array_of_matplotlib = all(map(is_matplotlib, obj))
-
-        if package in ['matplotlib']:
-            # For matplotlib objects, we need to use the builtin hashing
-            # function instead of joblib's. Multiple object hashes are
-            # generated, since each time something is plotted the object
-            # changes.
+        hash_method = None
+        if package in self._use_builtin_hash:
+            # Use the builtin hashing function instead of joblib's. This avoids
+            # the case where object changes result in multiple object hashes,
+            # which will produce a complex provenance track
             object_hash = hash(obj)
-        elif array_of_matplotlib:  # or isinstance(self.value, list):
-            # We also have to use an exception for NumPy arrays with Axes
-            # objects, as those also change when the plot changes.
-            # These are usually return by the `plt.subplots()` call.
-            object_hash = hash((obj_type, obj_id))
+            hash_method = "Python"
         else:
-            # Other objects, like Neo, Quantity and NumPy arrays, use joblib
-            object_hash = joblib.hash(obj, hash_name='sha1')
+            # Check if the object is a container of objects that should be
+            # hashed with the Python builtin function. For NumPy arrays, we
+            # restrict this to arrays of dtype=object, as they are the ones
+            # that can contain objects
+            container_builtin_hash = False
+            if isinstance(obj, Iterable) and not (
+                isinstance(obj, np.ndarray) and obj.dtype != object):
+
+                iterator = obj if not isinstance(obj, np.ndarray) \
+                    else obj.ravel()
+
+                # Loop over elements. If any element is not from the requested
+                # packages, abort the loop
+                container_builtin_hash = True
+                for element in iterator:
+                    container_builtin_hash = \
+                        container_builtin_hash and \
+                        (self._get_object_package(element) in
+                         self._use_builtin_hash)
+
+                    if not container_builtin_hash:
+                        break
+
+            if container_builtin_hash:
+                # We also have to use the builtin hash if objects from the
+                # requested packages are stored in containers (e.g., NumPy
+                # arrays with matplotlib Axes objects).
+
+                iterator = obj if not isinstance(obj, np.ndarray) \
+                    else obj.ravel()
+                object_hash = joblib.hash(
+                    tuple([hash(element) for element in iterator]),
+                    hash_name='sha1'
+                )
+                hash_method = "Python"
+            else:
+                # Other objects, like Neo, Quantity and NumPy arrays, use
+                # joblib's hash function
+                object_hash = joblib.hash(obj, hash_name='sha1')
+                hash_method = "joblib"
 
         # Memoize the hash
-        self._hash_memoizer[obj_id] = object_hash
+        self._hash_memoizer[obj_id] = (object_hash, hash_method)
 
-        return object_hash
+        return object_hash, hash_method
 
     def info(self, obj):
         """
@@ -223,6 +261,11 @@ class _ObjectInformation(object):
             A named tuple with the following attributes:
             * hash : int
                 Hash of the object.
+            * hash_method : {"Python", "joblib", "None"}
+                Hash function used in the computation. If the
+                :attr:`use_builtin_hash` list is defined, the builtin Python
+                hash function is used for objects of the packages in the list.
+                For None objects, the value will be "None".
             * type: str
                 Type of the object.
             * id : int
@@ -237,8 +280,8 @@ class _ObjectInformation(object):
         # All Nones will have the same hash. Use UUID instead
         if obj is None:
             unique_id = uuid.uuid4()
-            return DataObject(hash=unique_id, type=obj_type, id=obj_id,
-                              details={})
+            return DataObject(hash=unique_id, hash_method="None",
+                              type=obj_type, id=obj_id, details={})
 
         # Here we can extract specific metadata to record
         details = {}
@@ -256,8 +299,9 @@ class _ObjectInformation(object):
 
         # Compute object hash
         package = self._get_object_package(obj)
-        obj_hash = self._get_object_hash(obj=obj, obj_type=obj_type,
+        obj_hash, hash_method = self._get_object_hash(obj=obj,
+                                         obj_type=obj_type,
                                          obj_id=obj_id, package=package)
 
-        return DataObject(hash=obj_hash, type=obj_type, id=obj_id,
-                          details=details)
+        return DataObject(hash=obj_hash, hash_method=hash_method,
+                          type=obj_type, id=obj_id, details=details)
