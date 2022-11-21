@@ -10,3 +10,4 @@ API Reference
    reference/graph
    reference/serialization
    reference/utility
+   reference/settings
