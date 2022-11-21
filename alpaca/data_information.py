@@ -58,15 +58,20 @@ class _FileInformation(object):
         The path to the file that is being hashed.
     use_content: bool, optional
         If True, the file content will be used and a SHA256 hash will be
-        computed. If False, a hash based on file attributes (file path and
-        timestamps) will be computed.
+        computed. If False, a hash based on file attributes (timestamps, file,
+        size, permissions, owner, and group of the owner) will be computed.
         Default: True
     """
 
-    # TODO: quick hashing based on file path and timestamps
     @staticmethod
     def _get_attribute_file_hash(file_path):
-        return 0
+        file_stats = file_path.stat()
+        hash_elements = []
+        for attr in ('st_mode', 'st_uid', 'st_gid', 'st_size', 'st_mtime_ns',
+                     'st_ctime_ns'):
+            hash_elements.append(getattr(file_stats, attr))
+
+        return joblib.hash(tuple(hash_elements), hash_name='sha1')
 
     @staticmethod
     def _get_content_file_hash(file_path, block_size=4096 * 1024):
@@ -111,8 +116,9 @@ class _FileInformation(object):
                 is the SHA256 hash. Otherwise, it is a hash based on the
                 attributes of the file (file path and timestamps).
             * hash_type: {'sha256', 'attribute'}
-                String storing the hash type.
-            * path : str or path-like
+                String storing the hash type. If the object was initialized
+                with `use_content=False`, it will be `'attribute'`.
+            * path : str or Path-like
                 The path to the file that was hashed.
         """
         return File(hash=self._hash,
