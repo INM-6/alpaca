@@ -60,6 +60,7 @@ Container = namedtuple('Container', 'elements')
 # `DataObject` is for Python objects, and `File` is for files stored in
 # the disk.
 
-DataObject = namedtuple('DataObject', ('hash', 'type', 'id', 'details'))
+DataObject = namedtuple('DataObject', ('hash', 'hash_method', 'type', 'id',
+                                       'details'))
 
 File = namedtuple('File', ('hash', 'hash_type', 'path'))
