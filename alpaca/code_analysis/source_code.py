@@ -86,8 +86,6 @@ class _SourceCode(object):
         # `activate` function call statement. We need this to find the correct
         # the position in the source code list
 
-        activate_line = 0
-
         if isinstance(full_ast.body[0], ast.FunctionDef):
 
             function_def = full_ast.body[0]
@@ -96,12 +94,10 @@ class _SourceCode(object):
 
                 for statement in function_def.body:
                     for node in ast.walk(statement):
-                        if (isinstance(node, ast.Call) and
-                                node.func.id in (
-                                'activate', 'activate_ipython')):
-                            activate_line = statement.lineno
-                            break
-        return activate_line
+                        if ((isinstance(node, ast.Call)) and
+                                (node.func.id in ('activate',))):
+                            return statement.lineno
+        return 0
 
     @staticmethod
     def _build_line_map(ast_tree, start_line_number, source_code_lines):
