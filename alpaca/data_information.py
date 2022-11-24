@@ -243,12 +243,13 @@ class _ObjectInformation(object):
         -------
         alpaca_types.DataObject
             A named tuple with the following attributes:
-            * hash : int
-                Hash of the object.
+            * hash : str or UUID
+                Hash of the object. For None objects, it will be an UUID
+                generated to uniquely identify the object.
             * hash_method : {"Python", "joblib", "None"}
                 Hash function used in the computation. If the
                 :attr:`use_builtin_hash` list is defined, the builtin Python
-                hash function is used for objects of the packages in the list.
+                `hash` function is used for objects of the packages in the list.
                 For None objects, the value will be "None".
             * type: str
                 Type of the object.

@@ -14,5 +14,3 @@ and view the raw history, and serialize the information to a file.
 .. autofunction:: alpaca.print_history
 
 .. autofunction:: alpaca.save_provenance
-
-.. autofunction:: alpaca.activate_ipython
