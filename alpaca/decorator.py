@@ -4,7 +4,7 @@ during the execution of analysis scripts in Python.
 """
 
 from functools import wraps
-from collections import Iterable
+from collections.abc import Iterable
 from importlib.metadata import version, PackageNotFoundError
 import inspect
 import ast
