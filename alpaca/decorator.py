@@ -50,14 +50,18 @@ class Provenance(object):
         some computation or action. Arguments that only control the behavior
         of the function are considered parameters. The names can be for both
         positional or keyword arguments. Every argument that is not named in
-        `inputs`, `file_input` or `file_output` will be considered as a
-        parameter.
+        `inputs`, `container_input`, `file_input` or `file_output` will be
+        considered as a parameter. If None, this parameter is ignored. If a
+        function does not take any input (e.g., functions that generate data),
+        `inputs` can be set to an empty list or None.
     file_input : list of str, optional
         Names of the arguments that represent file(s) read from the disk by
         the function. Their hashes will be computed and stored.
+        Default: None
     file_output : list of str, optional
         Names of the arguments that represent file(s) write to the disk by
         the function. The hashes will be computed and stored.
+        Default: None
     container_input : list of str, optional
         Names of the arguments that are containers of data (e.g., a list with
         data structures used by the function). Alpaca will track and identify
@@ -121,7 +125,8 @@ class Provenance(object):
     Raises
     ------
     ValueError
-        If `inputs` is not a list.
+        If `inputs` is not a list or not None.
+
     """
 
     active = False
@@ -253,7 +258,10 @@ class Provenance(object):
 
     @staticmethod
     def _get_module_version(module, function_name):
+
         if not function_name.startswith("__main__"):
+            # User-defined functions in the running script do not have a
+            # version
             try:
                 return version(module)
             except PackageNotFoundError:
@@ -612,7 +620,7 @@ def save_provenance(file_name=None, file_format='ttl'):
         If None, the function will return a string containing the provenance
         information in the specified format.
         Default: None
-    file_format : {'json-ld', 'n3', 'nquads', 'nt', 'hext', 'pretty-xml', 'trig', 'trix', 'turtle', 'longturtle', 'xml', 'ttl', 'rdf', 'json'}
+    file_format : {'json-ld', 'n3', 'nt', 'hext', 'pretty-xml', 'trig', 'turtle', 'longturtle', 'xml', 'ttl', 'rdf', 'json'}
         Format into which the provenance data is serialized. The formats are
         the ones accepted by RDFLib. Some shortucts are defined for common
         file extensions:

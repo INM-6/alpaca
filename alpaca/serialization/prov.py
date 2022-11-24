@@ -1,10 +1,10 @@
 """
 This class provides functionality to serialize/deserialize the provenance
-track using the W3C Provenance Data Model (PROV). A derived model is defined
-in an ontology and is used to serialize the provenance information captured by
-Alpaca as RDF files.
+using an ontology based on the W3C Provenance Ontology (PROV-O). The Alpaca
+ontology is used to serialize the provenance information captured by Alpaca as
+RDF files.
 
-.. autoclass:: AlpacaProvDocument
+.. autoclass:: alpaca.AlpacaProvDocument
     :members:
 
 """
@@ -39,15 +39,15 @@ def _add_name_value_pair(graph, uri, predicate, name, value):
 
 class AlpacaProvDocument(object):
     """
-    Generates a W3C PROV file from history records captured by Alpaca during
-    the execution of a Python script, or reads a serialized file into an RDF
-    graph object.
+    Generates a file using the Alpaca ontology (based on W3C PROV-O) from
+    the history records captured during the execution of a Python script,
+    or reads a serialized file into an RDF graph object.
 
     Attributes
     ----------
     graph : rdflib.Graph
         Provenance data represented as an RDF graph, using the Alpaca ontology
-        based on PROV.
+        based on PROV-O.
 
     Notes
     -----
@@ -61,10 +61,10 @@ class AlpacaProvDocument(object):
         self.graph = Graph()
         self.graph.namespace_manager.bind('alpaca', ALPACA)
 
-        # For packages (e.g., Neo) that require special handling of metadata,
-        # when adding to the PROV records. Plugins are external functions
-        # that take the graph, the object URI, and the metadata dict as
-        # parameters.
+        # Metadata plugins are used for packages (e.g., Neo) that require
+        # special handling of metadata when adding to the PROV records.
+        # Plugins are external functions that take the graph, the object URI,
+        # and the metadata dict as parameters.
         self._metadata_plugins = {
             'neo': _neo_object_metadata
         }
@@ -157,8 +157,8 @@ class AlpacaProvDocument(object):
         metadata = info.details
 
         if package_name in self._metadata_plugins:
-            # Handle Neo objects, to avoid dumping all the information
-            # in collections such as `segments` or `events`
+            # Handle objects like Neo objects (i.e., to avoid dumping all the
+            # information in collections such as `segments` or `events`)
             self._metadata_plugins[package_name](self.graph, uri, metadata)
         else:
             # Add metadata using default handling, i.e., all attributes
@@ -275,7 +275,7 @@ class AlpacaProvDocument(object):
     def add_history(self, script_info, session_id, history):
         """
         Adds a history of `FunctionExecution` records captured by Alpaca to a
-        PROV document using the Alpaca PROV model. The script is added as
+        PROV document using the Alpaca PROV ontology. The script is added as
         a `ScriptAgent` agent.
 
         Parameters
@@ -301,7 +301,7 @@ class AlpacaProvDocument(object):
         ----------
         file_name : str or Path-like
             Location of the file with PROV data to be read.
-        file_format : {'json-ld', 'n3', 'nquads', 'nt', 'hext', 'pretty-xml', 'trig', 'trix', 'turtle', 'longturtle', 'xml', 'ttl', 'rdf', 'json'}
+        file_format : {'json-ld', 'n3', 'nt', 'turtle', 'xml', 'ttl', 'rdf', 'json'}
             Format used to serialize the file that is being read. If None, the
             format will be inferred from the extension. The formats are
             the ones accepted by RDFLib. Some shortucts are defined for common
@@ -325,9 +325,7 @@ class AlpacaProvDocument(object):
             raise ValueError("Could not infer serialization format. Please,"
                              "provide it explicitly using `file_format`.")
 
-        if file_format not in ['json-ld', 'n3', 'nquads', 'nt', 'hext',
-                               'pretty-xml', 'trig', 'trix', 'turtle',
-                               'longturtle', 'xml']:
+        if file_format not in ['json-ld', 'n3', 'nt', 'turtle', 'xml']:
             raise ValueError("Unsupported serialization format")
 
         with open(file_name, "r") as source:
@@ -341,7 +339,7 @@ class AlpacaProvDocument(object):
         ----------
         file_name : str or Path-like
             Location of the file with PROV data to be read.
-        file_format : {'json-ld', 'n3', 'nquads', 'nt', 'hext', 'pretty-xml', 'trig', 'trix', 'turtle', 'longturtle', 'xml'}
+        file_format : {'json-ld', 'n3', 'nt', 'hext', 'pretty-xml', 'trig', 'turtle', 'longturtle', 'xml'}
             Format used in the file that is being read. The format strings are
             the ones supported by RDFLib.
             If None, the format will be inferred from the extension.

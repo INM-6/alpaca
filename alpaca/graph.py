@@ -143,7 +143,7 @@ def _get_entity_data(graph, entity, annotations=None, attributes=None,
 class ProvenanceGraph:
     """
     Directed Acyclic Graph representing the provenance history stored in a
-    PROV file with the Alpaca model.
+    PROV file with the Alpaca ontology.
 
     The visualization is based on NetworkX, and the graph can be accessed
     through the :attr:`graph` attribute.
@@ -171,8 +171,8 @@ class ProvenanceGraph:
     * for `DataObjectEntity`, it contains the Python object attributes and
       annotations that were saved as metadata in the PROV file;
     * for `FileEntity`, it contains the file information such as path and hash;
-    * for `Function` activities, it contains the values of the parameters
-      used to call the function.
+    * for `FunctionExecution` activities, it contains the values of the
+      parameters used to call the function.
 
     The attributes to be included are selected by the `annotations`,
     `attributes`, and `array_annotations` parameters during the initialization.
@@ -211,7 +211,8 @@ class ProvenanceGraph:
         be stripped, and the keys in the node attributes will be just the name
         (e.g., `'name'`).
         If False, the keys in the node attributes will be the full name
-        (e.g. `'attribute:name'`).
+        (e.g. `'attribute:name'`). The namespaces are `annotation` and
+        `attribute` for object annotations and attributes, respectively.
         Default: True
     remove_none : bool, optional
         If True, the return nodes of functions that return `None` will be
