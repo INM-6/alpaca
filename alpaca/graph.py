@@ -219,6 +219,13 @@ class ProvenanceGraph:
         removed from the graph. This is useful to avoid cluttering if a
         function that returns None is called frequently.
         Default: True
+    use_name_in_parameter : bool, optional
+        If True, the function name will be added to the parameter name in the
+        node attributes (e.g., `'function:param'`). If False, the parameter name
+        will be shown with a generic tag (e.g., `'parameter:param'`). Use this
+        option if different functions share same parameter names, to avoid
+        ambiguity.
+        Default: True
 
     Attributes
     ----------
@@ -230,7 +237,8 @@ class ProvenanceGraph:
 
     def __init__(self, prov_file, annotations=None, attributes=None,
                  array_annotations=None, strip_namespace=True,
-                 remove_none=True, *args, **kwargs):
+                 remove_none=True, use_name_in_parameter=True, *args,
+                 **kwargs):
         super().__init__(*args, **kwargs)
 
         # Load PROV records from the file
@@ -240,12 +248,11 @@ class ProvenanceGraph:
         # Transform RDFlib graph to NetworkX and simplify the graph for
         # visualization. The parameters passed to the class initialization
         # will control the graph output
-        self.graph = self._transform_graph(doc.graph,
-                                           annotations=annotations,
-                                           attributes=attributes,
-                                           array_annotations=array_annotations,
-                                           strip_namespace=strip_namespace,
-                                           remove_none=remove_none)
+        self.graph = self._transform_graph(
+            doc.graph, annotations=annotations, attributes=attributes,
+            array_annotations=array_annotations,
+            strip_namespace=strip_namespace, remove_none=remove_none,
+            use_name_in_parameter=use_name_in_parameter)
 
         # Nodes that are not directly connected to function call nodes, need
         # to have the execution counter set, so that the Gephi timeline
