@@ -223,10 +223,11 @@ class _SubscriptRelationship(_StaticRelationship):
 
         if isinstance(slice_node, ast.Slice):
             # Slicing
-            stop = int(slice_node.upper.n)
+            stop = getattr(slice_node, 'upper')
             start = getattr(slice_node, 'lower', None)
             step = getattr(slice_node, 'step', None)
 
+            stop = int(stop.n) if stop is not None else None
             start = int(start.n) if start is not None else None
             step = int(step.n) if step is not None else None
 
@@ -239,7 +240,7 @@ class _SubscriptRelationship(_StaticRelationship):
             stop = self._slice.stop
             step = self._slice.step
 
-            params['slice'] = f":{stop}"
+            params['slice'] = f":{stop}" if stop is not None else ":"
             if start is not None:
                 params['slice'] = f"{start}{params['slice']}"
             if step is not None:
