@@ -183,7 +183,7 @@ class _ObjectInformation(object):
             # that can contain objects
             container_builtin_hash = False
             if isinstance(obj, Iterable) and not (
-                isinstance(obj, np.ndarray) and obj.dtype != object):
+                    isinstance(obj, np.ndarray) and obj.dtype != object):
 
                 iterator = obj if not isinstance(obj, np.ndarray) \
                     else obj.ravel()
@@ -284,8 +284,9 @@ class _ObjectInformation(object):
         # Compute object hash
         package = self._get_object_package(obj)
         obj_hash, hash_method = self._get_object_hash(obj=obj,
-                                         obj_type=obj_type,
-                                         obj_id=obj_id, package=package)
+                                                      obj_type=obj_type,
+                                                      obj_id=obj_id,
+                                                      package=package)
 
         return DataObject(hash=obj_hash, hash_method=hash_method,
                           type=obj_type, id=obj_id, details=details)
