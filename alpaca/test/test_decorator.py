@@ -4,12 +4,10 @@ import joblib
 import datetime
 
 import numpy as np
-import quantities as pq
-import neo
 
-from alpaca import Provenance, activate, deactivate, save_provenance
-from alpaca.types import (FunctionExecution, FunctionInfo, Container,
-                          DataObject, File)
+from alpaca import (Provenance, activate, deactivate, save_provenance,
+                    print_history)
+from alpaca.alpaca_types import (FunctionInfo, Container, DataObject, File)
 
 # Define some data and expected values test tracking
 
