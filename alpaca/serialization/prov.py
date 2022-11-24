@@ -24,7 +24,7 @@ from alpaca.serialization.converters import _ensure_type
 from alpaca.serialization.neo import _neo_object_metadata
 
 from alpaca.utils.files import _get_prov_file_format
-from alpaca.types import DataObject, File, Container
+from alpaca.alpaca_types import DataObject, File, Container
 
 
 def _add_name_value_pair(graph, uri, predicate, name, value):
@@ -280,7 +280,7 @@ class AlpacaProvDocument(object):
 
         Parameters
         ----------
-        script_info : types.File
+        script_info : alpaca_types.File
             Named tuple with the information on the script being tracked
             (hash and file path).
         session_id : str

@@ -1,3 +1,5 @@
 # .coveragerc to control coverage.py
 [report]
 omit = alpaca/test/*
+exclude_lines =
+    raise NotImplementedError

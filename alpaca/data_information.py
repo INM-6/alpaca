@@ -21,7 +21,7 @@ import joblib
 import numpy as np
 from dill._dill import save_function
 
-from alpaca.types import DataObject, File
+from alpaca.alpaca_types import DataObject, File
 
 # Need to use `dill` pickling function to support lambdas.
 # Some objects may have attributes that are lambdas. One example is the
@@ -110,7 +110,7 @@ class _FileInformation(object):
 
         Returns
         -------
-        types.File
+        alpaca_types.File
             A named tuple with the following attributes:
             * hash : int
                 Hash of the file. If hashing is done using the content, this
@@ -264,7 +264,7 @@ class _ObjectInformation(object):
 
         Returns
         -------
-        types.DataObject
+        alpaca_types.DataObject
             A named tuple with the following attributes:
             * hash : int
                 Hash of the object.

@@ -12,7 +12,7 @@ import datetime
 import logging
 import uuid
 
-from alpaca.types import FunctionExecution, FunctionInfo, Container
+from alpaca.alpaca_types import FunctionExecution, FunctionInfo, Container
 from alpaca.data_information import _ObjectInformation, _FileInformation
 from alpaca.code_analysis.ast import _CallAST
 from alpaca.code_analysis.source_code import _SourceCode

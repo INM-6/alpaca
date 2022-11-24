@@ -26,7 +26,7 @@ method.
 """
 
 import ast
-from alpaca.types import FunctionExecution, FunctionInfo
+from alpaca.alpaca_types import FunctionExecution, FunctionInfo
 import uuid
 
 
@@ -60,7 +60,7 @@ class _StaticRelationship(object):
 
     Attributes
     ----------
-    object_info : types.DataObject
+    object_info : alpaca_types.DataObject
         Named tuple describing the Python object associated with this
         `_StaticRelationship` instance.
     parent : _StaticRelationship
