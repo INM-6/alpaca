@@ -82,7 +82,10 @@ def alpaca_setting(name, value=None):
     if name not in _ALPACA_SETTINGS:
         raise ValueError(f"Setting '{name}' is not valid.")
 
-    if (value is not None) and (type(value) is type(_ALPACA_SETTINGS[name])):
+    if value is not None:
+        expected_type = type(_ALPACA_SETTINGS[name])
+        if type(value) is not expected_type:
+            raise ValueError(f"Setting '{name}' must be '{expected_type}'")
         _ALPACA_SETTINGS[name] = value
 
     return _ALPACA_SETTINGS[name]
