@@ -284,7 +284,7 @@ class Provenance(object):
         # call spans multiple lines. In this case, we fetch the
         # full statement using the code analyzer.
         source_line = \
-            self._code_analyzer.extract_multiline_statement(lineno)
+            self._source_code.extract_multiline_statement(lineno)
         ast_tree = ast.parse(source_line)
         logger.info(f"Line {lineno} -> {source_line}")
 
@@ -452,7 +452,7 @@ class Provenance(object):
         # If the frame corresponds to the script file and the tracked function,
         # we get the line number
         if (frame_info.filename == self.source_file and
-                function_name == self._code_analyzer.source_name):
+                function_name == self._source_code.source_name):
             lineno = frame.f_lineno
 
         return lineno
@@ -536,7 +536,7 @@ class Provenance(object):
 
         # Create a _SourceCode instance with the frame information,
         # so that we can capture provenance information later
-        cls._code_analyzer = _SourceCode(frame)
+        cls._source_code = _SourceCode(frame)
 
         # Create a unique identifier for the session and store script info
         cls.session_id = str(uuid.uuid4())
