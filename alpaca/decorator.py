@@ -18,6 +18,7 @@ from alpaca.code_analysis.ast import _CallAST
 from alpaca.code_analysis.source_code import _SourceCode
 from alpaca.serialization import AlpacaProvDocument
 from alpaca.utils.files import RDF_FILE_FORMAT_MAP
+from alpaca.settings import _ALPACA_SETTINGS
 
 from pprint import pprint
 
@@ -265,6 +266,11 @@ class Provenance(object):
                             function_output, time_stamp_start,
                             time_stamp_end):
 
+        content_file_hash = _ALPACA_SETTINGS['use_content_in_file_hash']
+        builtin_object_hash = _ALPACA_SETTINGS['use_builtin_hash_for_module']
+        logging.debug(f"Content file hash: {content_file_hash} ," 
+                      f"Builtin object hash: {builtin_object_hash}")
+
         # 1. Capture Abstract Syntax Tree (AST) of the call to the
         # function. We need to check the source code in case the
         # call spans multiple lines. In this case, we fetch the
@@ -321,7 +327,7 @@ class Provenance(object):
         # After this step, all hashes and metadata of input parameters/files
         # are going to be stored in the dictionary `inputs`.
 
-        data_info = _ObjectInformation()
+        data_info = _ObjectInformation(use_builtin_hash=builtin_object_hash)
 
         # Initialize parameter list with all default arguments that were not
         # passed to the function
@@ -343,7 +349,8 @@ class Provenance(object):
 
             elif key in self.file_inputs:
                 # Input is from a file. Hash using `_FileInformation`
-                inputs[key] = _FileInformation(input_value).info()
+                inputs[key] = _FileInformation(
+                    input_value, use_content=content_file_hash).info()
 
             elif key in self.container_inputs and \
                     isinstance(input_value, Iterable):
@@ -380,7 +387,8 @@ class Provenance(object):
         if self.file_outputs:
             for idx, file_output in enumerate(self.file_outputs):
                 outputs[f"file.{idx}"] = \
-                    _FileInformation(input_data[file_output]).info()
+                    _FileInformation(input_data[file_output],
+                                     use_content=content_file_hash).info()
 
         # 7. Analyze AST and fetch static relationships in the
         # input/output and other variables/objects in the script
