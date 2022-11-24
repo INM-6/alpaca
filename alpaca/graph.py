@@ -106,7 +106,8 @@ def _get_entity_data(graph, entity, annotations=None, attributes=None,
             for name_value_bnode in graph.objects(entity, attr_type):
                 attr_name, attr_value = _get_name_value_pair(graph,
                                                              name_value_bnode)
-                if attr_name in filter_map[attr_type]:
+                if (attr_name in filter_map[attr_type]) or \
+                        filter_map[attr_type] == 'all':
 
                     if array_annotations and attr_name in array_annotations:
                         # Extract the relevant keys from the array annotations

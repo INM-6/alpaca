@@ -6,25 +6,6 @@ from alpaca.settings import _ALPACA_SETTINGS
 
 class AlpacaSettingsTestCase(unittest.TestCase):
 
-    def test_use_content_in_file_hash(self):
-        setting_name = 'use_content_in_file_hash'
-
-        cur_setting = alpaca_setting(setting_name)
-        self.assertIsInstance(cur_setting, bool)
-
-        new_setting = alpaca_setting(setting_name, False)
-        self.assertFalse(new_setting)
-        self.assertFalse(alpaca_setting(setting_name))
-        self.assertFalse(_ALPACA_SETTINGS[setting_name])
-
-        # Test wrong type
-        with self.assertRaises(ValueError):
-            alpaca_setting(setting_name, "test wrong type")
-
-        # Restore value
-        alpaca_setting(setting_name, cur_setting)
-        self.assertEqual(_ALPACA_SETTINGS[setting_name], cur_setting)
-
     def test_use_builtin_hash_for_module(self):
         setting_name = 'use_builtin_hash_for_module'
 

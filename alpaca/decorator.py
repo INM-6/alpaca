@@ -274,10 +274,8 @@ class Provenance(object):
                             function_output, time_stamp_start,
                             time_stamp_end):
 
-        content_file_hash = _ALPACA_SETTINGS['use_content_in_file_hash']
         builtin_object_hash = _ALPACA_SETTINGS['use_builtin_hash_for_module']
-        logging.debug(f"Content file hash: {content_file_hash} ," 
-                      f"Builtin object hash: {builtin_object_hash}")
+        logging.debug(f"Builtin object hash: {builtin_object_hash}")
 
         # 1. Capture Abstract Syntax Tree (AST) of the call to the
         # function. We need to check the source code in case the
@@ -357,8 +355,7 @@ class Provenance(object):
 
             elif key in self.file_inputs:
                 # Input is from a file. Hash using `_FileInformation`
-                inputs[key] = _FileInformation(
-                    input_value, use_content=content_file_hash).info()
+                inputs[key] = _FileInformation(input_value).info()
 
             elif key in self.container_inputs and \
                     isinstance(input_value, Iterable):
@@ -395,8 +392,7 @@ class Provenance(object):
         if self.file_outputs:
             for idx, file_output in enumerate(self.file_outputs):
                 outputs[f"file.{idx}"] = \
-                    _FileInformation(input_data[file_output],
-                                     use_content=content_file_hash).info()
+                    _FileInformation(input_data[file_output]).info()
 
         # 7. Analyze AST and fetch static relationships in the
         # input/output and other variables/objects in the script

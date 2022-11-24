@@ -31,7 +31,6 @@ from alpaca.alpaca_types import DataObject, File
 # the function from `dill` that supports these lambda attributes.
 joblib.hashing.Hasher.dispatch[type(save_function)] = save_function
 
-
 # Create logger and set configuration
 logger = logging.getLogger(__file__)
 log_handler = logging.StreamHandler()
@@ -57,21 +56,7 @@ class _FileInformation(object):
     ----------
     file_path : str or path-like
         The path to the file that is being hashed.
-    use_content: bool, optional
-        If True, the file content will be used and a SHA256 hash will be
-        computed. If False, a hash based on file attributes (timestamps, file,
-        size, and permissions) will be computed.
-        Default: True
     """
-
-    @staticmethod
-    def _get_attribute_file_hash(file_path):
-        file_stats = file_path.stat()
-        hash_elements = []
-        for attr in ('st_mode', 'st_size', 'st_mtime_ns', 'st_ctime_ns'):
-            hash_elements.append(getattr(file_stats, attr))
-
-        return joblib.hash(tuple(hash_elements), hash_name='sha1')
 
     @staticmethod
     def _get_content_file_hash(file_path, block_size=4096 * 1024):
@@ -83,15 +68,11 @@ class _FileInformation(object):
 
         return file_hash.hexdigest()
 
-    def __init__(self, file_path, use_content=True):
+    def __init__(self, file_path):
         self.file_path = Path(file_path).expanduser().resolve().absolute()
 
-        if use_content:
-            self._hash_type = 'sha256'
-            self._hash = self._get_content_file_hash(self.file_path)
-        else:
-            self._hash_type = 'attribute'
-            self._hash = self._get_attribute_file_hash(self.file_path)
+        self._hash_type = 'sha256'
+        self._hash = self._get_content_file_hash(self.file_path)
 
     def __eq__(self, other):
         if isinstance(other, _FileInformation):
@@ -111,13 +92,10 @@ class _FileInformation(object):
         -------
         alpaca_types.File
             A named tuple with the following attributes:
-            * hash : int
-                Hash of the file. If hashing is done using the content, this
-                is the SHA256 hash. Otherwise, it is a hash based on the
-                attributes of the file (file path and timestamps).
-            * hash_type: {'sha256', 'attribute'}
-                String storing the hash type. If the object was initialized
-                with `use_content=False`, it will be `'attribute'`.
+            * hash : str
+                SHA256 hash of the file.
+            * hash_type: {'sha256'}
+                String storing the hash type.
             * path : str or Path-like
                 The path to the file that was hashed.
         """

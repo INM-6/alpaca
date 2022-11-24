@@ -8,14 +8,6 @@ information describing which setting value was used, when applicable.
 
 Currently, the following settings can be defined:
 
-* **use_content_in_file_hash**: bool
-        If True, whenever a file input/output is hashed, the SHA256 hash will
-        be produced. This can be slow for large files.
-        If False, an alternative quicker hash (not safe to guarantee a unique
-        identifier!) is implemented, based on file attributes such as path,
-        timestamps, and file size.
-        Default: True
-
 * **use_builtin_hash_for_module**: list of str
         Objects from the packages defined in the list will be hashed using
         the builtin `hash` function, instead of `joblib.hash`.
@@ -52,8 +44,7 @@ To set/read a setting, use the function :func:`alpaca_setting`.
 # Global Alpaca settings dictionary
 # Should be modified only through the `alpaca_setting` function.
 
-_ALPACA_SETTINGS = {'use_content_in_file_hash': True,
-                    'use_builtin_hash_for_module': []}
+_ALPACA_SETTINGS = {'use_builtin_hash_for_module': []}
 
 
 def alpaca_setting(name, value=None):

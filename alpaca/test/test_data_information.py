@@ -23,28 +23,21 @@ class FileInformationTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.file_path = Path(__file__).parent.absolute() / ("res/file_input.txt")
+        cls.file_path = Path(__file__).parent.absolute() / "res"
 
     def test_file_info_sha256(self):
-        file_info = _FileInformation(self.file_path)
+        file_input = self.file_path / "file_input.txt"
+        file_info = _FileInformation(file_input)
         info = file_info.info()
         self.assertIsInstance(info, File)
         self.assertEqual(info.hash_type, "sha256")
         self.assertEqual(info.hash, "96ccc1380e069667069acecea3e2ab559441657807e0a86d14f49028710ddb3a")
-        self.assertEqual(info.path, self.file_path)
-
-    def test_file_info_attribute(self):
-        file_info = _FileInformation(self.file_path, use_content=False)
-        info = file_info.info()
-        self.assertIsInstance(info, File)
-        self.assertEqual(info.hash_type, "attribute")
-        self.assertEqual(info.hash, "e5dbc2c7d5a1a56cf10b016026a7c7d2bebf7d91")
-        self.assertEqual(info.path, self.file_path)
+        self.assertEqual(info.path, file_input)
 
     def test_file_info_comparison(self):
-        file_info_1 = _FileInformation(self.file_path)
-        file_info_2 = _FileInformation(self.file_path)
-        file_info_3 = _FileInformation(self.file_path, use_content=False)
+        file_info_1 = _FileInformation(self.file_path / "file_input.txt")
+        file_info_2 = _FileInformation(self.file_path / "file_input.txt")
+        file_info_3 = _FileInformation(self.file_path / "file_output.txt")
 
         self.assertTrue(file_info_1 == file_info_2)
 
@@ -54,7 +47,7 @@ class FileInformationTestCase(unittest.TestCase):
         self.assertFalse(file_info_3 == file_info_1)
 
     def test_repr(self):
-        file_info = _FileInformation(self.file_path)
+        file_info = _FileInformation(self.file_path / "file_input.txt")
         expected_str = "file_input.txt: [sha256] 96ccc1380e069667069acece" \
                        "a3e2ab559441657807e0a86d14f49028710ddb3a"
         self.assertEqual(str(file_info), expected_str)
