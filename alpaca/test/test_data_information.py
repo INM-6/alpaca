@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from alpaca.types import File, DataObject
+from alpaca.alpaca_types import File, DataObject
 from alpaca.data_information import _FileInformation, _ObjectInformation
 
 from pathlib import Path

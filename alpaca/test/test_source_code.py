@@ -94,8 +94,8 @@ class CodeAnalyzerTestCase(unittest.TestCase):
         }
 
         for line, expected_statement in expected_statements.items():
-            with self.subTest(f"line = {line}, "
-                              f"expected = {expected_statement}"):
+            with self.subTest(f"line: {line}, "
+                              f"expected: {expected_statement}"):
                 self.assertEqual(
                     source_code.extract_multiline_statement(line),
                     expected_statement
@@ -139,8 +139,8 @@ class CodeAnalyzerTestCase(unittest.TestCase):
         }
 
         for line, expected_statement in expected_statements.items():
-            with self.subTest(f"line = {line}, "
-                              f"expected = {expected_statement}"):
+            with self.subTest(f"line: {line}, "
+                              f"expected: {expected_statement}"):
                 self.assertEqual(
                     source_code.extract_multiline_statement(line),
                     expected_statement
@@ -187,8 +187,8 @@ class CodeAnalyzerTestCase(unittest.TestCase):
         }
 
         for line, expected_statement in expected_statements.items():
-            with self.subTest(f"line = {line}, "
-                              f"expected = {expected_statement}"):
+            with self.subTest(f"line: {line}, "
+                              f"expected: {expected_statement}"):
                 self.assertEqual(
                     source_code.extract_multiline_statement(line),
                     expected_statement
@@ -238,8 +238,8 @@ class CodeAnalyzerWithBlocksTestCase(unittest.TestCase):
         }
 
         for line, expected_statement in expected_statements.items():
-            with self.subTest(f"line = {line}, "
-                              f"expected = {expected_statement}"):
+            with self.subTest(f"line: {line}, "
+                              f"expected: {expected_statement}"):
                 self.assertEqual(
                     source_code.extract_multiline_statement(line),
                     expected_statement
@@ -288,8 +288,8 @@ class CodeAnalyzerWithBlocksTestCase(unittest.TestCase):
         }
 
         for line, expected_statement in expected_statements.items():
-            with self.subTest(f"line = {line}, "
-                              f"expected = {expected_statement}"):
+            with self.subTest(f"line: {line}, "
+                              f"expected: {expected_statement}"):
                 self.assertEqual(
                     source_code.extract_multiline_statement(line),
                     expected_statement
