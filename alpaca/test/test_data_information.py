@@ -38,7 +38,7 @@ class FileInformationTestCase(unittest.TestCase):
         info = file_info.info()
         self.assertIsInstance(info, File)
         self.assertEqual(info.hash_type, "attribute")
-        self.assertEqual(info.hash, "e2644ad2a7ff27ad7811d74d3df2b28f1f0b4373")
+        self.assertEqual(info.hash, "e5dbc2c7d5a1a56cf10b016026a7c7d2bebf7d91")
         self.assertEqual(info.path, self.file_path)
 
     def test_file_info_comparison(self):

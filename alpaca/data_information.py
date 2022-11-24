@@ -60,7 +60,7 @@ class _FileInformation(object):
     use_content: bool, optional
         If True, the file content will be used and a SHA256 hash will be
         computed. If False, a hash based on file attributes (timestamps, file,
-        size, permissions, owner, and group of the owner) will be computed.
+        size, and permissions) will be computed.
         Default: True
     """
 
@@ -68,8 +68,7 @@ class _FileInformation(object):
     def _get_attribute_file_hash(file_path):
         file_stats = file_path.stat()
         hash_elements = []
-        for attr in ('st_mode', 'st_uid', 'st_gid', 'st_size', 'st_mtime_ns',
-                     'st_ctime_ns'):
+        for attr in ('st_mode', 'st_size', 'st_mtime_ns', 'st_ctime_ns'):
             hash_elements.append(getattr(file_stats, attr))
 
         return joblib.hash(tuple(hash_elements), hash_name='sha1')
