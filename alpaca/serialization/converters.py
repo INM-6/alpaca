@@ -37,7 +37,7 @@ def _ensure_type(value):
     # converted, as they are already supported.
 
     value_type = type(value)
-    package = str(value_type).split(".")[0]
+    package = value_type.__module__.split(".")[0]
 
     if package in PACKAGES_MAP:
         return PACKAGES_MAP[package](value)
