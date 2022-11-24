@@ -60,6 +60,7 @@ class AlpacaProvDocument(object):
     def __init__(self):
         self.graph = Graph()
         self.graph.namespace_manager.bind('alpaca', ALPACA)
+        self.graph.namespace_manager.bind('prov', PROV)
 
         # Metadata plugins are used for packages (e.g., Neo) that require
         # special handling of metadata when adding to the PROV records.
@@ -71,31 +72,20 @@ class AlpacaProvDocument(object):
 
     # PROV relationships methods
 
-    def _wasAttributedTo(self, activity, agent):
-        self.graph.add((activity, PROV.wasAttributedTo, agent))
+    def _wasAttributedTo(self, entity, agent):
+        self.graph.add((entity, PROV.wasAttributedTo, agent))
 
-    def _qualifiedGeneration(self, entity, activity, time, function_execution):
-        generation = BNode()
-        self.graph.add((generation, RDF.type, ALPACA.DataGeneration))
-        self.graph.add((generation, ALPACA.fromFunctionExecution,
-                        function_execution))
-        self.graph.add((generation, PROV.atTime,
-                        Literal(time, datatype=XSD.dateTime)))
-        self.graph.add((generation, PROV.activity, activity))
-        self.graph.add((entity, PROV.qualifiedGeneration, generation))
-
-    def _qualifiedUsage(self, activity, entity, time, function_execution):
-        usage = BNode()
-        self.graph.add((usage, RDF.type, ALPACA.DataUsage))
-        self.graph.add((usage, ALPACA.byFunctionExecution,
-                        function_execution))
-        self.graph.add((usage, PROV.atTime, Literal(time,
-                                                    datatype=XSD.dateTime)))
-        self.graph.add((usage, PROV.entity, entity))
-        self.graph.add((activity, PROV.qualifiedUsage, usage))
+    def _wasAssociatedWith(self, activity, agent):
+        self.graph.add((activity, PROV.wasAssociatedWith, agent))
 
     def _wasDerivedFrom(self, used_entity, generated_entity):
         self.graph.add((generated_entity, PROV.wasDerivedFrom, used_entity))
+
+    def _wasGeneratedBy(self, entity, activity):
+        self.graph.add((entity, PROV.wasGeneratedBy, activity))
+
+    def _used(self, activity, entity):
+        self.graph.add((activity, PROV.used, entity))
 
     # Agent methods
 
@@ -103,25 +93,38 @@ class AlpacaProvDocument(object):
         # Adds a ScriptAgent record from the Alpaca PROV model
         uri = URIRef(script_identifier(script_info, session_id))
         self.graph.add((uri, RDF.type, ALPACA.ScriptAgent))
+        self.graph.add((uri, ALPACA.scriptPath, Literal(script_info.path)))
         return uri
 
     # Activity methods
 
-    def _add_Function(self, info):
+    def _add_Function(self, function_info):
         # Adds a Function record from the Alpaca PROV model
-        uri = URIRef(function_identifier(info))
+        uri = URIRef(function_identifier(function_info))
         self.graph.add((uri, RDF.type, ALPACA.Function))
+        self.graph.add((uri, ALPACA.functionName,
+                        Literal(function_info.name)))
+        self.graph.add((uri, ALPACA.implementedIn,
+                        Literal(function_info.module)))
+        self.graph.add((uri, ALPACA.functionVersion,
+                        Literal(function_info.version)))
         return uri
 
     def _add_FunctionExecution(self, script_info, session_id, execution_id,
-                               params, execution_order, code_statement):
+                               function_info, params, execution_order,
+                               code_statement, start, end, function):
         # Adds a FunctionExecution record from the Alpaca PROV model
         uri = URIRef(execution_identifier(
-            script_info, session_id, execution_id))
+            script_info, function_info, session_id, execution_id))
         self.graph.add((uri, RDF.type, ALPACA.FunctionExecution))
+        self.graph.add((uri, PROV.startedAtTime,
+                        Literal(start, datatype=XSD.dateTime)))
+        self.graph.add((uri, PROV.endedAtTime,
+                        Literal(end, datatype=XSD.dateTime)))
         self.graph.add((uri, ALPACA.codeStatement, Literal(code_statement)))
         self.graph.add((uri, ALPACA.executionOrder,
                         Literal(execution_order, datatype=XSD.integer)))
+        self.graph.add((uri, ALPACA.usedFunction, function))
 
         for name, value in params.items():
             value = _ensure_type(value)
@@ -195,7 +198,7 @@ class AlpacaProvDocument(object):
 
     # Interface methods
 
-    def _add_function_execution(self, step, script_agent, script_info,
+    def _add_function_execution(self, execution, script_agent, script_info,
                                 session_id):
         # Add one `FunctionExecution` record to the file, and generate all the
         # provenance semantic relationships
@@ -204,34 +207,40 @@ class AlpacaProvDocument(object):
             name = function_info.name
             return name in ("attribute", "subscript")
 
-        function_info = step.function
+        function_info = execution.function
         if _is_membership(function_info):
             # attributes and subscripting operations
-            container = step.input[0]
-            child = step.output[0]
+            container = execution.input[0]
+            child = execution.output[0]
             container_entity = self._create_entity(container)
+            if PROV.wasAttributedTo not in \
+                    self.graph.predicates(container_entity, script_agent):
+                self._wasAttributedTo(container_entity, script_agent)
             child_entity = self._create_entity(child)
-            self._add_membership(container_entity, child_entity, step.params)
+            self._add_membership(container_entity, child_entity,
+                                 execution.params)
         else:
             # This is a function execution. Add Function activity
-            cur_activity = self._add_Function(function_info)
+            cur_function = self._add_Function(function_info)
 
-            # Get the FunctionExecution node with function parameters
-            function_execution = self._add_FunctionExecution(
+            # Get the FunctionExecution node with function parameters and
+            # other provenance info
+            cur_activity = self._add_FunctionExecution(
                 script_info=script_info, session_id=session_id,
-                execution_id=step.execution_id,
-                params=step.params, execution_order=step.order,
-                code_statement=step.code_statement)
-
-            step_time = step.time_stamp_end
+                execution_id=execution.execution_id,
+                function_info=function_info, params=execution.params,
+                execution_order=execution.order,
+                code_statement=execution.code_statement,
+                start=execution.time_stamp_start,
+                end=execution.time_stamp_end,
+                function=cur_function,
+            )
 
             # Add all the inputs as entities, and create a `used` association
             # with the activity. URNs differ when the input is a file or
             # Python object.
-            # This is a qualified relationship, as the attributes are stored
-            # together with the timestamp
             input_entities = []
-            for key, value in step.input.items():
+            for key, value in execution.input.items():
                 cur_entities = []
 
                 if isinstance(value, Container):
@@ -244,23 +253,18 @@ class AlpacaProvDocument(object):
                 input_entities.extend(cur_entities)
 
                 for cur_entity in cur_entities:
-                    self._qualifiedUsage(activity=cur_activity,
-                                         entity=cur_entity,
-                                         time=step_time,
-                                         function_execution=function_execution)
+                    self._used(activity=cur_activity, entity=cur_entity)
+                    self._wasAttributedTo(entity=cur_entity,
+                                          agent=script_agent)
 
             # Add all the outputs as entities, and create the `wasGenerated`
-            # relationship. This is a qualified relationship, as the attributes
-            # will be stored together with the timestamp.
+            # relationship.
             output_entities = []
-            for key, value in step.output.items():
+            for key, value in execution.output.items():
                 cur_entity = self._create_entity(value)
                 output_entities.append(cur_entity)
-                self._qualifiedGeneration(entity=cur_entity,
-                                          activity=cur_activity,
-                                          time=step_time,
-                                          function_execution=
-                                              function_execution)
+                self._wasGeneratedBy(entity=cur_entity, activity=cur_activity)
+                self._wasAttributedTo(entity=cur_entity, agent=script_agent)
 
             # Iterate over the input/output pairs to add the `wasDerived`
             # relationship
@@ -269,8 +273,8 @@ class AlpacaProvDocument(object):
                 self._wasDerivedFrom(used_entity=input_entity,
                                      generated_entity=output_entity)
 
-            # Attribute the activity to the script
-            self._wasAttributedTo(activity=cur_activity, agent=script_agent)
+            # Associate the activity to the script
+            self._wasAssociatedWith(activity=cur_activity, agent=script_agent)
 
     def add_history(self, script_info, session_id, history):
         """

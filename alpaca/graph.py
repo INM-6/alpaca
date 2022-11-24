@@ -339,44 +339,37 @@ class ProvenanceGraph:
         # with the parameters as node data.
         # If membership, membership flag is set to True, as this will be used.
 
-        for s, bnode in graph.subject_objects(PROV.qualifiedGeneration):
+        for s, func_execution in graph.subject_objects(PROV.wasGeneratedBy):
 
             target = str(s)
             if remove_none and len(none_nodes) > 0:
                 if target in none_nodes:
                     continue
 
-            # Get the function execution associated with the generation
-            function_execution = list(
-                graph.objects(bnode, ALPACA.fromFunctionExecution))[0]
-            activity = list(graph.objects(bnode, PROV.activity))[0]
-
             # Extract all the parameters of the function execution
             params = dict()
-            for parameter in graph.objects(function_execution,
+            for parameter in graph.objects(func_execution,
                                            ALPACA.hasParameter):
                 name, value = _get_name_value_pair(graph, parameter)
                 params[name] = value
 
             # Execution order
             execution_order = list(
-                graph.objects(function_execution,
+                graph.objects(func_execution,
                               ALPACA.executionOrder))[0].value
 
             # Get the entity(ies) used for this generation
             source_entities = list()
-            for usage_bnode in graph.subjects(ALPACA.byFunctionExecution,
-                                              function_execution):
-                entity = list(graph.objects(usage_bnode, PROV.entity))[0]
+            for entity in graph.objects(func_execution, PROV.used):
                 source_entities.append(str(entity))
 
-            node_data = _get_function_call_data(activity=activity,
+            node_data = _get_function_call_data(activity=func_execution,
                 execution_order=execution_order, params=params,
                 use_name_in_parameter=use_name_in_parameter)
 
             # Add a new node for the function execution, with the activity
             # data
-            node_id = str(function_execution)
+            node_id = str(func_execution)
             if not node_id in transformed.nodes:
                 transformed.add_node(node_id, **node_data)
 
