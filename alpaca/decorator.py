@@ -366,7 +366,7 @@ class Provenance(object):
                 # a `Container` namedtuple
                 container_elements = []
                 for element in input_value:
-                    container_elements.append(data_info.info(input_value))
+                    container_elements.append(data_info.info(element))
                 inputs[key] = Container(tuple(container_elements))
 
             elif key not in self.file_outputs:
