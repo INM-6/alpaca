@@ -62,8 +62,12 @@ Annotations
 ~~~~~~~~~~~
 
 Annotations are values stored inside a dictionary accessible by the
-`annotation` attribute of the Python object. These values are specially stored
-by Alpaca in PROV files, in the form of `hasAnnotation` properties.
+`annotations` or `array_annotations` attributes of the Python object.
+These values are specially stored by Alpaca in PROV files, in the form of 
+`hasAnnotation` properties. Array annotations are special type of annotations.
+For a Python object that is itself an array, with multiple elements, each
+value in an array annotation will refer to the respective element in the
+Python object.
 
 For example, the `neo.Block` object may have a custom field called
 `subject_name` to identify the name of the subject used in an
@@ -71,12 +75,18 @@ electrophysiology recording. For a `neo.Block` loaded into variable `block`,
 this would be stored inside `block.annotations`. The dictionary would be
 `{'subject_name': 'monkey_L'}`.
 
-To include the `subject_name` annotation value in the visualization, we need
-a list/tuple like:
+Additionally, for a `neo.SpikeTrain`, different annotations could be present,
+such as `id` for the unit identification, and `channel_id`, with the channel
+number from which the signal used to extract the unit was obtained. 
+As there are multiple spike times stored in the `neo.SpikeTrain` object, an
+array annotation will contain metadata referring to each individual spike.
+
+To include the `subject_name`, `id` and `channel_id` annotation values in the 
+visualization, we need a list/tuple like:
 
 .. code-block:: python
 
-    annotations = ['subject_name']
+    annotations = ['subject_name', 'id', 'channel_id']
 
 
 Generating the visualization graph
