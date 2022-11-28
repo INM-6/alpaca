@@ -29,7 +29,7 @@ def _neo_to_prov(value, displayed_attributes=DISPLAYED_ATTRIBUTES):
     # For Neo objects, we create a lightweight representation as a string, to
     # avoid dumping all the information such as SpikeTrain timestamps and
     # Event times as the usual Neo string representation. `value` is a Neo
-    # object, and `displayed_attriutes` is a list with the Neo object
+    # object, and `displayed_attributes` is a list with the Neo object
     # attributes to be displayed in the result string.
 
     from alpaca.serialization.converters import _ensure_type
@@ -93,7 +93,8 @@ def _neo_object_metadata(graph, uri, metadata):
                                  name=name,
                                  value=attr_value)
 
-        elif name == 'annotations' and isinstance(value, dict):
+        elif name in ('annotations', 'array_annotations') and \
+                isinstance(value, dict):
             # Handle the annotations in Neo objects
 
             for annotation, annotation_value in value.items():

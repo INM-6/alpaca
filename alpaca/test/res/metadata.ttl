@@ -7,9 +7,6 @@
     prov:wasAttributedTo <urn:fz-juelich.de:alpaca:script:Python:script.py:111111#999999> ;
     prov:wasGeneratedBy <urn:fz-juelich.de:alpaca:function_execution:Python:111111:999999:test.test_function#12345> ;
     alpaca:hasAttribute [ a alpaca:NameValuePair ;
-            alpaca:pairName "array_annotations" ;
-            alpaca:pairValue """{'complexity': array([0, 1, 2, 3]), 'event': array([ True, False, False])}""" ] ,
-        [ a alpaca:NameValuePair ;
             alpaca:pairName "name" ;
             alpaca:pairValue "Spiketrain#1" ] ;
     alpaca:hasAnnotation [ a alpaca:NameValuePair ;
@@ -17,7 +14,13 @@
             alpaca:pairValue false ] ,
         [ a alpaca:NameValuePair ;
             alpaca:pairName "channel" ;
-            alpaca:pairValue 56 ] .
+            alpaca:pairValue 56 ] ,
+        [ a alpaca:NameValuePair ;
+            alpaca:pairName "complexity" ;
+            alpaca:pairValue "[0 1 2 3]" ] ,
+        [ a alpaca:NameValuePair ;
+            alpaca:pairName "event" ;
+            alpaca:pairValue "[ True False False]" ] .
 
 <urn:fz-juelich.de:alpaca:object:Python:test.InputObject:12345> a alpaca:DataObjectEntity ;
     prov:wasAttributedTo <urn:fz-juelich.de:alpaca:script:Python:script.py:111111#999999> ;
@@ -29,7 +32,7 @@
         alpaca:pairValue 5 ] ,
     [ a alpaca:NameValuePair ;
         alpaca:pairName "metadata_3" ;
-        alpaca:pairValue 5.0 ] ,
+        alpaca:pairValue 5e+00 ] ,
     [ a alpaca:NameValuePair ;
         alpaca:pairName "metadata_4" ;
         alpaca:pairValue true ] .
