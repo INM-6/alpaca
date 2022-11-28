@@ -8,10 +8,11 @@ running Python scripts. The ultimate goal is to have, from a script that
 generates some outputs (e.g., files), an additional file with the provenance
 information as metadata.
 
-[figure]
+.. figure:: _static/images/alpaca/alpaca_overview.png
 
-How Alpaca captures provenance
-------------------------------
+
+How Alpaca captures provenance?
+-------------------------------
 
 The design of Alpaca is based on the notion that a Python script is composed
 of a series of functions, executed in sequence. The function may take some
@@ -33,7 +34,6 @@ the Python script:
   accessed by the dot `.` after the object name, such as `data.shape`) or
   files (e.g., path).
 
-[figure]
 
 When using Alpaca, a provenance track that contains the sequence of functions
 called in the script is built, and the relationships between inputs/outputs is
@@ -47,7 +47,8 @@ attributes and other object relationships relevant to build the provenance
 track. The user must apply the decorator to each function in the Python script
 to allow tracking.
 
-[figure]
+.. figure:: _static/images/alpaca/alpaca_decorator.png
+
 
 Serialization of provenance information as metadata
 ---------------------------------------------------
@@ -68,11 +69,14 @@ Alpaca elements. The following classes are defined:
 
 The figure below shows the relationship of Alpaca classes (filled shapes) to
 the base PROV-O classes (unfilled shapes):
-[fig base PROV]
+
+.. figure:: _static/images/alpaca/alpaca_prov.png
+
 
 For these classes, the usual PROV-O relationships describing provenance apply:
 
-[figure]
+.. figure:: _static/images/alpaca/alpaca_prov_relationships.png
+
 
 Finally, extended properties in the Alpaca ontology were defined, to store
 relevant provenance information:
@@ -90,7 +94,8 @@ These properties are stored as special values (`NameValuePair` class), where
 and `pairValue` contains the actual value. This allows serialization of
 specific names without the risk of breaking RDF syntax.
 
-[figure]
+.. figure:: _static/images/alpaca/alpaca_prov_properties.png
+
 
 Finally, each object is identified with an URI, based on its type and contents,
 that is automatically generated.
