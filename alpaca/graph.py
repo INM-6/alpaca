@@ -34,7 +34,7 @@ from alpaca.utils.files import _get_file_format
 
 
 # String constants to use in the output
-# These may be added to the names of NameValuePair information
+# These may be added to the names of `NameValuePair` information
 PREFIX_ATTRIBUTE = "attribute"
 PREFIX_ANNOTATION = "annotation"
 PREFIX_PARAMETER = "parameter"
@@ -85,14 +85,8 @@ def _get_name_value_pair(graph, bnode):
 
 
 def _get_entity_data(graph, entity, annotations=None, attributes=None,
-                     array_annotations=None, strip_namespace=True):
+                     strip_namespace=True):
     filter_map = defaultdict(list)
-
-    # Array annotations is a special attribute that stores a dictionary
-    # We will retrieve it as an ordinary attribute value, and then
-    # process later
-    if array_annotations:
-        attributes = attributes + tuple(array_annotations.keys())
 
     filter_map.update(
         {ALPACA.hasAnnotation: annotations,
@@ -101,7 +95,7 @@ def _get_entity_data(graph, entity, annotations=None, attributes=None,
     data = entity_info(entity)
     data["gephi_interval"] = []
 
-    if annotations or attributes or array_annotations:
+    if annotations or attributes:
         for attr_type in (ALPACA.hasAttribute, ALPACA.hasAnnotation):
             for name_value_bnode in graph.objects(entity, attr_type):
                 attr_name, attr_value = _get_name_value_pair(graph,
@@ -109,28 +103,8 @@ def _get_entity_data(graph, entity, annotations=None, attributes=None,
                 if (attr_name in filter_map[attr_type]) or \
                         filter_map[attr_type] == 'all':
 
-                    if array_annotations and attr_name in array_annotations:
-                        # Extract the relevant keys from the array annotations
-                        # string
-                        for annotation in array_annotations[attr_name]:
-                            search_annotation = re.compile(
-                                fr"'({annotation})':\s([\w\s()\/\-.*\[\]'\,=<>]+)(,\s'.+':|,*\}})")
-
-                            match = search_annotation.search(attr_value)
-
-                            if match:
-                                if match.group(1) == annotation:
-                                    value = str(match.group(2))
-                                    value = re.sub(r"\s+", " ", value)
-                                else:
-                                    value = "<could not fetch annotation value>"
-
-                                _add_attribute(data, annotation, attr_type,
-                                               value, strip_namespace)
-
-                    else:
-                        _add_attribute(data, attr_name, attr_type, attr_value,
-                                       strip_namespace)
+                    _add_attribute(data, attr_name, attr_type, attr_value,
+                                   strip_namespace)
 
     if data['type'] == NSS_FILE:
         file_path = str(list(graph.objects(entity, ALPACA.filePath))[0])
@@ -150,21 +124,21 @@ class ProvenanceGraph:
     through the :attr:`graph` attribute.
 
     `DataObjectEntity` and `FileEntity` individuals are nodes, identified with
-    the respective persistent identifiers. `Function` activities are also
-    loaded as nodes. Each of the three node types is identified by the `type`
-    node attribute. Interval strings for timeline visualization in Gephi are
+    the respective URIs. `FunctionExecution` activities are also loaded as
+    nodes. Each of the three node types is identified by the `type` node
+    attribute. Interval strings for timeline visualization in Gephi are
     provided as the `Time Interval` node attribute.
 
     Each node has an attributes dictionary with general description:
 
-    * for `DataObjectEntity`, the `Label` node attribute contains the Python
+    * for `DataObjectEntity`, the `label` node attribute contains the Python
       class name of the object (e.g., `ndarray`). The `Python_name` node
       attribute contains the full path to the class in the package (e.g.,
       `numpy.ndarray`);
-    * for `FileEntity`, the `Label` node attribute is `File`;
-    * for `Function` activities, the `Label` will be the function name (e.g.
-      `mean`), and the `Python_name` node attribute will be the full path to
-      the function in the package (e.g., `numpy.mean`).
+    * for `FileEntity`, the `label` node attribute is `File`;
+    * for `FunctionExecution` activities, the `label` will be the function
+      name (e.g. `mean`), and the `Python_name` node attribute will be the
+      full path to the function in the package (e.g., `numpy.mean`).
 
     Each node may also have additional attributes in the dictionary, with
     extended information:
@@ -175,8 +149,8 @@ class ProvenanceGraph:
     * for `FunctionExecution` activities, it contains the values of the
       parameters used to call the function.
 
-    The attributes to be included are selected by the `annotations`,
-    `attributes`, and `array_annotations` parameters during the initialization.
+    The node attributes to be included are selected by the `annotations` and
+    `attributes` parameters during the initialization.
 
     Finally, the graph can be simplified using methods for condensing
     memberships (e.g., elements inside lists) and simplification (e.g.,
@@ -187,33 +161,29 @@ class ProvenanceGraph:
     prov_file : str or Path-like
         Source file with provenance data in the Alpaca format based on W3C
         PROV-O.
-    annotations : tuple of str, optional
+    annotations : tuple of str or 'all', optional
         Names of all annotations of the objects to display in the graph as
         node attributes. Annotations are defined as values of an annotation
         dictionary that might be present in the object (e.g., Neo objects).
         In the PROV file, they are identified with the `hasAnnotation`
-        property in individuals of the `DataObjectEntity` class.
+        property in individuals of the `DataObjectEntity` class. If `'all'`,
+        all the annotations in the objects are going to be included.
         Default: None
-    attributes : tuple of str, optional
+    attributes : tuple of str or 'all', optional
         Names of all attributes of the objects to display in the graph as
         node attributes. Attributes are regular Python object attributes.
         In the PROV file, they are identified with the `hasAttribute`
-        property in individuals of the `DataObjectEntity` class.
-        Default: None
-    array_annotations : dict, optional
-        For objects that have array annotations, select which arrays to be
-        displayed in the graph as node attributes. The keys of the
-        `array_annotations` dictionary is the name of the Python object
-        attribute that contains the array annotations dictionary.
-        The values of the dictionary are which array annotations to display.
+        property in individuals of the `DataObjectEntity` class.  If `'all'`,
+        all the attributes in the objects are going to be included.
         Default: None
     strip_namespace : bool, optional
-        If True, the namespaces (e.g. `attribute` in `'attribute:name'`) will
-        be stripped, and the keys in the node attributes will be just the name
-        (e.g., `'name'`).
-        If False, the keys in the node attributes will be the full name
-        (e.g. `'attribute:name'`). The namespaces are `annotation` and
-        `attribute` for object annotations and attributes, respectively.
+        If False, the namespaces (i.e., `attribute` or `annotation`) will
+        be shown for each requested attribute/annotation. For example, for an
+        attribute `'shape'`, if `strip_namespace` is False, the key in the node
+        attributes will be the full name `'attribute:shape'`. If True, the key
+        in the node attributes will be just `'shape'`. The namespaces are
+        `annotation` and `attribute` for object annotations and attributes,
+        respectively.
         Default: True
     remove_none : bool, optional
         If True, the return nodes of functions that return `None` will be
@@ -222,9 +192,9 @@ class ProvenanceGraph:
         Default: True
     use_name_in_parameter : bool, optional
         If True, the function name will be added to the parameter name in the
-        node attributes (e.g., `'function:param'`). If False, the parameter name
-        will be shown with a generic tag (e.g., `'parameter:param'`). Use this
-        option if different functions share same parameter names, to avoid
+        node attributes (e.g., `'function:param'`). If False, the parameter
+        name will be shown with a generic tag (e.g., `'parameter:param'`). Use
+        this option if different functions share same parameter names, to avoid
         ambiguity.
         Default: True
 
@@ -237,8 +207,8 @@ class ProvenanceGraph:
     """
 
     def __init__(self, prov_file, annotations=None, attributes=None,
-                 array_annotations=None, strip_namespace=True,
-                 remove_none=True, use_name_in_parameter=True, *args,
+                 strip_namespace=True, remove_none=True,
+                 use_name_in_parameter=True, *args,
                  **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -251,7 +221,6 @@ class ProvenanceGraph:
         # will control the graph output
         self.graph = self._transform_graph(
             doc.graph, annotations=annotations, attributes=attributes,
-            array_annotations=array_annotations,
             strip_namespace=strip_namespace, remove_none=remove_none,
             use_name_in_parameter=use_name_in_parameter)
 
@@ -314,8 +283,8 @@ class ProvenanceGraph:
 
     @staticmethod
     def _transform_graph(graph, annotations=None, attributes=None,
-                         array_annotations=None, strip_namespace=True,
-                         remove_none=True, use_name_in_parameter=True):
+                         strip_namespace=True, remove_none=True,
+                         use_name_in_parameter=True):
         # Transform an RDFlib graph obtained from the PROV data, so that the
         # visualization is simplified. A new `nx.DiGraph` object is created
         # and returned. Annotations and attributes of the entities stored in
@@ -337,7 +306,6 @@ class ProvenanceGraph:
             data = _get_entity_data(graph, entity,
                                     annotations=annotations,
                                     attributes=attributes,
-                                    array_annotations=array_annotations,
                                     strip_namespace=strip_namespace)
             transformed.add_node(node_id, **data)
 
@@ -574,7 +542,7 @@ class ProvenanceGraph:
         nodes in the graph.
 
         The attributes can be individualized for each
-        node label (as defined by the `Label` node attribute), so that
+        node label (as defined by the `label` node attribute), so that
         different levels of aggregation are possible. Therefore, it is
         possible to generate visualizations with different levels of detail
         to progressively inspect the provenance trace.
@@ -616,8 +584,8 @@ class ProvenanceGraph:
         Raises
         ------
         ValueError
-            If 'output_file` is not None and the file does not have either
-            '.gexf' or '.graphml' as extension.
+            If `output_file` is not None and the file does not have either
+            `'.gexf'` or `'.graphml'` as extension.
 
         Notes
         -----
