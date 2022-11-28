@@ -97,11 +97,9 @@ def main(session_filename):
     block = load_data(session_filename)
 
     # Compute the ISI of the first spiketrain in the segment
-    spiketrains = block.segments[0].spiketrains
-    for st in spiketrains:
-    isi_times = isi([spiketrains[0])
+    isi_times = isi(block.segments[0].spiketrains[0])
 
-    unit_name = spiketrains[0].name
+    unit_name = block.segments[0].spiketrains[0].name
 
     # Compute the histogram of the ISIs
     isi_counts, isi_edges = isi_histogram(isi_times)

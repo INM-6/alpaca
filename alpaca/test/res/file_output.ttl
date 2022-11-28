@@ -8,6 +8,11 @@
     prov:wasAttributedTo <urn:fz-juelich.de:alpaca:script:Python:script.py:111111#999999> ;
     prov:wasGeneratedBy <urn:fz-juelich.de:alpaca:function_execution:Python:111111:999999:test.test_function#12345> .
 
+<urn:fz-juelich.de:alpaca:object:Python:builtins.NoneType:777777> a alpaca:DataObjectEntity ;
+    prov:wasAttributedTo <urn:fz-juelich.de:alpaca:script:Python:script.py:111111#999999>  ;
+    prov:wasDerivedFrom <urn:fz-juelich.de:alpaca:object:Python:test.InputObject:12345> ;
+    prov:wasGeneratedBy <urn:fz-juelich.de:alpaca:function_execution:Python:111111:999999:test.test_function#12345> .
+
 <urn:fz-juelich.de:alpaca:object:Python:test.InputObject:12345> a alpaca:DataObjectEntity ;
     prov:wasAttributedTo <urn:fz-juelich.de:alpaca:script:Python:script.py:111111#999999> .
 

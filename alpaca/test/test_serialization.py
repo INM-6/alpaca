@@ -3,6 +3,8 @@ import unittest
 from pathlib import Path
 import tempfile
 import rdflib
+from rdflib.compare import graph_diff
+
 import numpy as np
 import quantities as pq
 import neo
@@ -53,6 +55,9 @@ INPUT_2 = DataObject("212345", "joblib", "test.InputObject", 212345, {})
 OUTPUT = DataObject("54321", "joblib", "test.OutputObject", 54321, {})
 OUTPUT_2 = DataObject("254321", "joblib", "test.OutputObject", 254321, {})
 
+# None output
+NONE_OUTPUT = DataObject("777777", "None", "builtins.NoneType", 777777, {})
+
 # Object collections
 COLLECTION = DataObject("888888", "joblib", "builtins.list", 888888, {})
 
@@ -61,6 +66,14 @@ TIMESTAMP_START = "2022-05-02T12:34:56.123456"
 TIMESTAMP_END = "2022-05-02T12:35:56.123456"
 SCRIPT_INFO = File("111111", "sha256", "/script.py")
 SCRIPT_SESSION_ID = "999999"
+
+
+def assert_rdf_graphs_equal(G1, G2):
+    result = G1.isomorphic(G2)
+    _, in_first, in_second = graph_diff(G1, G2)
+    result = result and (len(in_first) == 0)
+    result = result and (len(in_second) == 0)
+    return result
 
 
 class AlpacaProvSerializationTestCase(unittest.TestCase):
@@ -91,7 +104,8 @@ class AlpacaProvSerializationTestCase(unittest.TestCase):
                                 history=[function_execution])
 
         # Check if graphs are equal
-        self.assertTrue(alpaca_prov.graph.isomorphic(expected_graph))
+        self.assertTrue(assert_rdf_graphs_equal(alpaca_prov.graph,
+                                                expected_graph))
 
     def test_metadata_serialization(self):
         function_execution = FunctionExecution(
@@ -115,7 +129,8 @@ class AlpacaProvSerializationTestCase(unittest.TestCase):
                                 history=[function_execution])
 
         # Check if graphs are equal
-        self.assertTrue(alpaca_prov.graph.isomorphic(expected_graph))
+        self.assertTrue(assert_rdf_graphs_equal(alpaca_prov.graph,
+                                                expected_graph))
 
     def test_input_container_serialization(self):
         function_execution = FunctionExecution(
@@ -140,7 +155,8 @@ class AlpacaProvSerializationTestCase(unittest.TestCase):
                                 history=[function_execution])
 
         # Check if graphs are equal
-        self.assertTrue(alpaca_prov.graph.isomorphic(expected_graph))
+        self.assertTrue(assert_rdf_graphs_equal(alpaca_prov.graph,
+                                                expected_graph))
 
     def test_input_multiple_serialization(self):
         function_execution = FunctionExecution(
@@ -165,7 +181,8 @@ class AlpacaProvSerializationTestCase(unittest.TestCase):
                                 history=[function_execution])
 
         # Check if graphs are equal
-        self.assertTrue(alpaca_prov.graph.isomorphic(expected_graph))
+        self.assertTrue(assert_rdf_graphs_equal(alpaca_prov.graph,
+                                                expected_graph))
 
     def test_collection_serialization(self):
         indexing_access = FunctionExecution(
@@ -197,13 +214,14 @@ class AlpacaProvSerializationTestCase(unittest.TestCase):
                                 history=[indexing_access, function_execution])
 
         # Check if graphs are equal
-        self.assertTrue(alpaca_prov.graph.isomorphic(expected_graph))
+        self.assertTrue(assert_rdf_graphs_equal(alpaca_prov.graph,
+                                                expected_graph))
 
     def test_file_output_serialization(self):
         function_execution = FunctionExecution(
             function=TEST_FUNCTION,
             input={'input_1': INPUT}, params={'param_1': 5},
-            output={0: OUTPUT_FILE}, call_ast=None,
+            output={0: NONE_OUTPUT, 'file.0': OUTPUT_FILE}, call_ast=None,
             arg_map=['input_1'], kwarg_map=[], return_targets=[],
             time_stamp_start=TIMESTAMP_START, time_stamp_end=TIMESTAMP_END,
             execution_id="12345", order=1,
@@ -221,7 +239,8 @@ class AlpacaProvSerializationTestCase(unittest.TestCase):
                                 history=[function_execution])
 
         # Check if graphs are equal
-        self.assertTrue(alpaca_prov.graph.isomorphic(expected_graph))
+        self.assertTrue(assert_rdf_graphs_equal(alpaca_prov.graph,
+                                                expected_graph))
 
     def test_file_input_serialization(self):
         function_execution = FunctionExecution(
@@ -245,7 +264,8 @@ class AlpacaProvSerializationTestCase(unittest.TestCase):
                                 history=[function_execution])
 
         # Check if graphs are equal
-        self.assertTrue(alpaca_prov.graph.isomorphic(expected_graph))
+        self.assertTrue(assert_rdf_graphs_equal(alpaca_prov.graph,
+                                                expected_graph))
 
 
 class SerializationIOTestCase(unittest.TestCase):
@@ -291,8 +311,8 @@ class SerializationIOTestCase(unittest.TestCase):
                 input_file = Path(self.temp_dir.name) / f"test.{read_format}"
                 read_alpaca_prov = AlpacaProvDocument()
                 read_alpaca_prov.read_records(input_file, file_format=None)
-                self.assertTrue(
-                    self.alpaca_prov.graph.isomorphic(read_alpaca_prov.graph))
+                self.assertTrue(assert_rdf_graphs_equal(self.alpaca_prov.graph,
+                                                        read_alpaca_prov.graph))
 
         # Test unsupported formats
         for wrong_format in ('pretty-xml', 'longturtle', 'hext', 'trig'):
@@ -308,7 +328,8 @@ class SerializationIOTestCase(unittest.TestCase):
         input_ttl = self.ttl_path / "input_output.ttl"
         read_ttl = AlpacaProvDocument()
         read_ttl.read_records(input_ttl, file_format=None)
-        self.assertTrue(read_ttl.graph.isomorphic(self.alpaca_prov.graph))
+        self.assertTrue(assert_rdf_graphs_equal(read_ttl.graph,
+                                                self.alpaca_prov.graph))
 
     def test_no_format(self):
         no_ext = Path(self.temp_dir.name) / "no_ext"

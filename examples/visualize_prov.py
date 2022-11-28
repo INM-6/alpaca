@@ -20,7 +20,7 @@ def main(file_name, output_file):
     # Attributes and annotations that should be displayed in the nodes, if
     # available
     attributes = ['shape', 'dtype', 'name']
-    annotations = ['id', 'channel_id']
+    annotations = ['subject_name', 'id', 'channel_id']
 
     # Load tye PROV document into the graph, and extract the information
     # requested
