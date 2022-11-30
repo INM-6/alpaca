@@ -89,8 +89,8 @@ def _get_entity_data(graph, entity, annotations=None, attributes=None,
     filter_map = defaultdict(list)
 
     filter_map.update(
-        {ALPACA.hasAnnotation: annotations,
-         ALPACA.hasAttribute: attributes})
+        {ALPACA.hasAnnotation: annotations if annotations else [],
+         ALPACA.hasAttribute: attributes if attributes else []})
 
     data = entity_info(entity)
     data["gephi_interval"] = []
