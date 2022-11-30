@@ -91,6 +91,7 @@ Installation
 
 
 .. _visualization:
+
 External tools for provenance visualization
 -------------------------------------------
 

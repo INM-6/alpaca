@@ -2,6 +2,13 @@ import unittest
 
 import joblib
 import datetime
+import sys
+from io import StringIO
+import tempfile
+from pathlib import Path
+
+import rdflib
+from rdflib.compare import graph_diff
 
 import numpy as np
 
@@ -113,7 +120,7 @@ def _check_function_execution(actual, exp_function, exp_input, exp_params,
         datetime.datetime)
 
 
-class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
+class ProvenanceDecoratorInterfaceFunctionsTestCase(unittest.TestCase):
 
     def test_activate_deactivate(self):
         activate(clear=True)
@@ -127,6 +134,60 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
                          "simple_function(TEST_ARRAY, 1, 2)")
         self.assertEqual(Provenance.history[1].code_statement,
                          "simple_function(TEST_ARRAY, 3, 4)")
+
+    def test_save_provenance(self):
+        activate(clear=True)
+        res = simple_function(TEST_ARRAY, 1, 2)
+        deactivate()
+
+        # For every supported format, serialize to a string
+        for output_format in ('json-ld', 'n3', 'nt', 'hext', 'pretty-xml',
+                              'trig', 'turtle', 'longturtle', 'xml'):
+            with self.subTest(f"Serialization format",
+                              output_format=output_format):
+                serialization = save_provenance(file_name=None,
+                                                file_format=output_format)
+                self.assertNotEqual(serialization, "")
+
+        # For shortucts, test the expected serializations
+        for short_output_format, output_format in (('ttl', 'turtle'),
+                                                   ('rdf', 'xml'),
+                                                   ('json', 'json-ld')):
+            with self.subTest(f"Short serialization format",
+                              short_format=short_output_format):
+                short = save_provenance(None, file_format=short_output_format)
+                serialization = save_provenance(None, file_format=output_format)
+
+                short_graph = rdflib.Graph()
+                short_graph.parse(StringIO(short), format=output_format)
+
+                serialization_graph = rdflib.Graph()
+                serialization_graph.parse(StringIO(serialization),
+                                          format=output_format)
+
+                self.assertTrue(short_graph.isomorphic(serialization_graph))
+                _, in_first, in_second = graph_diff(short_graph,
+                                                    serialization_graph)
+                self.assertEqual(len(in_first), 0)
+                self.assertEqual(len(in_second), 0)
+
+    def test_print_history(self):
+        activate(clear=True)
+        res = simple_function(TEST_ARRAY, 1, 2)
+        deactivate()
+
+        expected_str = str(Provenance.history)
+
+        # Capture STDOUT and print
+        captured = StringIO()
+        sys.stdout = captured
+        print_history()
+        sys.stdout = sys.__stdout__
+
+        self.assertEqual(captured.getvalue().replace("\n", ""), expected_str)
+
+
+class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
 
     def test_simple_function(self):
         activate(clear=True)
@@ -323,6 +384,217 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
             exp_kwarg_map=['param1', 'param2'],
             exp_code_stmnt="avg = varargs_function(*CONTAINER, param1=1, param2=2)",
             exp_return_targets=['avg'],
+            exp_order=1,
+            test_case=self)
+
+    def test_multiple_inputs_function(self):
+        activate(clear=True)
+        res = multiple_inputs_function(TEST_ARRAY, TEST_ARRAY_2, 3, 6)
+        deactivate()
+
+        self.assertEqual(len(Provenance.history), 1)
+
+        expected_output = DataObject(
+            hash=joblib.hash(TEST_ARRAY+TEST_ARRAY_2, hash_name='sha1'),
+            hash_method="joblib",
+            type="numpy.ndarray", id=id(res),
+            details={'shape': (3,), 'dtype': np.int64})
+
+        _check_function_execution(
+            actual=Provenance.history[0],
+            exp_function=FunctionInfo('multiple_inputs_function',
+                                      'test_decorator', ''),
+            exp_input={'array_1': TEST_ARRAY_INFO,
+                       'array_2': TEST_ARRAY_2_INFO},
+            exp_params={'param1': 3, 'param2': 6},
+            exp_output={0: expected_output},
+            exp_arg_map=['array_1', 'array_2', 'param1', 'param2'],
+            exp_kwarg_map=[],
+            exp_code_stmnt="res = multiple_inputs_function(TEST_ARRAY, TEST_ARRAY_2, 3, 6)",
+            exp_return_targets=['res'],
+            exp_order=1,
+            test_case=self)
+
+    def test_multiple_outputs_function_elements(self):
+        activate(clear=True)
+        res1, res2 = multiple_outputs_function(TEST_ARRAY, 3, 6)
+        deactivate()
+
+        self.assertEqual(len(Provenance.history), 1)
+
+        expected_output_1 = DataObject(
+            hash=joblib.hash(TEST_ARRAY+3, hash_name='sha1'),
+            hash_method="joblib",
+            type="numpy.ndarray", id=id(res1),
+            details={'shape': (3,), 'dtype': np.int64})
+
+        expected_output_2 = DataObject(
+            hash=joblib.hash(TEST_ARRAY+4, hash_name='sha1'),
+            hash_method="joblib",
+            type="numpy.ndarray", id=id(res2),
+            details={'shape': (3,), 'dtype': np.int64})
+
+        _check_function_execution(
+            actual=Provenance.history[0],
+            exp_function=FunctionInfo('multiple_outputs_function',
+                                      'test_decorator', ''),
+            exp_input={'array': TEST_ARRAY_INFO},
+            exp_params={'param1': 3, 'param2': 6},
+            exp_output={0: expected_output_1, 1: expected_output_2},
+            exp_arg_map=['array', 'param1', 'param2'],
+            exp_kwarg_map=[],
+            exp_code_stmnt="res1, res2 = multiple_outputs_function(TEST_ARRAY, 3, 6)",
+            exp_return_targets=['res1', 'res2'],
+            exp_order=1,
+            test_case=self)
+
+    def test_multiple_outputs_function_tuple(self):
+        activate(clear=True)
+        res = multiple_outputs_function(TEST_ARRAY, 3, 6)
+        deactivate()
+
+        self.assertEqual(len(Provenance.history), 1)
+
+        expected_output = DataObject(
+            hash=joblib.hash((TEST_ARRAY+3, TEST_ARRAY+4), hash_name='sha1'),
+            hash_method="joblib",
+            type="builtins.tuple", id=id(res),
+            details={})
+
+        _check_function_execution(
+            actual=Provenance.history[0],
+            exp_function=FunctionInfo('multiple_outputs_function',
+                                      'test_decorator', ''),
+            exp_input={'array': TEST_ARRAY_INFO},
+            exp_params={'param1': 3, 'param2': 6},
+            exp_output={0: expected_output},
+            exp_arg_map=['array', 'param1', 'param2'],
+            exp_kwarg_map=[],
+            exp_code_stmnt="res = multiple_outputs_function(TEST_ARRAY, 3, 6)",
+            exp_return_targets=['res'],
+            exp_order=1,
+            test_case=self)
+
+    def test_container_output_function(self):
+        activate(clear=True)
+        res = container_output_function(TEST_ARRAY, 3, 6)
+        deactivate()
+
+        self.assertEqual(len(Provenance.history), 1)
+
+        expected_output_1 = DataObject(
+            hash=joblib.hash(TEST_ARRAY + 3, hash_name='sha1'),
+            hash_method="joblib",
+            type="numpy.ndarray", id=id(res[0]),
+            details={'shape': (3,), 'dtype': np.int64})
+
+        expected_output_2 = DataObject(
+            hash=joblib.hash(TEST_ARRAY + 4, hash_name='sha1'),
+            hash_method="joblib",
+            type="numpy.ndarray", id=id(res[1]),
+            details={'shape': (3,), 'dtype': np.int64})
+
+        _check_function_execution(
+            actual=Provenance.history[0],
+            exp_function=FunctionInfo('container_output_function',
+                                      'test_decorator', ''),
+            exp_input={'array': TEST_ARRAY_INFO},
+            exp_params={'param1': 3, 'param2': 6},
+            exp_output={0: expected_output_1, 1: expected_output_2},
+            exp_arg_map=['array', 'param1', 'param2'],
+            exp_kwarg_map=[],
+            exp_code_stmnt="res = container_output_function(TEST_ARRAY, 3, 6)",
+            exp_return_targets=['res'],
+            exp_order=1,
+            test_case=self)
+
+@Provenance(inputs=None, file_input=['file_name'])
+def extract_words_from_file(file_name):
+    with open(file_name, "r") as input_file:
+        words = input_file.read().split(" ")
+    return words
+
+
+@Provenance(inputs=['words'], file_output=['file_name'])
+def save_words_to_file(words, file_name):
+    with open(file_name, "w") as output_file:
+        output_file.writelines(" ".join(words))
+
+
+class ProvenanceDecoratorFileInputOutputTestCase(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.res_path = Path(__file__).parent.absolute() / "res"
+
+    def test_file_input(self):
+        activate(clear=True)
+        file_name = self.res_path / "file_input.txt"
+        res = extract_words_from_file(file_name)
+        deactivate()
+
+        self.assertEqual(len(Provenance.history), 1)
+
+        expected_list = ["This", "is", "an", "example", "file", "used", "as",
+                         "input", "for", "the", "tests."]
+        expected_output = DataObject(
+            hash=joblib.hash(expected_list, hash_name='sha1'),
+            hash_method="joblib",
+            type="builtins.list", id=id(res), details={})
+
+        expected_file = File("96ccc1380e069667069acecea3e2ab559441657807e0a86d14f49028710ddb3a",
+                             hash_type="sha256", path=file_name)
+
+        _check_function_execution(
+            actual=Provenance.history[0],
+            exp_function=FunctionInfo('extract_words_from_file',
+                                      'test_decorator', ''),
+            exp_input={'file_name': expected_file},
+            exp_params={},
+            exp_output={0: expected_output},
+            exp_arg_map=['file_name'],
+            exp_kwarg_map=[],
+            exp_code_stmnt="res = extract_words_from_file(file_name)",
+            exp_return_targets=['res'],
+            exp_order=1,
+            test_case=self)
+
+    def test_file_output(self):
+        activate(clear=True)
+        tmp_file = tempfile.NamedTemporaryFile(dir=self.res_path, delete=True)
+        file_name = tmp_file.name
+        input_list = ["Some", "words", "were", "written", "to", "this", "file"]
+        res = save_words_to_file(input_list, file_name)
+        deactivate()
+
+        self.assertEqual(len(Provenance.history), 1)
+
+        expected_input = DataObject(
+            hash=joblib.hash(input_list, hash_name='sha1'),
+            hash_method="joblib",
+            type="builtins.list", id=id(input_list), details={})
+
+        # As None has its own UUID, let's get what was generated
+        self.assertEqual(len(Provenance.history), 1)
+        output_uuid = Provenance.history[0].output[0].hash
+
+        expected_none_output = DataObject(hash=output_uuid, hash_method="None",
+            type="builtins.NoneType", id=id(res), details={})
+
+        expected_file = File("00d20b4831b0dadded2c633bdfc3dde3926fc17baaed51dacdab3e52a3b0d419",
+                             hash_type="sha256", path=Path(file_name))
+
+        _check_function_execution(
+            actual=Provenance.history[0],
+            exp_function=FunctionInfo('save_words_to_file',
+                                      'test_decorator', ''),
+            exp_input={'words': expected_input},
+            exp_params={},
+            exp_output={0: expected_none_output, 'file.0': expected_file},
+            exp_arg_map=['words', 'file_name'],
+            exp_kwarg_map=[],
+            exp_code_stmnt="res = save_words_to_file(input_list, file_name)",
+            exp_return_targets=['res'],
             exp_order=1,
             test_case=self)
 

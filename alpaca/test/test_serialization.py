@@ -87,7 +87,7 @@ class AlpacaProvSerializationTestCase(unittest.TestCase):
             function=TEST_FUNCTION,
             input={'input_1': INPUT}, params={'param_1': 5},
             output={0: OUTPUT}, call_ast=None,
-            arg_map=['input_1'], kwarg_map=[], return_targets=[],
+            arg_map=['input_1', 'param_1'], kwarg_map=[], return_targets=[],
             time_stamp_start=TIMESTAMP_START, time_stamp_end=TIMESTAMP_END,
             execution_id="12345", order=1,
             code_statement="test_function(input_1, 5)"
@@ -112,7 +112,7 @@ class AlpacaProvSerializationTestCase(unittest.TestCase):
             function=TEST_FUNCTION,
             input={'input_1': INPUT_METADATA}, params={'param_1': 5},
             output={0: OUTPUT_METADATA_NEO}, call_ast=None,
-            arg_map=['input_1'], kwarg_map=[], return_targets=[],
+            arg_map=['input_1', 'param_1'], kwarg_map=[], return_targets=[],
             time_stamp_start=TIMESTAMP_START, time_stamp_end=TIMESTAMP_END,
             execution_id="12345", order=1,
             code_statement="test_function(input_1, 5)"
@@ -138,7 +138,8 @@ class AlpacaProvSerializationTestCase(unittest.TestCase):
             input={'input_container': Container((INPUT, INPUT_2))},
             params={'param_1': 5},
             output={0: OUTPUT}, call_ast=None,
-            arg_map=['input_container'], kwarg_map=[], return_targets=[],
+            arg_map=['input_container', 'param_1'], kwarg_map=[],
+            return_targets=[],
             time_stamp_start=TIMESTAMP_START, time_stamp_end=TIMESTAMP_END,
             execution_id="12345", order=1,
             code_statement="test_function(input_container, 5)"
@@ -164,7 +165,8 @@ class AlpacaProvSerializationTestCase(unittest.TestCase):
             input={'input_1': INPUT, 'input_2': INPUT_2},
             params={'param_1': 5},
             output={0: OUTPUT}, call_ast=None,
-            arg_map=['input_1', 'input_2'], kwarg_map=[], return_targets=[],
+            arg_map=['input_1', 'input_2', 'param_1'], kwarg_map=[],
+            return_targets=[],
             time_stamp_start=TIMESTAMP_START, time_stamp_end=TIMESTAMP_END,
             execution_id="12345", order=1,
             code_statement="test_function(input_1, input_2, 5)"
@@ -197,7 +199,7 @@ class AlpacaProvSerializationTestCase(unittest.TestCase):
             function=TEST_FUNCTION,
             input={'input_1': INPUT}, params={'param_1': 5},
             output={0: OUTPUT}, call_ast=None,
-            arg_map=['input_1'], kwarg_map=[], return_targets=[],
+            arg_map=['input_1', 'param_1'], kwarg_map=[], return_targets=[],
             time_stamp_start=TIMESTAMP_START, time_stamp_end=TIMESTAMP_END,
             execution_id="12345", order=1,
             code_statement="test_function(source_list[0], 5)"
@@ -222,7 +224,7 @@ class AlpacaProvSerializationTestCase(unittest.TestCase):
             function=TEST_FUNCTION,
             input={'input_1': INPUT}, params={'param_1': 5},
             output={0: NONE_OUTPUT, 'file.0': OUTPUT_FILE}, call_ast=None,
-            arg_map=['input_1'], kwarg_map=[], return_targets=[],
+            arg_map=['input_1', 'param_1'], kwarg_map=[], return_targets=[],
             time_stamp_start=TIMESTAMP_START, time_stamp_end=TIMESTAMP_END,
             execution_id="12345", order=1,
             code_statement="test_function(input_1, 5)"
@@ -247,7 +249,7 @@ class AlpacaProvSerializationTestCase(unittest.TestCase):
             function=TEST_FUNCTION,
             input={'input_1': INPUT_FILE}, params={'param_1': 5},
             output={0: OUTPUT}, call_ast=None,
-            arg_map=['input_1'], kwarg_map=[], return_targets=[],
+            arg_map=['input_1', 'param_1'], kwarg_map=[], return_targets=[],
             time_stamp_start=TIMESTAMP_START, time_stamp_end=TIMESTAMP_END,
             execution_id="12345", order=1,
             code_statement="test_function(input_1, 5)"
@@ -386,6 +388,90 @@ class ConvertersTestCase(unittest.TestCase):
     def test_others(self):
         value = 1.0 + 5.0j
         self.assertEqual("(1+5j)", _ensure_type(value))
+
+
+class MultipleMembershipSerializationTestCase(unittest.TestCase):
+
+    def test_multiple_memberships(self):
+        # test relationship `super_container.containers[0].inputs[1]`
+        self.ttl_path = Path(__file__).parent / "res"
+
+        super_container = DataObject("2333333", "joblib",
+                                     "test.SuperContainer", 2333333, {})
+
+        super_container_list = DataObject("23333332", "joblib",
+                                          "builtins.list", 23333332, {})
+
+        container = DataObject("333333", "joblib", "test.Container", 333333,
+                               {})
+
+        container_list = DataObject("3333332", "joblib", "builtins.list",
+                                    3333332, {})
+
+        attribute_access_container = FunctionExecution(
+            function=FunctionInfo(name='attribute', module="", version=""),
+            input={0: super_container}, params={'name': 'containers'},
+            output={0: super_container_list}, call_ast=None, arg_map=None,
+            kwarg_map=None,
+            return_targets=[], time_stamp_start=TIMESTAMP_START,
+            time_stamp_end=TIMESTAMP_END, execution_id="888888",
+            order=None, code_statement=None)
+
+        indexing_access_container = FunctionExecution(
+            function=FunctionInfo(name='subscript', module="", version=""),
+            input={0: super_container_list}, params={'index': 0},
+            output={0: container}, call_ast=None, arg_map=None, kwarg_map=None,
+            return_targets=[], time_stamp_start=TIMESTAMP_START,
+            time_stamp_end=TIMESTAMP_END, execution_id="2888888",
+            order=None,
+            code_statement=None)
+
+        attribute_access_inputs = FunctionExecution(
+            function=FunctionInfo(name='attribute', module="", version=""),
+            input={0: container}, params={'name': 'inputs'},
+            output={0: container_list}, call_ast=None, arg_map=None,
+            kwarg_map=None,
+            return_targets=[], time_stamp_start=TIMESTAMP_START,
+            time_stamp_end=TIMESTAMP_END, execution_id="3888888",
+            order=None, code_statement=None)
+
+        indexing_access_inputs = FunctionExecution(
+            function=FunctionInfo(name='subscript', module="", version=""),
+            input={0: container_list}, params={'index': 1},
+            output={0: INPUT}, call_ast=None, arg_map=None, kwarg_map=None,
+            return_targets=[], time_stamp_start=TIMESTAMP_START,
+            time_stamp_end=TIMESTAMP_END, execution_id="4888888",
+            order=None,
+            code_statement=None)
+
+        function_execution = FunctionExecution(
+            function=TEST_FUNCTION,
+            input={'input_1': INPUT}, params={'param_1': 5},
+            output={0: OUTPUT}, call_ast=None,
+            arg_map=['input_1', 'param_1'], kwarg_map=[],
+            return_targets=[],
+            time_stamp_start=TIMESTAMP_START, time_stamp_end=TIMESTAMP_END,
+            execution_id="12345", order=1,
+            code_statement="test_function(super_container.containers[0].inputs[1], 5)"
+        )
+
+        # Load expected RDF graph
+        expected_graph_file = self.ttl_path / "multiple_memberships.ttl"
+        expected_graph = rdflib.Graph()
+        expected_graph.parse(expected_graph_file, format='turtle')
+
+        # Serialize the history using AlpacaProv document
+        alpaca_prov = AlpacaProvDocument()
+        alpaca_prov.add_history(SCRIPT_INFO, SCRIPT_SESSION_ID,
+                                history=[attribute_access_container,
+                                         indexing_access_container,
+                                         attribute_access_inputs,
+                                         indexing_access_inputs,
+                                         function_execution])
+
+        # Check if graphs are equal
+        self.assertTrue(assert_rdf_graphs_equal(alpaca_prov.graph,
+                                                expected_graph))
 
 
 class NeoMetadataPluginTestCase(unittest.TestCase):
