@@ -377,10 +377,12 @@ class Provenance(object):
         # If the decorator was initialized with `container_output=True`, the
         # elements of the output will be hashed, if iterable.
         outputs = {}
-        if len(return_targets) < 2:
-            function_output = [function_output]
-        # TODO
-        iterator = enumerate(function_output)
+        if self.container_output and isinstance(function_output, Iterable):
+            iterator = enumerate(function_output)
+        else:
+            if len(return_targets) < 2:
+                function_output = [function_output]
+            iterator = enumerate(function_output)
 
         for index, item in iterator:
             outputs[index] = data_info.info(item)
