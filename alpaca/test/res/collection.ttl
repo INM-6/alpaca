@@ -5,15 +5,18 @@
 <urn:fz-juelich.de:alpaca:object:Python:test.OutputObject:54321> a alpaca:DataObjectEntity ;
     prov:wasDerivedFrom <urn:fz-juelich.de:alpaca:object:Python:test.InputObject:12345> ;
     prov:wasAttributedTo <urn:fz-juelich.de:alpaca:script:Python:script.py:111111#999999> ;
-    prov:wasGeneratedBy <urn:fz-juelich.de:alpaca:function_execution:Python:111111:999999:test.test_function#12345> .
+    prov:wasGeneratedBy <urn:fz-juelich.de:alpaca:function_execution:Python:111111:999999:test.test_function#12345> ;
+    alpaca:hashSource "joblib_SHA1" .
 
 <urn:fz-juelich.de:alpaca:object:Python:builtins.list:888888> a alpaca:DataObjectEntity ;
     prov:hadMember <urn:fz-juelich.de:alpaca:object:Python:test.InputObject:12345> ;
-    prov:wasAttributedTo <urn:fz-juelich.de:alpaca:script:Python:script.py:111111#999999> .
+    prov:wasAttributedTo <urn:fz-juelich.de:alpaca:script:Python:script.py:111111#999999>  ;
+    alpaca:hashSource "joblib_SHA1" .
 
 <urn:fz-juelich.de:alpaca:object:Python:test.InputObject:12345> a alpaca:DataObjectEntity ;
     prov:wasAttributedTo <urn:fz-juelich.de:alpaca:script:Python:script.py:111111#999999> ;
-    alpaca:containerIndex 0 .
+    alpaca:containerIndex 0  ;
+    alpaca:hashSource "joblib_SHA1" .
 
 <urn:fz-juelich.de:alpaca:function_execution:Python:111111:999999:test.test_function#12345> a alpaca:FunctionExecution ;
     prov:startedAtTime "2022-05-02T12:34:56.123456"^^xsd:dateTime ;

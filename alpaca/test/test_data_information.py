@@ -78,8 +78,8 @@ class ObjectInformationTestCase(unittest.TestCase):
         self.assertEqual(info_float.details['dtype'], np.float64)
         self.assertEqual(info_int.id, id(numpy_array_int))
         self.assertEqual(info_float.id, id(numpy_array_float))
-        self.assertEqual(info_int.hash_method, "joblib")
-        self.assertEqual(info_float.hash_method, "joblib")
+        self.assertEqual(info_int.hash_method, "joblib_SHA1")
+        self.assertEqual(info_float.hash_method, "joblib_SHA1")
         self.assertEqual(info_int.hash, joblib.hash(numpy_array_int,
                                                     hash_name='sha1'))
         self.assertEqual(info_float.hash, joblib.hash(numpy_array_float,
@@ -103,7 +103,7 @@ class ObjectInformationTestCase(unittest.TestCase):
         info = object_info.info(None)
         self.assertIsInstance(info.hash, uuid.UUID)
         self.assertEqual(info.type, "builtins.NoneType")
-        self.assertEqual(info.hash_method, "None")
+        self.assertEqual(info.hash_method, "UUID")
         self.assertDictEqual(info.details, {})
 
     def test_custom_class(self):
@@ -116,7 +116,7 @@ class ObjectInformationTestCase(unittest.TestCase):
         self.assertEqual(info_1.details['attribute'], "an object class")
         self.assertEqual(info_1.id, id(custom_object_1))
         self.assertEqual(info_1.type, "test_data_information.ObjectClass")
-        self.assertEqual(info_1.hash_method, "joblib")
+        self.assertEqual(info_1.hash_method, "joblib_SHA1")
         self.assertEqual(info_1.hash, joblib.hash(custom_object_1,
                                                   hash_name='sha1'))
 
@@ -125,7 +125,7 @@ class ObjectInformationTestCase(unittest.TestCase):
         self.assertEqual(info_2.details['attribute'], "an object class")
         self.assertEqual(info_2.id, id(custom_object_2))
         self.assertEqual(info_2.type, "test_data_information.ObjectClass")
-        self.assertEqual(info_2.hash_method, "joblib")
+        self.assertEqual(info_2.hash_method, "joblib_SHA1")
         self.assertEqual(info_2.hash, joblib.hash(custom_object_2,
                                                   hash_name='sha1'))
 
@@ -138,7 +138,7 @@ class ObjectInformationTestCase(unittest.TestCase):
         self.assertEqual(info.details['attribute'], "an object class")
         self.assertEqual(info.id, id(custom_object))
         self.assertEqual(info.type, "test_data_information.ObjectClass")
-        self.assertEqual(info.hash_method, "Python")
+        self.assertEqual(info.hash_method, "Python_hash")
         self.assertEqual(info.hash, hash(custom_object))
 
     def test_use_builtin_hash_container_list(self):
@@ -151,7 +151,7 @@ class ObjectInformationTestCase(unittest.TestCase):
         info = object_info.info(container)
         self.assertEqual(info.id, id(container))
         self.assertEqual(info.type, "builtins.list")
-        self.assertEqual(info.hash_method, "Python")
+        self.assertEqual(info.hash_method, "Python_hash")
 
         expected_hashes = [hash(obj) for obj in container]
 
@@ -171,7 +171,7 @@ class ObjectInformationTestCase(unittest.TestCase):
         info = object_info.info(container)
         self.assertEqual(info.id, id(container))
         self.assertEqual(info.type, "numpy.ndarray")
-        self.assertEqual(info.hash_method, "Python")
+        self.assertEqual(info.hash_method, "Python_hash")
 
         expected_hashes = []
         for row in container:
@@ -193,7 +193,7 @@ class ObjectInformationTestCase(unittest.TestCase):
         info = object_info.info(container)
         self.assertEqual(info.id, id(container))
         self.assertEqual(info.type, "numpy.ndarray")
-        self.assertEqual(info.hash_method, "joblib")
+        self.assertEqual(info.hash_method, "joblib_SHA1")
 
         self.assertEqual(info.hash, joblib.hash(container, hash_name='sha1'))
 

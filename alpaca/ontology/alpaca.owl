@@ -8,7 +8,8 @@
 @base <https://github.com/INM-6/alpaca/ontology/alpaca.owl#> .
 
 <https://github.com/INM-6/alpaca/ontology/alpaca.owl#> rdf:type owl:Ontology ;
-                                                        owl:imports <http://www.w3.org/ns/prov-o-20130430> .
+                                                        owl:imports <http://www.w3.org/ns/prov-o-20130430> ;
+                                                        rdfs:comment "An extension to PROV-O to support the serialization of provenance information captured with Alpaca as RDF triples." .
 
 #################################################################
 #    Object Properties
@@ -94,6 +95,12 @@
                  rdfs:range xsd:string .
 
 
+###  https://github.com/INM-6/alpaca/ontology/alpaca.owl#hashSource
+:hashSource rdf:type owl:DatatypeProperty ;
+            rdfs:domain :DataObjectEntity ;
+            rdfs:range xsd:string .
+
+
 ###  https://github.com/INM-6/alpaca/ontology/alpaca.owl#implementedIn
 :implementedIn rdf:type owl:DatatypeProperty ;
                rdfs:domain :Function ;
@@ -118,37 +125,36 @@
             rdfs:range xsd:string .
 
 
-###  https://github.com/INM-6/alpaca/ontology/alpaca.owl#sourceCode
-:sourceCode rdf:type owl:DatatypeProperty ;
-            rdfs:domain :Function ;
-            rdfs:range xsd:string .
-
-
 #################################################################
 #    Classes
 #################################################################
 
 ###  https://github.com/INM-6/alpaca/ontology/alpaca.owl#DataObjectEntity
 :DataObjectEntity rdf:type owl:Class ;
-                  rdfs:subClassOf prov:Entity .
+                  rdfs:subClassOf prov:Entity ;
+                  rdfs:comment "Represents an object that contains data." .
 
 
 ###  https://github.com/INM-6/alpaca/ontology/alpaca.owl#FileEntity
 :FileEntity rdf:type owl:Class ;
-            rdfs:subClassOf prov:Entity .
+            rdfs:subClassOf prov:Entity ;
+            rdfs:comment "Represents a file in the system." .
 
 
 ###  https://github.com/INM-6/alpaca/ontology/alpaca.owl#Function
-:Function rdf:type owl:Class .
+:Function rdf:type owl:Class ;
+          rdfs:comment "Represents a function object. It contains code that is executed to perform some action in the script, taking parameters and producing outputs." .
 
 
 ###  https://github.com/INM-6/alpaca/ontology/alpaca.owl#FunctionExecution
 :FunctionExecution rdf:type owl:Class ;
-                   rdfs:subClassOf prov:Activity .
+                   rdfs:subClassOf prov:Activity ;
+                   rdfs:comment "The execution of a function with a set of inputs and parameters, that may produce one or more outputs." .
 
 
 ###  https://github.com/INM-6/alpaca/ontology/alpaca.owl#NameValuePair
-:NameValuePair rdf:type owl:Class .
+:NameValuePair rdf:type owl:Class ;
+               rdfs:comment "Represents information defined by a name/value pair. Name is a string and value can be any literal value." .
 
 
 ###  https://github.com/INM-6/alpaca/ontology/alpaca.owl#ScriptAgent

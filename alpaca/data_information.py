@@ -175,7 +175,7 @@ class _ObjectInformation(object):
             # the case where object changes result in multiple object hashes,
             # which will produce a complex provenance track
             object_hash = hash(obj)
-            hash_method = "Python"
+            hash_method = "Python_hash"
         else:
             # Check if the object is a container of objects that should be
             # hashed with the Python builtin function. For NumPy arrays, we
@@ -211,12 +211,12 @@ class _ObjectInformation(object):
                     tuple([hash(element) for element in iterator]),
                     hash_name='sha1'
                 )
-                hash_method = "Python"
+                hash_method = "Python_hash"
             else:
                 # Other objects, like Neo, Quantity and NumPy arrays, use
                 # joblib's hash function
                 object_hash = joblib.hash(obj, hash_name='sha1')
-                hash_method = "joblib"
+                hash_method = "joblib_SHA1"
 
         # Memoize the hash
         self._hash_memoizer[obj_id] = (object_hash, hash_method)
@@ -246,10 +246,11 @@ class _ObjectInformation(object):
             * hash : str or UUID
                 Hash of the object. For None objects, it will be an UUID
                 generated to uniquely identify the object.
-            * hash_method : {"Python", "joblib", "None"}
+            * hash_method : {"Python_hash", "joblib_SHA1", "UUID"}
                 Hash function used in the computation. If the
                 :attr:`use_builtin_hash` list is defined, the builtin Python
-                `hash` function is used for objects of the packages in the list.
+                `hash` function is used for objects of the packages in the
+                list.
                 For None objects, the value will be "None".
             * type: str
                 Type of the object.
@@ -265,7 +266,7 @@ class _ObjectInformation(object):
         # All Nones will have the same hash. Use UUID instead
         if obj is None:
             unique_id = uuid.uuid4()
-            return DataObject(hash=unique_id, hash_method="None",
+            return DataObject(hash=unique_id, hash_method="UUID",
                               type=obj_type, id=obj_id, details={})
 
         # Here we can extract specific metadata to record

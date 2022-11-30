@@ -20,14 +20,14 @@ from alpaca.alpaca_types import (FunctionInfo, Container, DataObject, File)
 
 TEST_ARRAY = np.array([1, 2, 3])
 TEST_ARRAY_INFO = DataObject(hash=joblib.hash(TEST_ARRAY, hash_name='sha1'),
-                             hash_method="joblib",
+                             hash_method="joblib_SHA1",
                              type="numpy.ndarray", id=id(TEST_ARRAY),
                              details={'shape': (3,), 'dtype': np.int64})
 
 TEST_ARRAY_2 = np.array([4, 5, 6])
 TEST_ARRAY_2_INFO = DataObject(hash=joblib.hash(TEST_ARRAY_2,
                                                 hash_name='sha1'),
-                               hash_method="joblib",
+                               hash_method="joblib_SHA1",
                                type="numpy.ndarray", id=id(TEST_ARRAY_2),
                                details={'shape': (3,), 'dtype': np.int64})
 
@@ -198,7 +198,7 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
 
         expected_output = DataObject(
             hash=joblib.hash(TEST_ARRAY+3, hash_name='sha1'),
-            hash_method="joblib",
+            hash_method="joblib_SHA1",
             type="numpy.ndarray", id=id(res),
             details={'shape': (3,), 'dtype': np.int64})
 
@@ -230,7 +230,7 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
 
         expected_output = DataObject(
             hash=joblib.hash(TEST_ARRAY+3, hash_name='sha1'),
-            hash_method="joblib",
+            hash_method="joblib_SHA1",
             type="numpy.ndarray", id=output_id,
             details={'shape': (3,), 'dtype': np.int64})
 
@@ -257,7 +257,7 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
 
         expected_output = DataObject(
             hash=joblib.hash(TEST_ARRAY+3, hash_name='sha1'),
-            hash_method="joblib",
+            hash_method="joblib_SHA1",
             type="numpy.ndarray", id=id(res),
             details={'shape': (3,), 'dtype': np.int64})
 
@@ -284,7 +284,7 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
 
         expected_output = DataObject(
             hash=joblib.hash(TEST_ARRAY+5, hash_name='sha1'),
-            hash_method="joblib",
+            hash_method="joblib_SHA1",
             type="numpy.ndarray", id=id(res),
             details={'shape': (3,), 'dtype': np.int64})
 
@@ -311,7 +311,7 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
 
         expected_output = DataObject(
             hash=joblib.hash(TEST_ARRAY+5, hash_name='sha1'),
-            hash_method="joblib",
+            hash_method="joblib_SHA1",
             type="numpy.ndarray", id=id(res),
             details={'shape': (3,), 'dtype': np.int64})
 
@@ -339,7 +339,7 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
 
         expected_output = DataObject(
             hash=joblib.hash(np.float64(3.5), hash_name='sha1'),
-            hash_method="joblib",
+            hash_method="joblib_SHA1",
             type="numpy.float64", id=id(avg),
             details={'shape': (), 'dtype': np.float64})
 
@@ -368,7 +368,7 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
 
         expected_output = DataObject(
             hash=joblib.hash(np.float64(3.5), hash_name='sha1'),
-            hash_method="joblib",
+            hash_method="joblib_SHA1",
             type="numpy.float64", id=id(avg),
             details={'shape': (), 'dtype': np.float64})
 
@@ -396,7 +396,7 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
 
         expected_output = DataObject(
             hash=joblib.hash(TEST_ARRAY+TEST_ARRAY_2, hash_name='sha1'),
-            hash_method="joblib",
+            hash_method="joblib_SHA1",
             type="numpy.ndarray", id=id(res),
             details={'shape': (3,), 'dtype': np.int64})
 
@@ -424,13 +424,13 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
 
         expected_output_1 = DataObject(
             hash=joblib.hash(TEST_ARRAY+3, hash_name='sha1'),
-            hash_method="joblib",
+            hash_method="joblib_SHA1",
             type="numpy.ndarray", id=id(res1),
             details={'shape': (3,), 'dtype': np.int64})
 
         expected_output_2 = DataObject(
             hash=joblib.hash(TEST_ARRAY+4, hash_name='sha1'),
-            hash_method="joblib",
+            hash_method="joblib_SHA1",
             type="numpy.ndarray", id=id(res2),
             details={'shape': (3,), 'dtype': np.int64})
 
@@ -457,7 +457,7 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
 
         expected_output = DataObject(
             hash=joblib.hash((TEST_ARRAY+3, TEST_ARRAY+4), hash_name='sha1'),
-            hash_method="joblib",
+            hash_method="joblib_SHA1",
             type="builtins.tuple", id=id(res),
             details={})
 
@@ -484,13 +484,13 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
 
         expected_output_1 = DataObject(
             hash=joblib.hash(TEST_ARRAY + 3, hash_name='sha1'),
-            hash_method="joblib",
+            hash_method="joblib_SHA1",
             type="numpy.ndarray", id=id(res[0]),
             details={'shape': (3,), 'dtype': np.int64})
 
         expected_output_2 = DataObject(
             hash=joblib.hash(TEST_ARRAY + 4, hash_name='sha1'),
-            hash_method="joblib",
+            hash_method="joblib_SHA1",
             type="numpy.ndarray", id=id(res[1]),
             details={'shape': (3,), 'dtype': np.int64})
 
@@ -539,7 +539,7 @@ class ProvenanceDecoratorFileInputOutputTestCase(unittest.TestCase):
                          "input", "for", "the", "tests."]
         expected_output = DataObject(
             hash=joblib.hash(expected_list, hash_name='sha1'),
-            hash_method="joblib",
+            hash_method="joblib_SHA1",
             type="builtins.list", id=id(res), details={})
 
         expected_file = File("96ccc1380e069667069acecea3e2ab559441657807e0a86d14f49028710ddb3a",
@@ -571,14 +571,14 @@ class ProvenanceDecoratorFileInputOutputTestCase(unittest.TestCase):
 
         expected_input = DataObject(
             hash=joblib.hash(input_list, hash_name='sha1'),
-            hash_method="joblib",
+            hash_method="joblib_SHA1",
             type="builtins.list", id=id(input_list), details={})
 
         # As None has its own UUID, let's get what was generated
         self.assertEqual(len(Provenance.history), 1)
         output_uuid = Provenance.history[0].output[0].hash
 
-        expected_none_output = DataObject(hash=output_uuid, hash_method="None",
+        expected_none_output = DataObject(hash=output_uuid, hash_method="UUID",
             type="builtins.NoneType", id=id(res), details={})
 
         expected_file = File("00d20b4831b0dadded2c633bdfc3dde3926fc17baaed51dacdab3e52a3b0d419",

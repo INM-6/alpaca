@@ -26,27 +26,28 @@ joblib_hash = partial(joblib.hash, hash_name='sha1')
 
 TEST_ARRAY = np.array([1, 2, 3])
 TEST_ARRAY_INFO = DataObject(hash=joblib_hash(TEST_ARRAY),
-                             hash_method="joblib",
+                             hash_method="joblib_SHA1",
                              type="numpy.ndarray", id=id(TEST_ARRAY),
                              details={'shape': (3,), 'dtype': np.int64})
 
 ELEMENT_0_INFO = DataObject(hash=joblib_hash(TEST_ARRAY[0]),
-                            hash_method="joblib", type="numpy.int64",
+                            hash_method="joblib_SHA1", type="numpy.int64",
                             id=id(TEST_ARRAY[0]),
                             details={'shape': (), 'dtype': np.int64})
 
 ELEMENT_1_INFO = DataObject(hash=joblib_hash(TEST_ARRAY[1]),
-                            hash_method="joblib", type="numpy.int64",
+                            hash_method="joblib_SHA1", type="numpy.int64",
                             id=id(TEST_ARRAY[1]),
                             details={'shape': (), 'dtype': np.int64})
 
 ELEMENT_2_INFO = DataObject(hash=joblib_hash(TEST_ARRAY[2]),
-                            hash_method="joblib", type="numpy.int64",
+                            hash_method="joblib_SHA1", type="numpy.int64",
                             id=id(TEST_ARRAY[2]),
                             details={'shape': (), 'dtype': np.int64})
 
 TEST_DICT = {'numbers': TEST_ARRAY}
-TEST_DICT_INFO = DataObject(hash=joblib_hash(TEST_DICT), hash_method="joblib",
+TEST_DICT_INFO = DataObject(hash=joblib_hash(TEST_DICT),
+                            hash_method="joblib_SHA1",
                             type="builtins.dict", id=id(TEST_DICT),
                             details={})
 
@@ -141,7 +142,7 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
 
         expected_output = DataObject(
             hash=joblib_hash(TEST_ARRAY[0]+TEST_ARRAY[1]),
-            hash_method="joblib",
+            hash_method="joblib_SHA1",
             type="numpy.int64", id=id(res),
             details={'shape': (), 'dtype': np.int64})
 
@@ -189,7 +190,7 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
 
         expected_output = DataObject(
             hash=joblib_hash(TEST_ARRAY[-1]+TEST_ARRAY[-2]),
-            hash_method="joblib",
+            hash_method="joblib_SHA1",
             type="numpy.int64", id=id(res),
             details={'shape': (), 'dtype': np.int64})
 
@@ -237,12 +238,12 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
 
         expected_output = DataObject(
             hash=joblib_hash(TEST_ARRAY[0]+TEST_ARRAY[1]),
-            hash_method="joblib",
+            hash_method="joblib_SHA1",
             type="numpy.int64", id=id(res),
             details={'shape': (), 'dtype': np.int64})
 
         expected_slice_output = DataObject(
-            hash=joblib_hash(TEST_ARRAY[0:2]), hash_method="joblib",
+            hash=joblib_hash(TEST_ARRAY[0:2]), hash_method="joblib_SHA1",
             type="numpy.ndarray", id=id(TEST_ARRAY[0:2]),
             details={'shape': (2,), 'dtype': np.int64})
 
@@ -280,12 +281,12 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
 
         expected_output = DataObject(
             hash=joblib_hash(TEST_ARRAY[0]+TEST_ARRAY[1]),
-            hash_method="joblib",
+            hash_method="joblib_SHA1",
             type="numpy.int64", id=id(res),
             details={'shape': (), 'dtype': np.int64})
 
         expected_slice_output = DataObject(
-            hash=joblib_hash(TEST_ARRAY[:2]), hash_method="joblib",
+            hash=joblib_hash(TEST_ARRAY[:2]), hash_method="joblib_SHA1",
             type="numpy.ndarray", id=id(TEST_ARRAY[:2]),
             details={'shape': (2,), 'dtype': np.int64})
 
@@ -323,12 +324,12 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
 
         expected_output = DataObject(
             hash=joblib_hash(TEST_ARRAY[1]+TEST_ARRAY[2]),
-            hash_method="joblib",
+            hash_method="joblib_SHA1",
             type="numpy.int64", id=id(res),
             details={'shape': (), 'dtype': np.int64})
 
         expected_slice_output = DataObject(
-            hash=joblib_hash(TEST_ARRAY[1:]), hash_method="joblib",
+            hash=joblib_hash(TEST_ARRAY[1:]), hash_method="joblib_SHA1",
             type="numpy.ndarray", id=id(TEST_ARRAY[1:]),
             details={'shape': (2,), 'dtype': np.int64})
 
@@ -366,12 +367,12 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
 
         expected_output = DataObject(
             hash=joblib_hash(TEST_ARRAY[0]+TEST_ARRAY[2]),
-            hash_method="joblib",
+            hash_method="joblib_SHA1",
             type="numpy.int64", id=id(res),
             details={'shape': (), 'dtype': np.int64})
 
         expected_slice_output = DataObject(
-            hash=joblib_hash(TEST_ARRAY[::2]), hash_method="joblib",
+            hash=joblib_hash(TEST_ARRAY[::2]), hash_method="joblib_SHA1",
             type="numpy.ndarray", id=id(TEST_ARRAY[::2]),
             details={'shape': (2,), 'dtype': np.int64})
 
@@ -409,7 +410,7 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
 
         expected_output = DataObject(
             hash=joblib_hash(np.sum(TEST_ARRAY)),
-            hash_method="joblib",
+            hash_method="joblib_SHA1",
             type="numpy.int64", id=id(res),
             details={'shape': (), 'dtype': np.int64})
 
@@ -448,7 +449,7 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
 
         expected_output = DataObject(
             hash=joblib_hash(np.sum(TEST_ARRAY)),
-            hash_method="joblib",
+            hash_method="joblib_SHA1",
             type="numpy.int64", id=id(res),
             details={'shape': (), 'dtype': np.int64})
 
@@ -486,12 +487,12 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
 
         expected_output = DataObject(
             hash=joblib_hash(np.sum(TEST_ARRAY)),
-            hash_method="joblib",
+            hash_method="joblib_SHA1",
             type="numpy.int64", id=id(res),
             details={'shape': (), 'dtype': np.int64})
 
         expected_container_info = DataObject(
-            hash=joblib_hash(container_of_array), hash_method="joblib",
+            hash=joblib_hash(container_of_array), hash_method="joblib_SHA1",
             type="test_code_analysis.ContainerOfArray",
             id=id(container_of_array), details={'array': TEST_ARRAY})
 

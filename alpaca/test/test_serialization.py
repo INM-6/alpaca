@@ -23,16 +23,16 @@ from alpaca.serialization.neo import _neo_to_prov
 TEST_FUNCTION = FunctionInfo("test_function", "test", "0.0.1")
 
 # Object without metadata
-INPUT = DataObject("12345", "joblib", "test.InputObject", 12345, {})
+INPUT = DataObject("12345", "joblib_SHA1", "test.InputObject", 12345, {})
 
 # Object with all main types of metadata
-INPUT_METADATA = DataObject("12345", "joblib", "test.InputObject", 12345,
+INPUT_METADATA = DataObject("12345", "joblib_SHA1", "test.InputObject", 12345,
                             details={'metadata_1': "value1",
                                      'metadata_2': 5,
                                      'metadata_3': 5.0,
                                      'metadata_4': True})
 
-OUTPUT_METADATA_NEO = DataObject("54321", "joblib",
+OUTPUT_METADATA_NEO = DataObject("54321", "joblib_SHA1",
                                  "neo.core.SpikeTrain", 54321,
                                  details={'name': "Spiketrain#1",
                                           'annotations': {'sua': False,
@@ -51,15 +51,15 @@ INPUT_FILE = File("56789", "sha256", "/test_file_input")
 OUTPUT_FILE = File("98765", "sha256", "/test_file_output")
 
 # Simple objects to test multiple inputs/outputs handling
-INPUT_2 = DataObject("212345", "joblib", "test.InputObject", 212345, {})
-OUTPUT = DataObject("54321", "joblib", "test.OutputObject", 54321, {})
-OUTPUT_2 = DataObject("254321", "joblib", "test.OutputObject", 254321, {})
+INPUT_2 = DataObject("212345", "joblib_SHA1", "test.InputObject", 212345, {})
+OUTPUT = DataObject("54321", "joblib_SHA1", "test.OutputObject", 54321, {})
+OUTPUT_2 = DataObject("254321", "joblib_SHA1", "test.OutputObject", 254321, {})
 
 # None output
-NONE_OUTPUT = DataObject("777777", "None", "builtins.NoneType", 777777, {})
+NONE_OUTPUT = DataObject("777777", "UUID", "builtins.NoneType", 777777, {})
 
 # Object collections
-COLLECTION = DataObject("888888", "joblib", "builtins.list", 888888, {})
+COLLECTION = DataObject("888888", "joblib_SHA1", "builtins.list", 888888, {})
 
 # General information. Will be fixed across the tests
 TIMESTAMP_START = "2022-05-02T12:34:56.123456"
@@ -240,6 +240,8 @@ class AlpacaProvSerializationTestCase(unittest.TestCase):
         alpaca_prov.add_history(SCRIPT_INFO, SCRIPT_SESSION_ID,
                                 history=[function_execution])
 
+        alpaca_prov.graph.serialize(self.ttl_path / "expected.ttl")
+
         # Check if graphs are equal
         self.assertTrue(assert_rdf_graphs_equal(alpaca_prov.graph,
                                                 expected_graph))
@@ -396,16 +398,16 @@ class MultipleMembershipSerializationTestCase(unittest.TestCase):
         # test relationship `super_container.containers[0].inputs[1]`
         self.ttl_path = Path(__file__).parent / "res"
 
-        super_container = DataObject("2333333", "joblib",
+        super_container = DataObject("2333333", "joblib_SHA1",
                                      "test.SuperContainer", 2333333, {})
 
-        super_container_list = DataObject("23333332", "joblib",
+        super_container_list = DataObject("23333332", "joblib_SHA1",
                                           "builtins.list", 23333332, {})
 
-        container = DataObject("333333", "joblib", "test.Container", 333333,
+        container = DataObject("333333", "joblib_SHA1", "test.Container", 333333,
                                {})
 
-        container_list = DataObject("3333332", "joblib", "builtins.list",
+        container_list = DataObject("3333332", "joblib_SHA1", "builtins.list",
                                     3333332, {})
 
         attribute_access_container = FunctionExecution(

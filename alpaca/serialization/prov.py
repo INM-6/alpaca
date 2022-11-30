@@ -142,6 +142,7 @@ class AlpacaProvDocument(object):
         if uri in self.graph.subjects(RDF.type, ALPACA.DataObjectEntity):
             return uri
         self.graph.add((uri, RDF.type, ALPACA.DataObjectEntity))
+        self.graph.add((uri, ALPACA.hashSource, Literal(info.hash_method)))
         self._add_entity_metadata(uri, info)
         return uri
 
