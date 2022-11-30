@@ -40,6 +40,11 @@ ELEMENT_1_INFO = DataObject(hash=joblib_hash(TEST_ARRAY[1]),
                             id=id(TEST_ARRAY[1]),
                             details={'shape': (), 'dtype': np.int64})
 
+ELEMENT_2_INFO = DataObject(hash=joblib_hash(TEST_ARRAY[2]),
+                            hash_method="joblib", type="numpy.int64",
+                            id=id(TEST_ARRAY[2]),
+                            details={'shape': (), 'dtype': np.int64})
+
 TEST_DICT = {'numbers': TEST_ARRAY}
 TEST_DICT_INFO = DataObject(hash=joblib_hash(TEST_DICT), hash_method="joblib",
                             type="builtins.dict", id=id(TEST_DICT),
@@ -170,6 +175,54 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
             exp_arg_map=['num1', 'num2'],
             exp_kwarg_map=[],
             exp_code_stmnt="res = add_numbers(source_array[0], source_array[1])",
+            exp_return_targets=['res'],
+            exp_order=1,
+            test_case=self)
+
+    def test_subscript_negative_index(self):
+        activate(clear=True)
+        source_array = TEST_ARRAY
+        res = add_numbers(source_array[-1], source_array[-2])
+        deactivate()
+
+        self.assertEqual(len(Provenance.history), 3)
+
+        expected_output = DataObject(
+            hash=joblib_hash(TEST_ARRAY[-1]+TEST_ARRAY[-2]),
+            hash_method="joblib",
+            type="numpy.int64", id=id(res),
+            details={'shape': (), 'dtype': np.int64})
+
+        _check_function_execution(
+            actual=Provenance.history[0],
+            exp_function=FunctionInfo('subscript', '', ''),
+            exp_input={0: TEST_ARRAY_INFO},
+            exp_params={'index': -1},
+            exp_output={0: ELEMENT_2_INFO},
+            exp_arg_map=None, exp_kwarg_map=None, exp_code_stmnt=None,
+            exp_return_targets=[], exp_order=None,
+            test_case=self)
+
+        _check_function_execution(
+            actual=Provenance.history[1],
+            exp_function=FunctionInfo('subscript', '', ''),
+            exp_input={0: TEST_ARRAY_INFO},
+            exp_params={'index': -2},
+            exp_output={0: ELEMENT_1_INFO},
+            exp_arg_map=None, exp_kwarg_map=None, exp_code_stmnt=None,
+            exp_return_targets=[], exp_order=None,
+            test_case=self)
+
+        _check_function_execution(
+            actual=Provenance.history[2],
+            exp_function=FunctionInfo('add_numbers',
+                                      'test_code_analysis', ''),
+            exp_input={'num1': ELEMENT_2_INFO, 'num2': ELEMENT_1_INFO},
+            exp_params={},
+            exp_output={0: expected_output},
+            exp_arg_map=['num1', 'num2'],
+            exp_kwarg_map=[],
+            exp_code_stmnt="res = add_numbers(source_array[-1], source_array[-2])",
             exp_return_targets=['res'],
             exp_order=1,
             test_case=self)

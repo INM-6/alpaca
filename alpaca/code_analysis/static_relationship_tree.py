@@ -206,6 +206,10 @@ class _SubscriptRelationship(_StaticRelationship):
             elif isinstance(slice_node.value, ast.Name):
                 from alpaca.decorator import Provenance
                 index_value = Provenance._get_script_variable(slice_node.value.id)
+            elif isinstance(slice_node.value, ast.UnaryOp) and \
+                isinstance(slice_node.value.op, ast.USub):
+                # Negative indexing
+                index_value = -int(slice_node.value.operand.n)
             else:
                 raise TypeError("Operation not supported")
 
