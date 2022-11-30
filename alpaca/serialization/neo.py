@@ -19,7 +19,7 @@ __all__ = ['_neo_to_prov', '_neo_object_metadata']
 
 NEO_COLLECTIONS = ('segments', 'events', 'analogsignals',
                    'spiketrains', 'channel_indexes', 'block',
-                   'segment', 'epochs', 'parent')
+                   'segment', 'epochs', 'parent', '_items', 'waveforms')
 
 DISPLAYED_ATTRIBUTES = ('t_start', 't_stop', 'shape', 'dtype',
                         'name', 'description', 'nix_name')
