@@ -220,6 +220,11 @@ class _SubscriptRelationship(_StaticRelationship):
             index_value = slice_node.value
             return index_value
 
+        if isinstance(slice_node, ast.UnaryOp) and \
+                isinstance(slice_node.op, ast.USub):
+            # Negative indexing
+            return -int(slice_node.operand.n)
+
         if isinstance(slice_node, ast.Name):
             from alpaca.decorator import Provenance
             index_value = Provenance._get_script_variable(slice_node.id)

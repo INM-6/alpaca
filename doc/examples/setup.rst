@@ -26,9 +26,16 @@ Running the examples
 A suitable environment can be built using `conda <http://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html>`_
 with the **environment.yaml** file located in the **examples** folder.
 
+.. code-block:: sh
+
+    conda env create -f environment.yaml
+
+
 If configuring your own environment, the following additional packages are
 required (Python 3.8+):
 
 * Neo (`https://neuralensemble.org/neo <https://neuralensemble.org/neo>`_)
 * Elephant (`https://python-elephant.org <https://python-elephant.org>`_)
-* odML (`https://g-node.github.io/python-odml <https://g-node.github.io/python-odml>`_)
+* nixio (`https://pypi.org/project/nixio/ <https://pypi.org/project/nixio/>`_)
+* matplotlib (`https://matplotlib.org/ <https://matplotlib.org/>`_)
+
