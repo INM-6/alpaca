@@ -187,6 +187,26 @@ class ProvenanceDecoratorInterfaceFunctionsTestCase(unittest.TestCase):
         self.assertEqual(captured.getvalue().replace("\n", ""), expected_str)
 
 
+class ProvenanceDecoratorFunctionsTestCase(unittest.TestCase):
+
+    def test_get_module_version(self):
+        expected_numpy_version = np.__version__
+
+        numpy_version = Provenance._get_module_version("numpy", "mean")
+        self.assertEqual(numpy_version, expected_numpy_version)
+
+        numpy_version_submodule = Provenance._get_module_version(
+            "numpy.random", "normal")
+        self.assertEqual(numpy_version_submodule, expected_numpy_version)
+
+        main_version = Provenance._get_module_version("__main__",
+                                                      "test_function")
+        self.assertEqual(main_version, "")
+
+        invalid = Provenance._get_module_version("non_existent", "test")
+        self.assertEqual(invalid, "")
+
+
 class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
 
     def test_simple_function(self):

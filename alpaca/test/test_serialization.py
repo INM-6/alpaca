@@ -240,8 +240,6 @@ class AlpacaProvSerializationTestCase(unittest.TestCase):
         alpaca_prov.add_history(SCRIPT_INFO, SCRIPT_SESSION_ID,
                                 history=[function_execution])
 
-        alpaca_prov.graph.serialize(self.ttl_path / "expected.ttl")
-
         # Check if graphs are equal
         self.assertTrue(assert_rdf_graphs_equal(alpaca_prov.graph,
                                                 expected_graph))
