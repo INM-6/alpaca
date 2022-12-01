@@ -270,12 +270,39 @@ class Provenance(object):
                 return ""
         return ""
 
-    def _capture_provenance(self, lineno, function, args, kwargs,
-                            function_output, time_stamp_start,
-                            time_stamp_end):
+    def _get_calling_line_number(self, frame):
+        # Get the line number of the current call.
+        # For that, we need to find the frame containing the call, starting
+        # from `frame`, which is the current frame being executed.
+        lineno = None
 
-        builtin_object_hash = _ALPACA_SETTINGS['use_builtin_hash_for_module']
-        logging.debug(f"Builtin object hash: {builtin_object_hash}")
+        # Extract information and calling function name in `frame`
+        frame_info = inspect.getframeinfo(frame)
+        function_name = frame_info.function
+
+        if function_name == '<listcomp>':
+            # For list comprehensions, we need to check the frame above,
+            # as this creates a function named <listcomp>. We use a while loop
+            # in case of nested list comprehensions.
+            while function_name == '<listcomp>':
+                frame = frame.f_back
+                frame_info = inspect.getframeinfo(frame)
+                function_name = frame_info.function
+        elif function_name == 'wrapper':
+            # For functions with a decorator, we need to skip the decorator
+            frame = frame.f_back
+            frame_info = inspect.getframeinfo(frame)
+            function_name = frame_info.function
+
+        # If the frame corresponds to the script file and the tracked function,
+        # we get the line number
+        if (frame_info.filename == self.source_file and
+                function_name == self._source_code.source_name):
+            lineno = frame.f_lineno
+
+        return lineno
+
+    def _capture_code_and_function_provenance(self, lineno, function):
 
         # 1. Capture Abstract Syntax Tree (AST) of the call to the
         # function. We need to check the source code in case the
@@ -311,7 +338,12 @@ class Provenance(object):
         function_info = FunctionInfo(name=function_name, module=module,
                                      version=module_version)
 
-        # 4. Extract the parameters passed to the function and store them in
+        return source_line, ast_tree, return_targets, function_info
+
+    def _capture_input_and_parameters_provenance(self, function, args, kwargs,
+        ast_tree, function_info, time_stamp_start, builtin_object_hash):
+
+        # 1. Extract the parameters passed to the function and store them in
         # the `input_data` dictionary.
         # Two separate lists with the names according to the arg/kwarg order
         # are also constructed, to map to the `args` and `keywords` fields
@@ -321,7 +353,7 @@ class Provenance(object):
         input_data, input_args_names, input_kwargs_names, default_args = \
             self._process_input_arguments(function, args, kwargs)
 
-        # 5. Create parameters/input descriptions for the graph.
+        # 2. Create parameters/input descriptions for the graph.
         # Here the inputs, but not the parameters passed to the function, are
         # hashed using the `_ObjectInformation` object.
         # Inputs are defined by the parameter `inputs` when initializing the
@@ -371,6 +403,22 @@ class Provenance(object):
                 # is a parameter to the function.
                 parameters[key] = input_value
 
+        # 3. Analyze AST and fetch static relationships in the
+        # input/output and other variables/objects in the script
+        self._insert_static_information(tree=ast_tree, data_info=data_info,
+                                        function=function_info.name,
+                                        time_stamp=time_stamp_start)
+
+        return inputs, parameters, input_args_names, input_kwargs_names, \
+            input_data
+
+    def _capture_output_provenance(self, function_output, return_targets,
+                                   input_data, builtin_object_hash):
+
+        # In case in-place operations were performed, lets not use
+        # memoization
+        data_info = _ObjectInformation(use_builtin_hash=builtin_object_hash)
+
         # 6. Create hash for the output using `_ObjectInformation` to follow
         # individual returns. The hashes will be stored in the `outputs`
         # dictionary, with the index as the order of each returned object.
@@ -396,76 +444,21 @@ class Provenance(object):
                 outputs[f"file.{idx}"] = \
                     _FileInformation(input_data[file_output]).info()
 
-        # 7. Analyze AST and fetch static relationships in the
-        # input/output and other variables/objects in the script
-        self._insert_static_information(tree=ast_tree, data_info=data_info,
-                                        function=function_info.name,
-                                        time_stamp=time_stamp_start)
-
-        # 8. Increment the global call counter
-        Provenance._call_count += 1
-
-        # 9. Create execution ID
-        execution_id = str(uuid.uuid4())
-
-        # 9. Create tuple with the analysis step information and return.
-        return FunctionExecution(function=function_info,
-                                 input=inputs,
-                                 params=parameters,
-                                 output=outputs,
-                                 arg_map=input_args_names,
-                                 kwarg_map=input_kwargs_names,
-                                 call_ast=ast_tree,
-                                 code_statement=source_line,
-                                 time_stamp_start=time_stamp_start,
-                                 time_stamp_end=time_stamp_end,
-                                 return_targets=return_targets,
-                                 order=Provenance._call_count,
-                                 execution_id = execution_id)
-
-    def _get_calling_line_number(self, frame):
-        # Get the line number of the current call.
-        # For that, we need to find the frame containing the call, starting
-        # from `frame`, which is the current frame being executed.
-        lineno = None
-
-        # Extract information and calling function name in `frame`
-        frame_info = inspect.getframeinfo(frame)
-        function_name = frame_info.function
-
-        if function_name == '<listcomp>':
-            # For list comprehensions, we need to check the frame above,
-            # as this creates a function named <listcomp>. We use a while loop
-            # in case of nested list comprehensions.
-            while function_name == '<listcomp>':
-                frame = frame.f_back
-                frame_info = inspect.getframeinfo(frame)
-                function_name = frame_info.function
-        elif function_name == 'wrapper':
-            # For functions with a decorator, we need to skip the decorator
-            frame = frame.f_back
-            frame_info = inspect.getframeinfo(frame)
-            function_name = frame_info.function
-
-        # If the frame corresponds to the script file and the tracked function,
-        # we get the line number
-        if (frame_info.filename == self.source_file and
-                function_name == self._source_code.source_name):
-            lineno = frame.f_lineno
-
-        return lineno
+        return outputs
 
     def __call__(self, function):
 
         @wraps(function)
         def wrapped(*args, **kwargs):
 
-            # Call the function and get the execution time stamps
-            time_stamp_start = datetime.datetime.utcnow().isoformat()
-            function_output = function(*args, **kwargs)
-            time_stamp_end = datetime.datetime.utcnow().isoformat()
+            builtin_object_hash = _ALPACA_SETTINGS[
+                'use_builtin_hash_for_module']
+            logging.debug(f"Builtin object hash: {builtin_object_hash}")
 
-            # If capturing provenance...
+            lineno = None
+
+            # If capturing provenance, get the code, function, inputs and
+            # parameter information, before executing the function
             if Provenance.active:
 
                 # For functions that are used inside other decorated functions,
@@ -479,21 +472,65 @@ class Provenance(object):
                 finally:
                     del frame
 
-                # Capture provenance information
-                if lineno is not None:
-                    # Get FunctionExecution tuple with provenance information
-                    step = self._capture_provenance(
-                        lineno=lineno,
-                        function=function, args=args,
-                        kwargs=kwargs,
-                        function_output=function_output,
-                        time_stamp_start=time_stamp_start,
-                        time_stamp_end=time_stamp_end)
+                if lineno:
+                    # Get the start time stamp
+                    time_stamp_start = datetime.datetime.utcnow().isoformat()
 
-                    # Add step to the history.
-                    # The history will be the base to generate the graph and
-                    # PROV document.
-                    Provenance.history.append(step)
+                    # Increment the global call counter
+                    Provenance._call_count += 1
+
+                    # Create execution ID
+                    execution_id = str(uuid.uuid4())
+
+                    # Capture code and function information
+                    source_line, ast_tree, return_targets, function_info = \
+                        self._capture_code_and_function_provenance(
+                            lineno=lineno, function=function)
+
+                    # Capture input and parameter information
+                    inputs, parameters, input_args_names, \
+                        input_kwargs_names, input_data = \
+                            self._capture_input_and_parameters_provenance(
+                                function=function, args=args, kwargs=kwargs,
+                                ast_tree=ast_tree, function_info=function_info,
+                                time_stamp_start=time_stamp_start,
+                                builtin_object_hash=builtin_object_hash)
+
+            # Call the function
+            function_output = function(*args, **kwargs)
+
+            # If capturing provenance, resume capturing the output information
+            if Provenance.active and lineno:
+
+                # Capture output information
+                outputs = self._capture_output_provenance(
+                    function_output=function_output,
+                    return_targets=return_targets, input_data=input_data,
+                    builtin_object_hash=builtin_object_hash)
+
+                # Get the end time stamp
+                time_stamp_end = datetime.datetime.utcnow().isoformat()
+
+                # Create FunctionExecution tuple
+                function_execution = FunctionExecution(
+                    function=function_info,
+                    input=inputs,
+                    params=parameters,
+                    output=outputs,
+                    arg_map=input_args_names,
+                    kwarg_map=input_kwargs_names,
+                    call_ast=ast_tree,
+                    code_statement=source_line,
+                    time_stamp_start=time_stamp_start,
+                    time_stamp_end=time_stamp_end,
+                    return_targets=return_targets,
+                    order=Provenance._call_count,
+                    execution_id=execution_id)
+
+                # Add to the history.
+                # The history will be the base to generate the graph and
+                # PROV document.
+                Provenance.history.append(function_execution)
 
             return function_output
 
