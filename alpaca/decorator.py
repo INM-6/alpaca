@@ -259,11 +259,12 @@ class Provenance(object):
     @staticmethod
     def _get_module_version(module, function_name):
 
-        if not function_name.startswith("__main__"):
+        if not module.startswith("__main__"):
             # User-defined functions in the running script do not have a
             # version
+            package = module.split(".")[0]
             try:
-                return version(module)
+                return version(package)
             except PackageNotFoundError:
                 # When running unit tests or using user-defined functions
                 # imported from a source file
@@ -332,7 +333,7 @@ class Provenance(object):
 
         # 3. Extract function name and information
         module = getattr(function, '__module__')
-        function_name = function.__name__
+        function_name = function.__qualname__
         module_version = self._get_module_version(module=module,
                                                   function_name=function_name)
         function_info = FunctionInfo(name=function_name, module=module,
