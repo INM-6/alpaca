@@ -6,7 +6,7 @@ Visualizing a provenance graph with Gephi
 visualize and explore graphs and networks, and supports the visualization of
 graphs stored in the GEXF format.
 
-You can follow the instructions of the :ref:`visualization` section on the
+We can follow the instructions of the :ref:`visualization` section on the
 Alpaca `Installation` section, for instructions on how to download and setup
 Gephi.
 

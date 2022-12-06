@@ -3,14 +3,14 @@ Simple example
 **************
 
 The **run_basic.py** script shows the basic functionality of Alpaca.
-The script takes one of the Reach2Grasp datasets as argument. The provenance
+The script takes the downloaded dataset file as input argument. The provenance
 information will be saved as **run_basic.ttl** in the RDF Turtle format.
-You can modify it to export according to other serialization formats.
+You can modify the script to export according to other serialization formats.
 
 Running the script
 ------------------
 
-Usage is:
+The usage of the script is:
 
 .. code-block:: sh
 
@@ -18,21 +18,20 @@ Usage is:
 
 This script parses the arguments and call the **main** function with the
 file name as parameter. The main code to be tracked is within the **main**
-function.
+function. In the following, we will walk through the script.
 
 
 Importing Alpaca and necessary functions
 ----------------------------------------
 
-You start by importing the **Provenance** decorator and the interface
+We start by importing the **Provenance** decorator and the interface
 functions:
 
 .. code-block:: python
 
     from alpaca import Provenance, activate, save_provenance
 
-You can also import some utility functions to facilitate generating file
-names:
+We can also import utility functions to facilitate generating file names:
 
 .. code-block:: python
 
@@ -45,21 +44,21 @@ Applying the decorator
 User-defined functions
 ~~~~~~~~~~~~~~~~~~~~~~
 
-You can use the syntactic sugar **@** to apply the decorator in the functions
-you defined in your own script:
+We use the syntactic sugar **@** to apply the decorator to the functions
+we defined in our own script:
 
 .. code-block:: python
 
     @Provenance(inputs=['isi_times'])
     def isi_histogram(isi_times, bin_size=2*pq.ms, max_time=500*pq.ms):
 
-The `inputs` parameter is mandatory. You should list the names of the arguments
-that are inputs to the function. If a function does not take inputs, you should
+The `inputs` parameter is mandatory. We list the names of the arguments
+that are inputs to the function. If a function does not take inputs, we
 pass an empty list. In the example above, `bin_size` and `max_time` are not
 inputs, but parameters of the function, and will influence how `isi_histogram`
 is producing its output.
 
-If a function reads one or more files (source defined by arguments), you can
+If a function reads one or more files (source defined by arguments), we can
 set this using the `file_input` parameter:
 
 .. code-block:: python
@@ -67,7 +66,7 @@ set this using the `file_input` parameter:
     @Provenance(inputs=[], file_input=['session_filename'])
     def load_data(session_filename):
 
-If a function writes one or more files (destination defined by arguments), you
+If a function writes one or more files (destination defined by arguments), we
 can set this using the `file_output` parameter:
 
 .. code-block:: python
@@ -79,7 +78,7 @@ can set this using the `file_output` parameter:
 Imported functions
 ~~~~~~~~~~~~~~~~~~
 
-You can also wrap any imported function in the decorator:
+We can also wrap any imported function in the decorator:
 
 .. code-block:: python
 
@@ -93,7 +92,7 @@ functions (`inputs`, `file_input`, `file_output`).
 Activating provenance tracking
 ------------------------------
 
-At the beginning of your code block, you call the **activate** function:
+At the beginning of our code block, we call Alpaca's **activate** function:
 
 .. code-block:: python
 
@@ -105,20 +104,20 @@ At the beginning of your code block, you call the **activate** function:
 Saving captured provenance at the end of the script
 ---------------------------------------------------
 
-After all your functions are called, you can serialize the history easily
+After all your functions are called, we can serialize the history easily
 using **save_provenance**:
 
 .. code-block:: python
 
     save_provenance(prov_file)
 
-An utility function allows to easily provide a name for your script execution
-provenance:
+A utility function allows to easily provide a name for our script execution
+provenance, e.g., by using the same file name as out script:
 
 .. code-block:: python
 
     prov_file = get_file_name(__file__, extension='ttl')
 
 
-After executing this script, you will have the output file **isi_plot.png**
+After executing this script, we will have the output file **isi_plot.png**
 together with the **run_basic.ttl** file with the serialized provenance.

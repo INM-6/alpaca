@@ -2,11 +2,11 @@
 Alpaca - Automated Light-weight Provenance Capture
 **************************************************
 
-A Python package for the capture of provenance information during the execution
-of data analysis workflows based on Python scripts.
+Alpaca is a Python package for the capture of provenance information during the
+execution Python scripts that process data.
 
-Alpaca provides a simple API for capturing the details of the functions being
-executed, together with the description of the data and parameters used.
+Alpaca provides a simple API for recording the details of the functions being
+executed, the data flow, and a description of parameters used.
 This is accomplished with minimal code instrumentation and user intervention.
 
 Provenance information is structured and serialized according to a model
@@ -16,7 +16,7 @@ Examples are provided for the analysis of electrophysiology data, using the
 open source packages `Neo <https://neuralensemble.org/neo>`_ and
 `Elephant <https://python-elephant.org>`_.
 
-Check the `project page on GitHub <https://github.com/INM-6/alpaca>`_, to
+Visit the `project page on GitHub <https://github.com/INM-6/alpaca>`_, to
 report bugs and issues, or to make contributions to the source code.
 
 
