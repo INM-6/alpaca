@@ -515,8 +515,10 @@ class ProvenanceGraph:
 
             # Save a string with the identifiers of all member nodes
             members = ";".join(group_set)
+            count = len(group_set)
 
-            output.add_node(supernode, members=members, **supernode_attributes)
+            output.add_node(supernode, members=members, member_count=count,
+                            **supernode_attributes)
 
         for group_id in groups:
             group_set = groups[group_id]
@@ -528,7 +530,6 @@ class ProvenanceGraph:
                     target_supernode = node_label_lookup[other_group]
                     summary_graph_edge = (source_supernode, target_supernode)
 
-                    # TODO: add edge weight and summarize attributes
                     superedge_attributes = {}
                     output.add_edge(*summary_graph_edge,
                                     **superedge_attributes)
@@ -546,6 +547,10 @@ class ProvenanceGraph:
         different levels of aggregation are possible. Therefore, it is
         possible to generate visualizations with different levels of detail
         to progressively inspect the provenance trace.
+
+        In the summarized nodes, the node attribute `members` stores the list
+        with the IDs of the original nodes that are part of that group, and
+        `member_count` stores the number of nodes in the group.
 
         Parameters
         ----------
