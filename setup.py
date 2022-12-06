@@ -24,7 +24,7 @@ setup(
     author_email="",
     description="Alpaca is a package for the capture of provenance "
                 "information during the execution of data analysis workflows "
-                "based on Python scripts and Jupyter notebooks",
+                "based on Python scripts",
     long_description=long_description,
     long_description_content_type="text/markdown",
     license="BSD",
