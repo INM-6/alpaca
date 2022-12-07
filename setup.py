@@ -22,9 +22,9 @@ setup(
     install_requires=install_requires,
     author="Alpaca authors and contributors",
     author_email="",
-    description="Alpaca is a package for the capture of provenance "
-                "information during the execution of data analysis workflows "
-                "based on Python scripts",
+    description="Alpaca is a Python package for the capture of provenance "
+                "information during the execution of Python scripts that "
+                "process data.",
     long_description=long_description,
     long_description_content_type="text/markdown",
     license="BSD",

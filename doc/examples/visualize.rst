@@ -12,7 +12,7 @@ writes a GEXF file.
 Running the script
 ------------------
 
-Usage is:
+The usage is:
 
 .. code-block:: sh
 
@@ -22,7 +22,7 @@ Usage is:
 Importing Alpaca and necessary objects
 --------------------------------------
 
-You start by importing the **ProvenanceGraph** object:
+We start by importing the **ProvenanceGraph** object:
 
 .. code-block:: python
 
@@ -33,10 +33,10 @@ Selecting data to include in the visualization
 ----------------------------------------------
 
 The captured metadata within the provenance track can be extensive. By default,
-Alpaca captures all object attributes and, for some specific packages (e.g.
+Alpaca captures all object attributes and, for some specific packages (e.g.,
 Neo), additional information is captured in the form of annotations and array
-annotations. You can pass lists of names to determine the exact information
-to include in the visualization graph.
+annotations. You can pass lists of names to Alpace to limit the information
+to include in the visualization graph to avoid cluttering.
 
 
 Attributes
@@ -63,8 +63,8 @@ Annotations
 
 Annotations are values stored inside a dictionary accessible by the
 `annotations` or `array_annotations` attributes of the Python object.
-These values are specially stored by Alpaca in PROV files, in the form of 
-`hasAnnotation` properties. Array annotations are special type of annotations.
+These values are stored by Alpaca in PROV files in the form of
+`hasAnnotation` properties. Array annotations are a special type of annotation.
 For a Python object that is itself an array, with multiple elements, each
 value in an array annotation will refer to the respective element in the
 Python object.
@@ -76,8 +76,8 @@ this would be stored inside `block.annotations`. The dictionary would be
 `{'subject_name': 'monkey_L'}`.
 
 Additionally, for a `neo.SpikeTrain`, different annotations could be present,
-such as `id` for the unit identification, and `channel_id`, with the channel
-number from which the signal used to extract the unit was obtained. 
+such as `id` for the neuron identification, and `channel_id` indicating the channel
+number from which the signal used to extract the neuron was obtained.
 As there are multiple spike times stored in the `neo.SpikeTrain` object, an
 array annotation will contain metadata referring to each individual spike.
 

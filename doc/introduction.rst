@@ -2,11 +2,25 @@
 What is Alpaca?
 ***************
 
+*Provenance* is a term that refers to a description of all details that have
+led to the creation of a certain object. In the context of processing data
+on a computer, this involves recording the individual steps and the environment
+that were used to arrive at the processed data. Where such data processing
+is performed by a Python script, this may involve information such as the
+Python environment, the script and script version used, and any input files.
+While this information will suffice to ensure reproducibility of the
+data processing, it is not possible to tell what was done to the input
+data without the need to study the script, and more often than not, observe the
+execution of the script in a debugger to track the individual variables.
+
 **A**\utomated **L**\ight-weight **P**\roven\ **a**\nce **Ca**\pture (Alpaca)
-is a toolbox to easily capture and serialize provenance information when
-running Python scripts. The ultimate goal is to have, from a script that
-generates some outputs (e.g., files), an additional file with the provenance
-information as metadata.
+is a toolbox to easily capture and serialize more detailed provenance information
+when running Python scripts. To this end, Alpaca generates an additional file with
+the provenance information as metadata to accompany the output files of a script.
+For example, considering a script that reads a data file and produces a figure as an
+image output file, Alpaca will generate an additional file containing the
+provenance of the image in terms of the data flow and functions used by the script
+to generate the figure.
 
 .. figure:: _static/images/alpaca/alpaca_overview.png
 
@@ -18,7 +32,7 @@ The design of Alpaca is based on the notion that a Python script is composed
 of a series of functions, executed in sequence. The function may take some
 data as input, and produce output based on a transformation of that data or
 generate new data. Finally, the functions may be controlled by parameters
-that ultimately modify their behavior and affect the generation of the output.
+that modify their behavior and affect the generation of the output.
 
 Therefore, we define the following concepts with respect to a function used in
 the Python script:
@@ -32,20 +46,21 @@ the Python script:
 * **metadata**: additional information contained in the input/output. These
   can be information accessible by attributes of the Python objects (i.e.,
   accessed by the dot `.` after the object name, such as `data.shape`) or
-  files (e.g., path).
+  files (e.g., the file path).
 
 
 When using Alpaca, a provenance track that contains the sequence of functions
-called in the script is built, and the relationships between inputs/outputs is
+called in the script is built, and the relationships between inputs/outputs are
 captured together with the relevant parameters used in each function call.
-Finally, additional properties (metadata) of the inputs/outputs are also
-captured, to help understanding their provenance.
+Additionally, certain properties (metadata) of the inputs/outputs are
+captured to help understanding and interpreting the provenance.
 
-The capture is accomplished by a function decorator, that it is used to
+The capture is accomplished by a function decorator that it is used to
 identify the inputs, outputs, and parameters at runtime. It also analyzes
 attributes and other object relationships relevant to build the provenance
 track. The user must apply the decorator to each function in the Python script
-to allow tracking.
+to allow tracking, or resort to libraries that offer their functionality with the
+corresponding decorators already in place.
 
 .. figure:: _static/images/alpaca/alpaca_decorator.png
 
@@ -54,7 +69,7 @@ Serialization of provenance information as metadata
 ---------------------------------------------------
 
 Ultimately, the captured provenance information can be serialized as a text
-file using `RDF <https://www.w3.org/TR/rdf11-concepts/>`_, according to the
+file using `RDF <https://www.w3.org/TR/rdf11-concepts/>`_ according to the
 provenance data model defined by the
 `W3C PROV standard <https://www.w3.org/TR/prov-overview/>`_. For that, the base
 `PROV-O ontology <https://www.w3.org/TR/prov-o/>`_ was extended to incorporate
@@ -89,7 +104,7 @@ relevant provenance information:
   pairs stored in dictionaries that are part of the object, such as the
   `annotations of Neo objects <https://neo.readthedocs.io/en/latest/core.html#annotations>`_.
 
-These properties are stored as special values (`NameValuePair` class), where
+These extended properties are stored as special values (`NameValuePair` class), where
 `pairName` is a string describing the parameter, attribute, or annotation name,
 and `pairValue` contains the actual value. This allows serialization of
 specific names without the risk of breaking RDF syntax.
