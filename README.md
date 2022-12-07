@@ -4,11 +4,11 @@
 
 [![tests](https://github.com/INM-6/alpaca/actions/workflows/CI.yml/badge.svg)](https://github.com/INM-6/alpaca/actions/workflows/CI.yml)
 
-A Python package for the capture of provenance information during the execution
-of data analysis workflows based on Python scripts.
+Alpaca is a Python package for the capture of provenance information during the
+execution of Python scripts that process data.
 
-Alpaca provides a simple API for capturing the details of the functions being
-executed, together with the description of the data and parameters used.
+Alpaca provides a simple API for recording the details of the functions being
+executed, the data flow, and a description of parameters used.
 This is accomplished with minimal code instrumentation and user intervention.
 
 Provenance information is structured and serialized according to a model

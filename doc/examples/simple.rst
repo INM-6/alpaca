@@ -112,7 +112,7 @@ using **save_provenance**:
     save_provenance(prov_file)
 
 A utility function allows to easily provide a name for our script execution
-provenance, e.g., by using the same file name as out script:
+provenance, e.g., by using the same file name as our script:
 
 .. code-block:: python
 

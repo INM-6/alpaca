@@ -3,7 +3,7 @@ Alpaca - Automated Light-weight Provenance Capture
 **************************************************
 
 Alpaca is a Python package for the capture of provenance information during the
-execution Python scripts that process data.
+execution of Python scripts that process data.
 
 Alpaca provides a simple API for recording the details of the functions being
 executed, the data flow, and a description of parameters used.
