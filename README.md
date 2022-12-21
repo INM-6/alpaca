@@ -3,6 +3,7 @@
 ## Automated Light-weight Provenance Capture
 
 [![tests](https://github.com/INM-6/alpaca/actions/workflows/CI.yml/badge.svg)](https://github.com/INM-6/alpaca/actions/workflows/CI.yml)
+[![Documentation Status](https://readthedocs.org/projects/alpaca-prov/badge/?version=latest)](https://alpaca-prov.readthedocs.io/en/latest/?badge=latest)
 
 Alpaca is a Python package for the capture of provenance information during the
 execution of Python scripts that process data.
@@ -18,6 +19,7 @@ based on the [W3C PROV format](https://www.w3.org/TR/prov-overview).
 ## Table of contents
   - [Prerequisites](#prerequisites)
   - [Installation](#installation)
+  - [Documentation](#documentation)
   - [How to run](#how-to-run)
   - [Collaborators](#collaborators)
   - [How to contribute](#how-to-contribute)
@@ -53,9 +55,9 @@ More detailed instructions on how to setup conda environments and additional
 install options can be checked in the [Installation](doc/install.rst) page.
 
 
-<!-- ## Documentation
+## Documentation
 
-See [http://](http://). -->
+See [https://alpaca-prov.readthedocs.io/en/latest/](https://alpaca-prov.readthedocs.io/en/latest/).
 
 
 ## How to run
