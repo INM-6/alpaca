@@ -42,7 +42,7 @@ jobs:
           # any requirements or every month
           key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements.txt') }}
             -${{ hashFiles('**/requirements-tests.txt') }}-${{ hashFiles('setup.py') }}
-            -${{ steps.date.outputs.date }}
+            -${{ hashFiles('**/CI.yml') }}-${{ steps.date.outputs.date }}
 
       # Install required Python version
       - name: Set up Python ${{ matrix.python-version }}
@@ -60,12 +60,6 @@ jobs:
           pip install -r requirements/requirements-tests.txt
           pip install -r requirements/requirements.txt
           pip install -e .
-
-      # Build Alpaca
-      - name: Build
-        run: |
-          source ~/test_env/bin/activate
-          python setup.py install
 
       # Output the Python version and environment information
       - name: List packages
@@ -90,12 +84,22 @@ jobs:
         os: [ubuntu-latest]
 
     steps:
-
+      # Used to reset cache every month
       - name: Get current year-month
         id: date
-        run: echo "date=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
+        run: echo "::set-output name=date::$(date +'%Y-%m')"
+      - uses: actions/checkout@v2
 
-      - uses: actions/checkout@v3
+      - name: Cache doc_env
+        uses: actions/cache@v2
+        with:
+          path: ~/doc_env
+          # Look to see if there is a cache hit for the corresponding
+          # requirements files. The cache will be reset on changes to
+          # any requirements or every month
+          key: ${{ runner.os }}-venv-${{ hashFiles('**/requirements.txt') }}
+            -${{ hashFiles('**/requirements-docs.txt') }}-${{ hashFiles('setup.py') }}
+            -${{ hashFiles('**/CI.yml') }}-${{ steps.date.outputs.date }}
 
       # Install required Python version
       - name: Set up Python 3.9
@@ -115,11 +119,12 @@ jobs:
 
       - name: List packages
         run: |
+          source ~/doc_env/bin/activate
           pip list
-          conda list
           python --version
 
       - name: make html
         run: |
+          source ~/doc_env/bin/activate
           cd doc
           make html
