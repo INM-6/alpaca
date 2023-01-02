@@ -33,13 +33,8 @@ based on the [W3C PROV format](https://www.w3.org/TR/prov-overview).
 
 ### Requirements
 
-Alpaca requires Python 3.8 or higher and the following packages:
-
-- numpy
-- networkx >= 2.6
-- dill == 0.3.3
-- joblib == 1.0.1
-- rdflib >= 6.0
+Alpaca requires Python 3.8 or higher and the packages specified in 
+[requirements.txt](requirements/requirements.txt).
 
 
 ## Installation
