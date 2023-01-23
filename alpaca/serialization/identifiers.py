@@ -100,5 +100,4 @@ def activity_info(identifier):
         "type": NSS_FUNCTION,
         "execution_id": exec_id
     }
-    data["label"] = data["Python_name"].split(".")[-1]
     return data

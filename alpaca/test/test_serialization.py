@@ -159,6 +159,40 @@ class AlpacaProvSerializationTestCase(unittest.TestCase):
         self.assertTrue(assert_rdf_graphs_equal(alpaca_prov.graph,
                                                 expected_graph))
 
+    def test_class_method_serialization(self):
+        obj_info = DataObject(
+            hash="232323",
+            hash_method="joblib_SHA1",
+            type="test.ObjectWithMethod",
+            id=232323,
+            details={})
+
+        function_execution = FunctionExecution(
+            function=FunctionInfo('ObjectWithMethod.process',
+                                  'test', ''),
+            input={'self': obj_info, 'array': INPUT},
+            params={'param1': 4},
+            output={0: OUTPUT}, call_ast=None,
+            arg_map=['self', 'array', 'param1'], kwarg_map=[],
+            return_targets=[],
+            time_stamp_start=TIMESTAMP_START, time_stamp_end=TIMESTAMP_END,
+            execution_id="12345", order=1,
+            code_statement="res = obj.process(INPUT, 4)")
+
+        # Load expected RDF graph
+        expected_graph_file = self.ttl_path / "class_method.ttl"
+        expected_graph = rdflib.Graph()
+        expected_graph.parse(expected_graph_file, format='turtle')
+
+        # Serialize the history using AlpacaProv document
+        alpaca_prov = AlpacaProvDocument()
+        alpaca_prov.add_history(SCRIPT_INFO, SCRIPT_SESSION_ID,
+                                history=[function_execution])
+
+        # Check if graphs are equal
+        self.assertTrue(assert_rdf_graphs_equal(alpaca_prov.graph,
+                                                expected_graph))
+
     def test_input_multiple_serialization(self):
         function_execution = FunctionExecution(
             function=TEST_FUNCTION,

@@ -52,10 +52,15 @@ def _add_gephi_interval(data, order):
     data["gephi_interval"].append((order, order))
 
 
-def _get_function_call_data(activity, execution_order, params,
-                            use_name_in_parameter=True):
+def _get_function_call_data(activity, function_name, execution_order, params,
+                            use_name_in_parameter=True,
+                            use_class_in_name=True):
 
     data = activity_info(activity)
+    label = function_name
+    if not use_class_in_name:
+        label = function_name.split(".")[-1]
+    data['label'] = label
     data["execution_order"] = execution_order
 
     prefix = "parameter" if not use_name_in_parameter else data["label"]
@@ -197,6 +202,12 @@ class ProvenanceGraph:
         this option if different functions share same parameter names, to avoid
         ambiguity.
         Default: True
+    use_class_in_method_name : bool, optional
+        If True, function nodes that are methods in classes will be labeled
+        with the class name as prefix (e.g., `ClassName.method_name`). If
+        False, only the method name will appear in the node label (e.g.,
+        `method_name`).
+        Default: True
 
     Attributes
     ----------
@@ -208,8 +219,8 @@ class ProvenanceGraph:
 
     def __init__(self, prov_file, annotations=None, attributes=None,
                  strip_namespace=True, remove_none=True,
-                 use_name_in_parameter=True, *args,
-                 **kwargs):
+                 use_name_in_parameter=True, use_class_in_method_name=True,
+                 *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         # Load PROV records from the file
@@ -222,7 +233,9 @@ class ProvenanceGraph:
         self.graph = self._transform_graph(
             doc.graph, annotations=annotations, attributes=attributes,
             strip_namespace=strip_namespace, remove_none=remove_none,
-            use_name_in_parameter=use_name_in_parameter)
+            use_name_in_parameter=use_name_in_parameter,
+            use_class_in_method_name=use_class_in_method_name
+        )
 
         # Nodes that are not directly connected to function call nodes, need
         # to have the execution counter set, so that the Gephi timeline
@@ -284,7 +297,8 @@ class ProvenanceGraph:
     @staticmethod
     def _transform_graph(graph, annotations=None, attributes=None,
                          strip_namespace=True, remove_none=True,
-                         use_name_in_parameter=True):
+                         use_name_in_parameter=True,
+                         use_class_in_method_name=True):
         # Transform an RDFlib graph obtained from the PROV data, so that the
         # visualization is simplified. A new `nx.DiGraph` object is created
         # and returned. Annotations and attributes of the entities stored in
@@ -334,14 +348,22 @@ class ProvenanceGraph:
                 graph.objects(func_execution,
                               ALPACA.executionOrder))[0].value
 
+            # Function description
+            function = list(
+                graph.objects(func_execution, ALPACA.usedFunction))[0]
+            function_name = list(
+                graph.objects(function, ALPACA.functionName))[0].value
+
             # Get the entity(ies) used for this generation
             source_entities = list()
             for entity in graph.objects(func_execution, PROV.used):
                 source_entities.append(str(entity))
 
             node_data = _get_function_call_data(activity=func_execution,
+                function_name=function_name,
                 execution_order=execution_order, params=params,
-                use_name_in_parameter=use_name_in_parameter)
+                use_name_in_parameter=use_name_in_parameter,
+                use_class_in_name=use_class_in_method_name)
 
             # Add a new node for the function execution, with the activity
             # data

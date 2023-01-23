@@ -619,5 +619,56 @@ class ProvenanceDecoratorFileInputOutputTestCase(unittest.TestCase):
             test_case=self)
 
 
+# Tracking methods inside classes
+class ObjectWithMethod(object):
+    def __init__(self, coefficient):
+        self.coefficient = coefficient
+
+    def process(self, array, param1, param2):
+        return array + self.coefficient
+
+
+ObjectWithMethod.process = Provenance(inputs=['self', 'array'])(
+    ObjectWithMethod.process)
+
+
+class ProvenanceDecoratorClassMethodsTestCase(unittest.TestCase):
+
+    def test_class_method(self):
+        activate(clear=True)
+        obj = ObjectWithMethod(2)
+        res = obj.process(TEST_ARRAY, 4, 5)
+        deactivate()
+
+        self.assertEqual(len(Provenance.history), 1)
+
+        obj_info = DataObject(
+            hash=joblib.hash(obj, hash_name='sha1'),
+            hash_method="joblib_SHA1",
+            type="test_decorator.ObjectWithMethod",
+            id=id(obj),
+            details={'coefficient': 2})
+
+        expected_output = DataObject(
+            hash=joblib.hash(TEST_ARRAY+2, hash_name='sha1'),
+            hash_method="joblib_SHA1",
+            type="numpy.ndarray", id=id(res),
+            details={'shape': (3,), 'dtype': np.int64})
+
+        _check_function_execution(
+            actual=Provenance.history[0],
+            exp_function=FunctionInfo('ObjectWithMethod.process',
+                                      'test_decorator', ''),
+            exp_input={'self': obj_info, 'array': TEST_ARRAY_INFO},
+            exp_params={'param1': 4, 'param2': 5},
+            exp_output={0: expected_output},
+            exp_arg_map=['self', 'array', 'param1', 'param2'],
+            exp_kwarg_map=[],
+            exp_code_stmnt="res = obj.process(TEST_ARRAY, 4, 5)",
+            exp_return_targets=['res'],
+            exp_order=1,
+            test_case=self)
+
+
 if __name__ == "__main__":
     unittest.main()

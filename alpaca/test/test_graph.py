@@ -215,6 +215,28 @@ class ProvenanceGraphTestCase(unittest.TestCase):
         self.assertEqual(node_attrs["name"], "Spiketrain#1")
         self.assertEqual(node_attrs["sua"], "false")
 
+    def test_use_class_in_method_name(self):
+        input_file = self.ttl_path / "class_method.ttl"
+
+        graph = ProvenanceGraph(input_file, attributes=None,
+                                annotations=None,
+                                use_class_in_method_name=True)
+        node_attrs = graph.graph.nodes[
+            "urn:fz-juelich.de:alpaca:function_execution:Python:111111:999999:test.ObjectWithMethod.process#12345"]
+
+        self.assertEqual(node_attrs["label"], "ObjectWithMethod.process")
+
+    def test_no_use_class_in_method_name(self):
+        input_file = self.ttl_path / "class_method.ttl"
+
+        graph = ProvenanceGraph(input_file, attributes=None,
+                                annotations=None,
+                                use_class_in_method_name=False)
+        node_attrs = graph.graph.nodes[
+            "urn:fz-juelich.de:alpaca:function_execution:Python:111111:999999:test.ObjectWithMethod.process#12345"]
+
+        self.assertEqual(node_attrs["label"], "process")
+
     def test_no_strip_namespace(self):
         input_file = self.ttl_path / "metadata.ttl"
 
