@@ -332,9 +332,6 @@ class ProvenanceGraph:
         for s, func_execution in graph.subject_objects(PROV.wasGeneratedBy):
 
             target = str(s)
-            if remove_none and len(none_nodes) > 0:
-                if target in none_nodes:
-                    continue
 
             # Extract all the parameters of the function execution
             params = dict()
@@ -378,9 +375,10 @@ class ProvenanceGraph:
                 _add_gephi_interval(transformed.nodes[source],
                                     node_data['execution_order'])
 
-            transformed.add_edge(node_id, target, membership=False)
-            _add_gephi_interval(transformed.nodes[target],
-                                node_data['execution_order'])
+            if not remove_none or (remove_none and target not in none_nodes):
+                transformed.add_edge(node_id, target, membership=False)
+                _add_gephi_interval(transformed.nodes[target],
+                                    node_data['execution_order'])
 
         for container, member in graph.subject_objects(PROV.hadMember):
 

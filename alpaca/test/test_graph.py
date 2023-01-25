@@ -84,6 +84,18 @@ class ProvenanceGraphTestCase(unittest.TestCase):
         self.assertEqual(len(graph_with_none.graph.nodes), 4)
         self.assertEqual(len(graph_without_none.graph.nodes), 3)
 
+    def test_remove_none_no_output_function(self):
+        node = "urn:fz-juelich.de:alpaca:object:Python:builtins.NoneType:777777"
+        input_file = self.ttl_path / "none_output.ttl"
+        graph_with_none = ProvenanceGraph(input_file, remove_none=False)
+        graph_without_none = ProvenanceGraph(input_file, remove_none=True)
+
+        self.assertTrue(node in graph_with_none.graph.nodes)
+        self.assertFalse(node in graph_without_none.graph.nodes)
+        self.assertEqual(len(graph_with_none.graph.nodes), 3)
+        self.assertEqual(len(graph_without_none.graph.nodes), 2)
+
+
     def test_memberships(self):
         input_file = self.ttl_path / "multiple_memberships.ttl"
         graph = ProvenanceGraph(input_file)
