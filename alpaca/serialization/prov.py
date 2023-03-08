@@ -25,6 +25,7 @@ from alpaca.serialization.neo import _neo_object_metadata
 
 from alpaca.utils.files import _get_prov_file_format
 from alpaca.alpaca_types import DataObject, File, Container
+from alpaca.settings import _ALPACA_SETTINGS
 
 
 def _add_name_value_pair(graph, uri, predicate, name, value):
@@ -61,6 +62,7 @@ class AlpacaProvDocument(object):
         self.graph = Graph()
         self.graph.namespace_manager.bind('alpaca', ALPACA)
         self.graph.namespace_manager.bind('prov', PROV)
+        self._authority = _ALPACA_SETTINGS['authority']
 
         # Metadata plugins are used for packages (e.g., Neo) that require
         # special handling of metadata when adding to the PROV records.
@@ -91,7 +93,8 @@ class AlpacaProvDocument(object):
 
     def _add_ScriptAgent(self, script_info, session_id):
         # Adds a ScriptAgent record from the Alpaca PROV model
-        uri = URIRef(script_identifier(script_info, session_id))
+        uri = URIRef(script_identifier(script_info, session_id,
+                                       self._authority))
         self.graph.add((uri, RDF.type, ALPACA.ScriptAgent))
         self.graph.add((uri, ALPACA.scriptPath, Literal(script_info.path)))
         return uri
@@ -100,7 +103,7 @@ class AlpacaProvDocument(object):
 
     def _add_Function(self, function_info):
         # Adds a Function record from the Alpaca PROV model
-        uri = URIRef(function_identifier(function_info))
+        uri = URIRef(function_identifier(function_info, self._authority))
         self.graph.add((uri, RDF.type, ALPACA.Function))
         self.graph.add((uri, ALPACA.functionName,
                         Literal(function_info.name)))
@@ -115,7 +118,8 @@ class AlpacaProvDocument(object):
                                code_statement, start, end, function):
         # Adds a FunctionExecution record from the Alpaca PROV model
         uri = URIRef(execution_identifier(
-            script_info, function_info, session_id, execution_id))
+            script_info, function_info, session_id, execution_id,
+            self._authority))
         self.graph.add((uri, RDF.type, ALPACA.FunctionExecution))
         self.graph.add((uri, PROV.startedAtTime,
                         Literal(start, datatype=XSD.dateTime)))
@@ -137,7 +141,7 @@ class AlpacaProvDocument(object):
     def _add_DataObjectEntity(self, info):
         # Adds a DataObjectEntity from the Alpaca PROV model
         # If the entity already exists, skip it
-        uri = URIRef(data_object_identifier(info))
+        uri = URIRef(data_object_identifier(info, self._authority))
 
         if uri in self.graph.subjects(RDF.type, ALPACA.DataObjectEntity):
             return uri
@@ -148,7 +152,7 @@ class AlpacaProvDocument(object):
 
     def _add_FileEntity(self, info):
         # Adds a FileEntity from the Alpaca PROV model
-        uri = URIRef(file_identifier(info))
+        uri = URIRef(file_identifier(info, self._authority))
         self.graph.add((uri, RDF.type, ALPACA.FileEntity))
         self.graph.add((uri, ALPACA.filePath,
                         Literal(info.path, datatype=XSD.string)))
