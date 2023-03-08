@@ -1,6 +1,6 @@
 # alpaca
 
-## Automated Light-weight Provenance Capture
+## Automated Lightweight Provenance Capture
 
 [![tests](https://github.com/INM-6/alpaca/actions/workflows/CI.yml/badge.svg)](https://github.com/INM-6/alpaca/actions/workflows/CI.yml)
 [![Documentation Status](https://readthedocs.org/projects/alpaca-prov/badge/?version=latest)](https://alpaca-prov.readthedocs.io/en/latest/?badge=latest)
