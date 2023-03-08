@@ -6,7 +6,7 @@ import networkx as nx
 from functools import partial
 from collections import Counter
 
-from alpaca import ProvenanceGraph
+from alpaca import ProvenanceGraph, alpaca_setting
 
 
 class ProvenanceGraphTestCase(unittest.TestCase):
@@ -31,6 +31,7 @@ class ProvenanceGraphTestCase(unittest.TestCase):
                                                    suffix="tmp")
         cls.graph_comparison = partial(nx.is_isomorphic,
                                        node_match=cls._attr_comparison)
+        alpaca_setting('authority', "my-authority")
 
     def test_graph_behavior_and_serialization(self):
         input_file = self.ttl_path / "input_output.ttl"
@@ -353,6 +354,7 @@ class GraphAggregationTestCase(unittest.TestCase):
         cls.ttl_path = Path(__file__).parent / "res"
         input_file = cls.ttl_path / "parallel_graph.ttl"
         cls.graph = ProvenanceGraph(input_file, attributes=['shape', 'metadata'])
+        alpaca_setting('authority', "my-authority")
 
     def test_serialization(self):
         temp_dir = tempfile.TemporaryDirectory(dir=self.ttl_path, suffix="tmp")
@@ -466,6 +468,7 @@ class GraphAggregationTestCase(unittest.TestCase):
                         self.assertEqual(attrs[key], value)
                     else:
                         self.assertTrue(attrs[key] in value)
+
 
 if __name__ == "__main__":
     unittest.main()

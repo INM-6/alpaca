@@ -35,6 +35,22 @@ Currently, the following settings can be defined:
 
         Default: []
 
+* **authority**: str
+        The string defining the authority component used in the identifiers
+        throughout Alpaca.
+
+        Data objects, files, scripts, functions, and function executions are
+        serialized to RDF using URN identifiers. The basic form of the
+        identifier string is `urn:[authority]:alpaca:[complement]`, where
+        `[complement]` is a string composed by specific information of each
+        element identified.
+
+        `[authority]` is a string that points to the institute or organisation
+        which has responsibility over the script execution, and is defined
+        by this setting.
+
+        Default: "my-authority"
+
 
 To set/read a setting, use the function :func:`alpaca_setting`.
 
@@ -44,7 +60,8 @@ To set/read a setting, use the function :func:`alpaca_setting`.
 # Global Alpaca settings dictionary
 # Should be modified only through the `alpaca_setting` function.
 
-_ALPACA_SETTINGS = {'use_builtin_hash_for_module': []}
+_ALPACA_SETTINGS = {'use_builtin_hash_for_module': [],
+                    'authority': "my-authority"}
 
 
 def alpaca_setting(name, value=None):

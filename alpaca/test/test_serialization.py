@@ -12,7 +12,7 @@ import neo
 from alpaca.alpaca_types import (DataObject, File, FunctionInfo,
                                  FunctionExecution,
                                  Container)
-from alpaca import AlpacaProvDocument
+from alpaca import AlpacaProvDocument, alpaca_setting
 from alpaca.serialization.converters import _ensure_type
 from alpaca.serialization.neo import _neo_to_prov
 
@@ -81,6 +81,7 @@ class AlpacaProvSerializationTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.ttl_path = Path(__file__).parent / "res"
+        alpaca_setting('authority', "fz-juelich.de")
 
     def test_input_output_serialization(self):
         function_execution = FunctionExecution(
@@ -324,6 +325,7 @@ class SerializationIOTestCase(unittest.TestCase):
         cls.alpaca_prov = AlpacaProvDocument()
         cls.alpaca_prov.add_history(SCRIPT_INFO, SCRIPT_SESSION_ID,
                                     history=[function_execution])
+        alpaca_setting('authority', "fz-juelich.de")
 
     def test_serialization_deserialization(self):
 
@@ -425,6 +427,10 @@ class ConvertersTestCase(unittest.TestCase):
 
 
 class MultipleMembershipSerializationTestCase(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        alpaca_setting('authority', "fz-juelich.de")
 
     def test_multiple_memberships(self):
         # test relationship `super_container.containers[0].inputs[1]`
