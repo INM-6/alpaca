@@ -10,3 +10,4 @@ from .serialization import AlpacaProvDocument
 from .graph import ProvenanceGraph
 from .settings import alpaca_setting
 from .utils import files
+from .ontology.annotation import annotate_ontology, annotate_eao

@@ -25,6 +25,7 @@ from alpaca.serialization.neo import _neo_object_metadata
 
 from alpaca.utils.files import _get_prov_file_format
 from alpaca.alpaca_types import DataObject, File, Container
+from alpaca.ontology.annotation import OntologyInformation
 
 
 def _add_name_value_pair(graph, uri, predicate, name, value):
@@ -59,8 +60,10 @@ class AlpacaProvDocument(object):
 
     def __init__(self):
         self.graph = Graph()
-        self.graph.namespace_manager.bind('alpaca', ALPACA)
-        self.graph.namespace_manager.bind('prov', PROV)
+        namespace_manager = self.graph.namespace_manager
+        namespace_manager.bind('alpaca', ALPACA)
+        namespace_manager.bind('prov', PROV)
+        OntologyInformation.bind_namespaces(namespace_manager)
 
         # Metadata plugins are used for packages (e.g., Neo) that require
         # special handling of metadata when adding to the PROV records.
@@ -110,6 +113,14 @@ class AlpacaProvDocument(object):
                         Literal(function_info.version)))
         return uri
 
+    def _add_ontology_information(self, uri, info, information_type,
+                                  element=None):
+        ontology_info = info.ontology
+        if ontology_info.has_information(information_type):
+            class_iri = ontology_info.get_iri(information_type, element)
+            if class_iri:
+                self.graph.add((uri, RDF.type, class_iri))
+
     def _add_FunctionExecution(self, script_info, session_id, execution_id,
                                function_info, params, execution_order,
                                code_statement, start, end, function):
@@ -117,6 +128,9 @@ class AlpacaProvDocument(object):
         uri = URIRef(execution_identifier(
             script_info, function_info, session_id, execution_id))
         self.graph.add((uri, RDF.type, ALPACA.FunctionExecution))
+
+        self._add_ontology_information(uri, function_info, 'function')
+
         self.graph.add((uri, PROV.startedAtTime,
                         Literal(start, datatype=XSD.dateTime)))
         self.graph.add((uri, PROV.endedAtTime,

@@ -16,6 +16,7 @@ import numpy as np
 
 from alpaca import Provenance, activate, deactivate
 from alpaca.alpaca_types import FunctionInfo, DataObject
+from alpaca.ontology.annotation import OntologyInformation
 
 
 # Shortcut for SHA1 hashing using joblib
@@ -148,7 +149,7 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
 
         _check_function_execution(
             actual=Provenance.history[0],
-            exp_function=FunctionInfo('subscript', '', ''),
+            exp_function=FunctionInfo('subscript', '', '', None),
             exp_input={0: TEST_ARRAY_INFO},
             exp_params={'index': 0},
             exp_output={0: ELEMENT_0_INFO},
@@ -249,7 +250,7 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
 
         _check_function_execution(
             actual=Provenance.history[0],
-            exp_function=FunctionInfo('subscript', '', ''),
+            exp_function=FunctionInfo('subscript', '', '', None),
             exp_input={0: TEST_ARRAY_INFO},
             exp_params={'slice': '0:2'},
             exp_output={0: expected_slice_output},
@@ -416,7 +417,7 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
 
         _check_function_execution(
             actual=Provenance.history[0],
-            exp_function=FunctionInfo('subscript', '', ''),
+            exp_function=FunctionInfo('subscript', '', '', None),
             exp_input={0: TEST_DICT_INFO},
             exp_params={'index': 'numbers'},
             exp_output={0: TEST_ARRAY_INFO},
@@ -455,7 +456,7 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
 
         _check_function_execution(
             actual=Provenance.history[0],
-            exp_function=FunctionInfo('subscript', '', ''),
+            exp_function=FunctionInfo('subscript', '', '', None),
             exp_input={0: TEST_DICT_INFO},
             exp_params={'index': 'numbers'},
             exp_output={0: TEST_ARRAY_INFO},
@@ -498,7 +499,7 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
 
         _check_function_execution(
             actual=Provenance.history[0],
-            exp_function=FunctionInfo('attribute', '', ''),
+            exp_function=FunctionInfo('attribute', '', '', None),
             exp_input={0: expected_container_info},
             exp_params={'name': 'array'},
             exp_output={0: TEST_ARRAY_INFO},

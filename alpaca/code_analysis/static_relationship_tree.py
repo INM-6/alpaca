@@ -131,7 +131,8 @@ class _StaticRelationship(object):
         return FunctionExecution(
             function=FunctionInfo(name=self._operation,
                                   module="",
-                                  version=""),
+                                  version="",
+                                  ontology=None),
             input={0: input_object},
             params=params,
             output={0: output_object},

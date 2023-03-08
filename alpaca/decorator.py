@@ -19,6 +19,7 @@ from alpaca.code_analysis.source_code import _SourceCode
 from alpaca.serialization import AlpacaProvDocument
 from alpaca.utils.files import RDF_FILE_FORMAT_MAP
 from alpaca.settings import _ALPACA_SETTINGS
+from alpaca.ontology.annotation import OntologyInformation
 
 from pprint import pprint
 
@@ -336,8 +337,10 @@ class Provenance(object):
         function_name = function.__qualname__
         module_version = self._get_module_version(module=module,
                                                   function_name=function_name)
+
         function_info = FunctionInfo(name=function_name, module=module,
-                                     version=module_version)
+                                     version=module_version,
+                                     ontology=OntologyInformation(function))
 
         return source_line, ast_tree, return_targets, function_info
 

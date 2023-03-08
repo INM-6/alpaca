@@ -20,7 +20,7 @@ from alpaca.serialization.neo import _neo_to_prov
 # The unit tests will build FunctionExecution tuples using them
 
 # Function
-TEST_FUNCTION = FunctionInfo("test_function", "test", "0.0.1")
+TEST_FUNCTION = FunctionInfo("test_function", "test", "0.0.1", None)
 
 # Object without metadata
 INPUT = DataObject("12345", "joblib_SHA1", "test.InputObject", 12345, {})
