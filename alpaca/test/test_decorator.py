@@ -631,12 +631,42 @@ class ObjectWithMethod(object):
 ObjectWithMethod.process = Provenance(inputs=['self', 'array'])(
     ObjectWithMethod.process)
 
+ObjectWithMethod.__init__ = Provenance(inputs=[])(ObjectWithMethod.__init__)
+
 
 class ProvenanceDecoratorClassMethodsTestCase(unittest.TestCase):
 
-    def test_class_method(self):
+    def test_class_constructor(self):
         activate(clear=True)
         obj = ObjectWithMethod(2)
+        deactivate()
+
+        self.assertEqual(len(Provenance.history), 1)
+
+        expected_output = DataObject(
+            hash=joblib.hash(obj, hash_name='sha1'),
+            hash_method="joblib_SHA1",
+            type="test_decorator.ObjectWithMethod",
+            id=id(obj),
+            details={'coefficient': 2})
+
+        _check_function_execution(
+            actual=Provenance.history[0],
+            exp_function=FunctionInfo('ObjectWithMethod.__init__',
+                                      'test_decorator', ''),
+            exp_input={},
+            exp_params={'coefficient': 2},
+            exp_output={0: expected_output},
+            exp_arg_map=['self', 'coefficient'],
+            exp_kwarg_map=[],
+            exp_code_stmnt="obj = ObjectWithMethod(2)",
+            exp_return_targets=['obj'],
+            exp_order=1,
+            test_case=self)
+
+    def test_class_method(self):
+        obj = ObjectWithMethod(2)
+        activate(clear=True)
         res = obj.process(TEST_ARRAY, 4, 5)
         deactivate()
 

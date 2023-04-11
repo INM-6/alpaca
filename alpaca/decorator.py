@@ -303,6 +303,11 @@ class Provenance(object):
 
         return lineno
 
+    @staticmethod
+    def _is_class_constructor(function_name):
+        names = function_name.split(".")
+        return len(names) == 2 and names[-1] == "__init__"
+
     def _capture_code_and_function_provenance(self, lineno, function):
 
         # 1. Capture Abstract Syntax Tree (AST) of the call to the
@@ -414,7 +419,8 @@ class Provenance(object):
             input_data
 
     def _capture_output_provenance(self, function_output, return_targets,
-                                   input_data, builtin_object_hash):
+                                   input_data, builtin_object_hash,
+                                   constructed_object=None):
 
         # In case in-place operations were performed, lets not use
         # memoization
@@ -430,7 +436,11 @@ class Provenance(object):
             iterator = enumerate(function_output)
         else:
             if len(return_targets) < 2:
-                function_output = [function_output]
+                # If this was the `__init__` method, we do not consider the
+                # None object returned, as the call is returning the
+                # constructed object instance
+                function_output = [function_output] \
+                    if constructed_object is None else [constructed_object]
             iterator = enumerate(function_output)
 
         for index, item in iterator:
@@ -503,11 +513,24 @@ class Provenance(object):
             # If capturing provenance, resume capturing the output information
             if Provenance.active and lineno:
 
+                # If this was a constructor, we work with the object defined
+                # by the `self` argument
+                constructed_object = None
+                if self._is_class_constructor(function_info.name):
+                    # Capture information of the `self` object
+                    constructed_object = input_data.get('self', None)
+
+                    # Remove `self` from the parameters, in case it was not
+                    # specified as an input
+                    if 'self' in parameters:
+                        parameters.pop('self')
+
                 # Capture output information
                 outputs = self._capture_output_provenance(
                     function_output=function_output,
                     return_targets=return_targets, input_data=input_data,
-                    builtin_object_hash=builtin_object_hash)
+                    builtin_object_hash=builtin_object_hash,
+                    constructed_object=constructed_object)
 
                 # Get the end time stamp
                 time_stamp_end = datetime.datetime.utcnow().isoformat()
