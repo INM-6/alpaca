@@ -72,6 +72,10 @@ class AlpacaProvDocument(object):
             'neo': _neo_object_metadata
         }
 
+        # Set to store all entity URIs that are added to the graph, so that
+        # there is a fast lookup
+        self._entity_uris = set()
+
     # PROV relationships methods
 
     def _wasAttributedTo(self, entity, agent):
@@ -143,11 +147,12 @@ class AlpacaProvDocument(object):
         # If the entity already exists, skip it
         uri = URIRef(data_object_identifier(info, self._authority))
 
-        if uri in self.graph.subjects(RDF.type, ALPACA.DataObjectEntity):
+        if uri in self._entity_uris:
             return uri
         self.graph.add((uri, RDF.type, ALPACA.DataObjectEntity))
         self.graph.add((uri, ALPACA.hashSource, Literal(info.hash_method)))
         self._add_entity_metadata(uri, info)
+        self._entity_uris.add(uri)
         return uri
 
     def _add_FileEntity(self, info):
