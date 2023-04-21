@@ -338,9 +338,12 @@ class Provenance(object):
         module_version = self._get_module_version(module=module,
                                                   function_name=function_name)
 
+        ontology_information = OntologyInformation(function) \
+                if OntologyInformation.has_ontology(function) else None
+
         function_info = FunctionInfo(name=function_name, module=module,
                                      version=module_version,
-                                     ontology=OntologyInformation(function))
+                                     ontology=ontology_information)
 
         return source_line, ast_tree, return_targets, function_info
 

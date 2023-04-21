@@ -225,7 +225,7 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
         _check_function_execution(
             actual=Provenance.history[0],
             exp_function=FunctionInfo('simple_function',
-                                      'test_decorator', ''),
+                                      'test_decorator', '', None),
             exp_input={'array': TEST_ARRAY_INFO},
             exp_params={'param1': 1, 'param2': 2},
             exp_output={0: expected_output},
@@ -257,7 +257,7 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
         _check_function_execution(
             actual=Provenance.history[0],
             exp_function=FunctionInfo('simple_function',
-                                      'test_decorator', ''),
+                                      'test_decorator', '', None),
             exp_input={'array': TEST_ARRAY_INFO},
             exp_params={'param1': 2, 'param2': 1},
             exp_output={0: expected_output},
@@ -284,7 +284,7 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
         _check_function_execution(
             actual=Provenance.history[0],
             exp_function=FunctionInfo('simple_function',
-                                      'test_decorator', ''),
+                                      'test_decorator', '', None),
             exp_input={'array': TEST_ARRAY_INFO},
             exp_params={'param1': 1, 'param2': 2},
             exp_output={0: expected_output},
@@ -311,7 +311,7 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
         _check_function_execution(
             actual=Provenance.history[0],
             exp_function=FunctionInfo('simple_function_default',
-                                      'test_decorator', ''),
+                                      'test_decorator', '', None),
             exp_input={'array': TEST_ARRAY_INFO},
             exp_params={'param1': 1, 'param2': 10},
             exp_output={0: expected_output},
@@ -338,7 +338,7 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
         _check_function_execution(
             actual=Provenance.history[0],
             exp_function=FunctionInfo('simple_function_default',
-                                      'test_decorator', ''),
+                                      'test_decorator', '', None),
             exp_input={'array': TEST_ARRAY_INFO},
             exp_params={'param1': 1, 'param2': 8},
             exp_output={0: expected_output},
@@ -366,7 +366,7 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
         _check_function_execution(
             actual=Provenance.history[0],
             exp_function=FunctionInfo('container_input_function',
-                                      'test_decorator', ''),
+                                      'test_decorator', '', None),
             exp_input={'arrays': Container(tuple(
                 [TEST_ARRAY_INFO, TEST_ARRAY_2_INFO]))},
             exp_params={'param1': 3, 'param2': 6},
@@ -395,7 +395,7 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
         _check_function_execution(
             actual=Provenance.history[0],
             exp_function=FunctionInfo('varargs_function',
-                                      'test_decorator', ''),
+                                      'test_decorator', '', None),
             exp_input={'arrays': Container(tuple(
                 [TEST_ARRAY_INFO, TEST_ARRAY_2_INFO]))},
             exp_params={'param1': 1, 'param2': 2},
@@ -423,7 +423,7 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
         _check_function_execution(
             actual=Provenance.history[0],
             exp_function=FunctionInfo('multiple_inputs_function',
-                                      'test_decorator', ''),
+                                      'test_decorator', '', None),
             exp_input={'array_1': TEST_ARRAY_INFO,
                        'array_2': TEST_ARRAY_2_INFO},
             exp_params={'param1': 3, 'param2': 6},
@@ -457,7 +457,7 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
         _check_function_execution(
             actual=Provenance.history[0],
             exp_function=FunctionInfo('multiple_outputs_function',
-                                      'test_decorator', ''),
+                                      'test_decorator', '', None),
             exp_input={'array': TEST_ARRAY_INFO},
             exp_params={'param1': 3, 'param2': 6},
             exp_output={0: expected_output_1, 1: expected_output_2},
@@ -484,7 +484,7 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
         _check_function_execution(
             actual=Provenance.history[0],
             exp_function=FunctionInfo('multiple_outputs_function',
-                                      'test_decorator', ''),
+                                      'test_decorator', '', None),
             exp_input={'array': TEST_ARRAY_INFO},
             exp_params={'param1': 3, 'param2': 6},
             exp_output={0: expected_output},
@@ -517,7 +517,7 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
         _check_function_execution(
             actual=Provenance.history[0],
             exp_function=FunctionInfo('container_output_function',
-                                      'test_decorator', ''),
+                                      'test_decorator', '', None),
             exp_input={'array': TEST_ARRAY_INFO},
             exp_params={'param1': 3, 'param2': 6},
             exp_output={0: expected_output_1, 1: expected_output_2},
@@ -568,7 +568,7 @@ class ProvenanceDecoratorFileInputOutputTestCase(unittest.TestCase):
         _check_function_execution(
             actual=Provenance.history[0],
             exp_function=FunctionInfo('extract_words_from_file',
-                                      'test_decorator', ''),
+                                      'test_decorator', '', None),
             exp_input={'file_name': expected_file},
             exp_params={},
             exp_output={0: expected_output},
@@ -607,7 +607,7 @@ class ProvenanceDecoratorFileInputOutputTestCase(unittest.TestCase):
         _check_function_execution(
             actual=Provenance.history[0],
             exp_function=FunctionInfo('save_words_to_file',
-                                      'test_decorator', ''),
+                                      'test_decorator', '', None),
             exp_input={'words': expected_input},
             exp_params={},
             exp_output={0: expected_none_output, 'file.0': expected_file},

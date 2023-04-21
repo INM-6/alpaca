@@ -60,9 +60,13 @@ class OntologyInformation(object):
         for name, namespace in cls.namespaces.items():
             namespace_manager.bind(name, namespace)
 
+    @staticmethod
+    def has_ontology(obj):
+        return hasattr(obj, "__ontology__")
+
     def __init__(self, obj):
 
-        if hasattr(obj, "__ontology__"):
+        if self.has_ontology(obj):
             # An ontology annotation with semantic information is present
             # Store each element inside this object
 
