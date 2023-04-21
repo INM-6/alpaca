@@ -116,7 +116,7 @@ class AlpacaProvDocument(object):
     def _add_ontology_information(self, uri, info, information_type,
                                   element=None):
         ontology_info = info.ontology
-        if ontology_info.has_information(information_type):
+        if ontology_info and ontology_info.has_information(information_type):
             class_iri = ontology_info.get_iri(information_type, element)
             if class_iri:
                 self.graph.add((uri, RDF.type, class_iri))
