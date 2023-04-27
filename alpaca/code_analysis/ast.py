@@ -108,8 +108,13 @@ class _CallAST(ast.NodeVisitor):
 
     def visit_Call(self, node):
 
+        # In case of initializers, the AST function name will not have
+        # `__init__` in the method name
+        func_name = self.function[:-9] \
+            if self.function.endswith(".__init__") else self.function
+
         # Check if the Call is for the function being executed
-        if isinstance(node.func, ast.Name) and node.func.id == self.function:
+        if isinstance(node.func, ast.Name) and node.func.id == func_name:
 
             # Fetch static information of Attribute and Subscript nodes that
             # were inputs. This should capture hierarchical information for

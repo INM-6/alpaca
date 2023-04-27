@@ -58,6 +58,12 @@ class ContainerOfArray:
         self.array = array
 
 
+class CustomObject:
+    @Provenance(inputs=['data'])
+    def __init__(self, data):
+        self.data = data
+
+
 # Define some test functions to use different relationships
 
 @Provenance(inputs=['num1', 'num2'])
@@ -517,6 +523,56 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
             exp_kwarg_map=[],
             exp_code_stmnt="res = add_numbers_array(container_of_array.array)",
             exp_return_targets=['res'],
+            exp_order=1,
+            test_case=self)
+
+    def test_subscript_initializer(self):
+        activate(clear=True)
+        list_1 = [1, 2, 3]
+        list_2 = [3, 4, 5]
+        source_data = [list_1, list_2]
+        custom_object = CustomObject(source_data[0])
+        deactivate()
+
+        self.assertEqual(len(Provenance.history), 2)
+
+        expected_output = DataObject(
+            hash=joblib_hash(custom_object),
+            hash_method="joblib_SHA1",
+            type="test_code_analysis.CustomObject", id=id(custom_object),
+            details={'data': list_1})
+
+        source_list_info = DataObject(
+            hash=joblib_hash(source_data),
+            hash_method="joblib_SHA1",
+            type="builtins.list", id=id(source_data), details={})
+
+        element_info = DataObject(
+            hash=joblib_hash(list_1),
+            hash_method="joblib_SHA1",
+            type="builtins.list", id=id(list_1), details={})
+
+        _check_function_execution(
+            actual=Provenance.history[0],
+            exp_function=FunctionInfo('subscript', '', ''),
+            exp_input={0: source_list_info},
+            exp_params={'index': 0},
+            exp_output={0: element_info},
+            exp_arg_map=None, exp_kwarg_map=None, exp_code_stmnt=None,
+            exp_return_targets=[], exp_order=None,
+            test_case=self)
+
+        _check_function_execution(
+            actual=Provenance.history[1],
+            exp_function=FunctionInfo('CustomObject.__init__',
+                                      'test_code_analysis', ''),
+            exp_input={'data': element_info},
+            exp_params={},
+            exp_output={0: expected_output},
+            exp_arg_map=['self', 'data'],
+            exp_kwarg_map=[],
+            exp_code_stmnt="custom_object = CustomObject(source_data[0])",
+            exp_return_targets=['custom_object'],
             exp_order=1,
             test_case=self)
 
