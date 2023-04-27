@@ -257,9 +257,9 @@ class Provenance(object):
         return input_data, input_args_names, input_kwargs_names, default_args
 
     @staticmethod
-    def _get_module_version(module, function_name):
+    def _get_module_version(module):
 
-        if not module.startswith("__main__"):
+        if not module.startswith("__main__") or module is None:
             # User-defined functions in the running script do not have a
             # version
             package = module.split(".")[0]
@@ -332,10 +332,16 @@ class Provenance(object):
                 raise ValueError("Unknown assign target!")
 
         # 3. Extract function name and information
-        module = getattr(function, '__module__')
         function_name = function.__qualname__
-        module_version = self._get_module_version(module=module,
-                                                  function_name=function_name)
+        module = None
+        try:
+            module = getattr(function, '__module__')
+        except AttributeError:
+            # Case of method descriptors
+            if type(function).__qualname__ == "method_descriptor":
+                module = getattr(function.__objclass__, '__module__')
+
+        module_version = self._get_module_version(module)
         function_info = FunctionInfo(name=function_name, module=module,
                                      version=module_version)
 

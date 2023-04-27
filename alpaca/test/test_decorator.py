@@ -11,6 +11,8 @@ import rdflib
 from rdflib.compare import graph_diff
 
 import numpy as np
+import quantities as pq
+import neo
 
 from alpaca import (Provenance, activate, deactivate, save_provenance,
                     print_history)
@@ -669,8 +671,57 @@ class ObjectWithMethod(object):
 ObjectWithMethod.process = Provenance(inputs=['self', 'array'])(
     ObjectWithMethod.process)
 
+# Apply decorator to method that uses the descriptor protocol
+neo.AnalogSignal.reshape = Provenance(inputs=[0])(neo.AnalogSignal.reshape)
+
 
 class ProvenanceDecoratorClassMethodsTestCase(unittest.TestCase):
+
+    def test_method_descriptor(self):
+        activate(clear=True)
+        ansig = neo.AnalogSignal(TEST_ARRAY, units='mV', sampling_rate=1*pq.Hz)
+        reshaped = ansig.reshape((1, -1))
+        deactivate()
+
+        self.assertEqual(len(Provenance.history), 1)
+
+        expected_input = DataObject(
+            hash=joblib.hash(ansig, hash_name='sha1'),
+            hash_method="joblib_SHA1",
+            type="neo.core.analogsignal.AnalogSignal", id=id(ansig),
+            details={'_dimensionality': pq.mV.dimensionality,
+                     '_t_start': 0 * pq.s, '_sampling_rate': 1 * pq.Hz,
+                     'annotations': {}, 'array_annotations': {}, 'name': None,
+                     'file_origin': None, 'description': None, 'segment': None,
+                     'units': pq.mV.units, 'shape': (3, 1), 'dtype': np.int64,
+                     't_start': 0 * pq.s, 't_stop': 3 * pq.s,
+                     'dimensionality': pq.mV.dimensionality})
+
+        expected_output = DataObject(
+            hash=joblib.hash(reshaped, hash_name='sha1'),
+            hash_method="joblib_SHA1",
+            type="neo.core.analogsignal.AnalogSignal", id=id(reshaped),
+            details={'_dimensionality': pq.mV.dimensionality,
+                     '_t_start': 0 * pq.s, '_sampling_rate': 1 * pq.Hz,
+                     'annotations': {}, 'array_annotations': {}, 'name': None,
+                     'file_origin': None, 'description': None, 'segment': None,
+                     'units': pq.mV.units, 'shape': (1, 3), 'dtype': np.int64,
+                     't_start': 0 * pq.s, 't_stop': 1 * pq.s,
+                     'dimensionality': pq.mV.dimensionality})
+
+        _check_function_execution(
+            actual=Provenance.history[0],
+            exp_function=FunctionInfo('ndarray.reshape',
+                                      'numpy', np.__version__),
+            exp_input={0: expected_input},
+            exp_params={1: (1, -1)},
+            exp_output={0: expected_output},
+            exp_arg_map=[0, 1],
+            exp_kwarg_map=[],
+            exp_code_stmnt="reshaped = ansig.reshape((1, -1))",
+            exp_return_targets=['reshaped'],
+            exp_order=1,
+            test_case=self)
 
     def test_class_method(self):
         activate(clear=True)
