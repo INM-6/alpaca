@@ -312,7 +312,7 @@ class Provenance(object):
         source_line = \
             self._source_code.extract_multiline_statement(lineno)
         ast_tree = ast.parse(source_line)
-        logger.info(f"Line {lineno} -> {source_line}")
+        logger.debug(f"Line {lineno} -> {source_line}")
 
         # 2. Check if there is an assignment to one or more
         # variables. This will be used to identify if there are
@@ -454,7 +454,7 @@ class Provenance(object):
 
             builtin_object_hash = _ALPACA_SETTINGS[
                 'use_builtin_hash_for_module']
-            logging.debug(f"Builtin object hash: {builtin_object_hash}")
+            logger.debug(f"Builtin object hash: {builtin_object_hash}")
 
             lineno = None
 
