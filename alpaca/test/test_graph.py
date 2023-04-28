@@ -469,6 +469,56 @@ class GraphAggregationTestCase(unittest.TestCase):
                     else:
                         self.assertTrue(attrs[key] in value)
 
+    def test_aggregation_member_info(self):
+        aggregated = self.graph.aggregate({}, use_function_parameters=False,
+                                          output_file=None)
+        nodes = aggregated.nodes
+
+        self.assertEqual(len(nodes), 4)
+
+        expected = {
+            'OutputObject': {'member_count': 4,
+                             'members': "urn:fz-juelich.de:alpaca:object:Python:__main__.OutputObject:4ef19b49bcf029faae5349020a54096d53398c95;urn:fz-juelich.de:alpaca:object:Python:__main__.OutputObject:3934c99ea6197963f4bc7413932f6ce6dd800b08;urn:fz-juelich.de:alpaca:object:Python:__main__.OutputObject:93f4a32cb869a3e115e3382fd0fd49ab4ea0c8df;urn:fz-juelich.de:alpaca:object:Python:__main__.OutputObject:97ce94acf4ec4e2cb7d1319b798dbdd187df9558"},
+            'InputObject': {'member_count': 4,
+                            'members': "urn:fz-juelich.de:alpaca:object:Python:__main__.InputObject:84fa33edca00abb3c664c3b994e455ae10fbefa1;urn:fz-juelich.de:alpaca:object:Python:__main__.InputObject:9dbee0f2b42ba928138d4eb3cc3059f2d7086716;urn:fz-juelich.de:alpaca:object:Python:__main__.InputObject:eed23509f67bfc5dd108fe361ce57a1b9737a286;urn:fz-juelich.de:alpaca:object:Python:__main__.InputObject:b443853aa145342288afaae4f68b6b421683f411"},
+            'process': {'member_count': 4,
+                        'members': "urn:fz-juelich.de:alpaca:function_execution:Python:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393:13495a29-65e6-4853-90b1-05bb4dba9040:__main__.process#6ef55dd9-35f5-4519-aed5-80906c7fa341;urn:fz-juelich.de:alpaca:function_execution:Python:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393:13495a29-65e6-4853-90b1-05bb4dba9040:__main__.process#7e3565c0-4313-4229-a0dc-8fa81e4301a1;urn:fz-juelich.de:alpaca:function_execution:Python:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393:13495a29-65e6-4853-90b1-05bb4dba9040:__main__.process#3dbe5e02-a5e6-48b6-8cb8-e3f0447d7a40;urn:fz-juelich.de:alpaca:function_execution:Python:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393:13495a29-65e6-4853-90b1-05bb4dba9040:__main__.process#f635dbb8-ad01-4c3d-99ca-5496940143cc"},
+            'list': {'member_count': 1,
+                     'members': "urn:fz-juelich.de:alpaca:object:Python:builtins.list:f801594e5cebdc73ba8815e8ad66cab5cd86d2bf"}
+        }
+
+        for node, attrs in nodes.items():
+            label = attrs['label']
+            with self.subTest(f"Node label {label}"):
+                expected_info = expected[label]
+                self.assertTrue('members' in attrs)
+                self.assertEqual(attrs['member_count'],
+                                 expected_info['member_count'])
+                graph_members = sorted(attrs['members'].split(";"))
+                expected_members = sorted(expected_info['members'].split(";"))
+                self.assertListEqual(graph_members, expected_members)
+
+    def test_aggregation_member_info_count_only(self):
+        aggregated = self.graph.aggregate({}, use_function_parameters=False,
+                                          output_file=None,
+                                          record_members=False)
+        nodes = aggregated.nodes
+
+        self.assertEqual(len(nodes), 4)
+
+        expected_counts = {
+            'OutputObject': 4,
+            'InputObject': 4,
+            'process': 4,
+            'list': 1
+        }
+
+        for node, attrs in nodes.items():
+            label = attrs['label']
+            with self.subTest(f"Node label {label}"):
+                self.assertTrue('members' not in attrs)
+                self.assertEqual(attrs['member_count'], expected_counts[label])
+
 
 if __name__ == "__main__":
     unittest.main()
