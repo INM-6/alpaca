@@ -27,6 +27,7 @@ from alpaca.utils.files import _get_prov_file_format
 from alpaca.alpaca_types import DataObject, File, Container
 from alpaca.settings import _ALPACA_SETTINGS
 
+from tqdm import tqdm
 
 def _add_name_value_pair(graph, uri, predicate, name, value):
     # Add a relationship defined by `predicate` using a blank node as object.
@@ -303,7 +304,7 @@ class AlpacaProvDocument(object):
             Provenance history to be serialized as PROV.
         """
         script_agent = self._add_ScriptAgent(script_info, session_id)
-        for execution in history:
+        for execution in tqdm(history, desc="Serializing provenance history"):
             self._add_function_execution(execution, script_agent, script_info,
                                          session_id)
 
