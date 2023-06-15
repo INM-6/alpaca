@@ -11,7 +11,7 @@ is used in the examples, available at
 `https://doi.gin.g-node.org/10.12751/g-node.f83565 <https://doi.gin.g-node.org/10.12751/g-node.f83565>`_.
 
 The dataset that is used in the examples is **l101210-001.nix**, and must be downloaded
-to your computer. It can be directly accessed at `the GIN repository <https://>`_.
+to your computer. It can be directly accessed at `the GIN repository <https://gin.g-node.org/INT/multielectrode_grasp/raw/to_nix/datasets_nix/l101210-001.nix>`_.
 
 
 Running the examples
