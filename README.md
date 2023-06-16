@@ -96,5 +96,4 @@ BSD 3-Clause License, see [LICENSE.txt](LICENSE.txt) for details.
 
 ## Copyright
 
-:copyright: 2019-2022 by the 
-[Alpaca authors and contributors](doc/authors.rst).
+:copyright: 2022-2023, Forschungszentrum Jülich GmbH, INM-6, IAS-6. All rights reserved.
