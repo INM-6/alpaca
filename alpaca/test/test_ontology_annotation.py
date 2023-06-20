@@ -105,7 +105,7 @@ class OntologyAnnotationTestCase(unittest.TestCase):
             self.assertTupleEqual(tuple(info.namespaces.keys()), ('ontology',))
 
     def test_provenance_annotation(self):
-        activate()
+        activate(clear=True)
         input_object = InputObject()
         output_object = process(input_object, 34)
         deactivate()
@@ -133,7 +133,14 @@ class OntologyAnnotationTestCase(unittest.TestCase):
             len(list(prov_graph.triples(
                 (None, RDF.type, ONTOLOGY.ProcessedData)))
             ), 1)
-
+        self.assertEqual(
+            len(list(prov_graph.triples(
+                (None, RDF.type, ONTOLOGY.InputObject)))
+            ), 1)
+        self.assertEqual(
+            len(list(prov_graph.triples(
+                (None, RDF.type, ONTOLOGY.OutputObject)))
+            ), 1)
 
         # FunctionExecution is ProcessFunction
         execution_iri = list(
@@ -151,9 +158,11 @@ class OntologyAnnotationTestCase(unittest.TestCase):
             prov_graph.subjects(RDF.type, ONTOLOGY.ProcessedData))[0]
         self.assertTrue((output_node, PROV.wasGeneratedBy, execution_iri) in prov_graph)
         self.assertTrue((output_node, RDF.type, ALPACA.DataObjectEntity) in prov_graph)
+        self.assertTrue((output_node, RDF.type, ONTOLOGY.OutputObject) in prov_graph)
 
-        # execution_iri = list(
-        #     prov_graph.predicate_objects(
-        #         RDF.type, ALPACA.FunctionExecution))
-        # print(prov_graph.triples((execution_iri, RDF.type, ONTOLOGY.ProcessFunction)))
-
+        # Check input value
+        input_node = list(
+            prov_graph.subjects(RDF.type, ONTOLOGY.InputObject))[0]
+        self.assertTrue((execution_iri, PROV.used, input_node) in prov_graph)
+        self.assertTrue((input_node, RDF.type, ALPACA.DataObjectEntity) in prov_graph)
+        self.assertTrue((output_node, PROV.wasDerivedFrom, input_node) in prov_graph)
