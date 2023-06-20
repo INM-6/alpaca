@@ -41,8 +41,7 @@ FunctionExecution = namedtuple('FunctionExecution', ('function',
                                                      'execution_id')
                                )
 
-FunctionInfo = namedtuple('FunctionInfo', ('name', 'module', 'version',
-                                           'ontology'))
+FunctionInfo = namedtuple('FunctionInfo', ('name', 'module', 'version',))
 
 
 # NAMED TUPLE TO STORE ARGUMENTS THAT ARE CONTAINERS

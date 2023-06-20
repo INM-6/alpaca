@@ -20,7 +20,7 @@ from alpaca.serialization.neo import _neo_to_prov
 # The unit tests will build FunctionExecution tuples using them
 
 # Function
-TEST_FUNCTION = FunctionInfo("test_function", "test", "0.0.1", None)
+TEST_FUNCTION = FunctionInfo("test_function", "test", "0.0.1")
 
 # Object without metadata
 INPUT = DataObject("12345", "joblib_SHA1", "test.InputObject", 12345, {})
@@ -188,8 +188,7 @@ class AlpacaProvSerializationTestCase(unittest.TestCase):
 
     def test_collection_serialization(self):
         indexing_access = FunctionExecution(
-            function=FunctionInfo(name='subscript', module="", version="",
-                                  ontology=None),
+            function=FunctionInfo(name='subscript', module="", version=""),
             input={0: COLLECTION}, params={'index': 0},
             output={0: INPUT}, call_ast=None, arg_map=None, kwarg_map=None,
             return_targets=[], time_stamp_start=TIMESTAMP_START,
@@ -410,8 +409,7 @@ class MultipleMembershipSerializationTestCase(unittest.TestCase):
                                     3333332, {})
 
         attribute_access_container = FunctionExecution(
-            function=FunctionInfo(name='attribute', module="", version="",
-                                  ontology=None),
+            function=FunctionInfo(name='attribute', module="", version=""),
             input={0: super_container}, params={'name': 'containers'},
             output={0: super_container_list}, call_ast=None, arg_map=None,
             kwarg_map=None,
@@ -420,8 +418,7 @@ class MultipleMembershipSerializationTestCase(unittest.TestCase):
             order=None, code_statement=None)
 
         indexing_access_container = FunctionExecution(
-            function=FunctionInfo(name='subscript', module="", version="",
-                                  ontology=None),
+            function=FunctionInfo(name='subscript', module="", version=""),
             input={0: super_container_list}, params={'index': 0},
             output={0: container}, call_ast=None, arg_map=None, kwarg_map=None,
             return_targets=[], time_stamp_start=TIMESTAMP_START,
@@ -430,8 +427,7 @@ class MultipleMembershipSerializationTestCase(unittest.TestCase):
             code_statement=None)
 
         attribute_access_inputs = FunctionExecution(
-            function=FunctionInfo(name='attribute', module="", version="",
-                                  ontology=None),
+            function=FunctionInfo(name='attribute', module="", version=""),
             input={0: container}, params={'name': 'inputs'},
             output={0: container_list}, call_ast=None, arg_map=None,
             kwarg_map=None,
@@ -440,8 +436,7 @@ class MultipleMembershipSerializationTestCase(unittest.TestCase):
             order=None, code_statement=None)
 
         indexing_access_inputs = FunctionExecution(
-            function=FunctionInfo(name='subscript', module="", version="",
-                                  ontology=None),
+            function=FunctionInfo(name='subscript', module="", version=""),
             input={0: container_list}, params={'index': 1},
             output={0: INPUT}, call_ast=None, arg_map=None, kwarg_map=None,
             return_targets=[], time_stamp_start=TIMESTAMP_START,

@@ -6,6 +6,8 @@ The items that can be stored in the dictionary are:
 
 * 'function' : str
    An IRI to the ontology class representing the function.
+* 'package': str
+   An IRI to the individual representing the package information.
 * 'data_object' : str
    An IRI to the ontology class representing the Python data object.
 * 'arguments' : dict
@@ -22,23 +24,35 @@ The items that can be stored in the dictionary are:
    A dictinoary where the keys are annotation names and the values are the
    IRI to the ontology class representing the annotation.
 * 'namespaces' : dict
-   A dictionary where the keys are the name used as prefix and the values are
-   the prefixed IRI to be expanded.
+   A dictionary where the keys are the names used as prefixes and the values
+   are the prefixed IRIs to be expanded.
 
-The decorator `annotate_ontology` is provide to insert ontology information
+The decorator `annotate_ontology` is provided to insert ontology information
 into functions.
 
 """
 import rdflib
 from copy import deepcopy
 from functools import partial
+from itertools import chain
 
 
+# Two types of entities can be annotated: functions or data objects.
+# For each, specific additional information can also be annotated (e.g.,
+# the parameters of a function). This dictionary defines which can be defined
+# for each entity, and the strings that are used as keys in the `__ontology__`
+# dictionary.
 VALID_INFORMATION = {
     'data_object': ('namespaces', 'attributes', 'annotations'),
-    'function': ('namespaces', 'arguments', 'returns')
+    'function': ('namespaces', 'arguments', 'returns', 'package')
 }
-VALID_OBJECTS = list(VALID_INFORMATION.keys())
+VALID_OBJECTS = set(VALID_INFORMATION.keys())
+VALID_ANNOTATIONS = set(VALID_INFORMATION.values())
+
+
+# Global dictionary to store ontology information during the capture.
+# This is used later for the serialization.
+ONTOLOGY_INFORMATION = {}
 
 
 class OntologyInformation(object):
@@ -84,10 +98,14 @@ class OntologyInformation(object):
 
     def get_iri(self, information_type, element=None):
         if information_type in VALID_OBJECTS:
+            # Information on 'function', 'data_object' and 'package' are
+            # strings, stored directly as attributes
             information_value = getattr(self, information_type)
         else:
-            information = getattr(self, information_type)
-            if element not in information:
+            # Specific information of 'function' and 'data_object' are
+            # stored in dictionaries (e.g., 'attributes', 'parameters'...)
+            information = getattr(self, information_type, None)
+            if information is None or element not in information:
                 return None
             information_value = information[element]
 
@@ -95,7 +113,7 @@ class OntologyInformation(object):
             # This is an IRI
             return rdflib.URIRef(information_value[1:-1])
 
-        # If not full IRIs, information must be CURIEs
+        # If not full IRIs, information must be CURIEs. Get the URIRef.
         prefix, value = information_value.split(":")
         return self.namespaces[prefix][value]
 
@@ -107,21 +125,53 @@ class OntologyInformation(object):
                 information.append(f"{obj_type}='{getattr(self, obj_type)}'")
                 for specific_information in VALID_INFORMATION[obj_type]:
                     if self.has_information(specific_information):
+                        specific_info = getattr(self, specific_information)
+                        info_str = str(specific_info) \
+                            if not isinstance(specific_info, str) else \
+                            f"'{specific_info}'"
                         information.append(
-                            f"{specific_information}="
-                            f"{getattr(self, specific_information)}")
+                            f"{specific_information}={info_str}")
                 repr_str = f"{repr_str}{', '.join(information)})"
         return repr_str
 
 
-# Annotation decorator
+def update_ontology_information(obj, obj_type, obj_iri, namespaces=None,
+                                **kwargs):
+    """
+    Updates the ontology information in an object. This can be a function or
+    an object holding data.
 
-
-def update_ontology_information(obj, obj_type, obj_iri, **kwargs):
+    Parameters
+    ----------
+    obj : object
+        Function or data object. It must allow attribute assignment.
+    obj_type : {'function', 'data_object'}
+        Defines the type of object being annotated. This is used to filter
+        additional information that can be annotated using `kwargs`.
+    namespaces : dict
+        Dictionary where the keys are the prefixes of the namespaces used in
+        the annotations, and the values are the IRI representing the namespace.
+    kwargs : dict
+        Additional information on the object `obj`. The key is the type of
+        information, and the values are a dictionary, where the keys identify
+        the information and the values are the IRIs of the ontology identifying
+        the term.
+        This depends on `obj_type`:
+        * `'function'`: `arguments`, `returns`, to identify the names of any
+          argument present in the function definition, or the returns. In case
+          of tuples, the key of the dictionary is an integer with the order of
+          the objects returned.
+        * `'data_object'`: `attributes`, `annotations`, to identify the names
+          of object attributes or annotations (as elements in an `annotations`
+          dictionary) respectively.
+    """
     if obj_type not in VALID_OBJECTS:
         raise ValueError(f"Invalid object type: {obj_type}")
 
     obj.__ontology__ = {obj_type: obj_iri}
+
+    if namespaces is not None:
+        kwargs['namespaces'] = namespaces
 
     for information_type, value in kwargs.items():
         if value and information_type in VALID_INFORMATION[obj_type]:
@@ -130,13 +180,14 @@ def update_ontology_information(obj, obj_type, obj_iri, **kwargs):
     return obj
 
 
-def annotate_ontology(function_iri, **kwargs):
+def annotate_function_with_ontology(function_iri, **kwargs):
 
-    def decorator(function):
+    def wrapped(function):
 
         if {'attributes', 'annotations'}.intersection(set(kwargs.keys())):
             raise ValueError("Invalid annotations for a function")
 
+        # Dictionary will be passed to `update_ontology_information`
         info = {'obj_type': 'function',
                 'obj_iri': function_iri}
         info.update(kwargs)
@@ -148,30 +199,4 @@ def annotate_ontology(function_iri, **kwargs):
 
         return update_ontology_information(function, **info)
 
-    return decorator
-
-
-annotate_eao = partial(annotate_ontology,
-                       namespaces={"eao": "http://eao.ontology/owl#"})
-
-@annotate_eao("eao:add", arguments={"a": "eao:operand", "b": "eao:operand"},
-              returns={0: "eao:result"})
-def test(a, b):
-    return a + b
-
-
-@annotate_eao("eao:add2")
-def test2(a, b):
-    return a + b + b
-
-
-if __name__ == "__main__":
-
-    for fn in (test, test2):
-        print(fn(1, 2))
-        print(fn.__ontology__)
-        print(fn.__qualname__, fn.__name__)
-
-        annotation = OntologyInformation(fn)
-        print(annotation)
-        print(OntologyInformation.namespaces)
+    return wrapped

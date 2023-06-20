@@ -10,6 +10,7 @@ RDF files.
 """
 
 from itertools import product
+from collections import defaultdict
 
 from rdflib import Graph, URIRef, BNode, Literal
 from rdflib.namespace import RDF, PROV, XSD
@@ -19,13 +20,14 @@ from alpaca.serialization.identifiers import (data_object_identifier,
                                               file_identifier,
                                               function_identifier,
                                               script_identifier,
-                                              execution_identifier)
+                                              execution_identifier,
+                                              _get_function_name)
 from alpaca.serialization.converters import _ensure_type
 from alpaca.serialization.neo import _neo_object_metadata
 
 from alpaca.utils.files import _get_prov_file_format
 from alpaca.alpaca_types import DataObject, File, Container
-from alpaca.ontology.annotation import OntologyInformation
+from alpaca.ontology.annotation import OntologyInformation, ONTOLOGY_INFORMATION
 
 
 def _add_name_value_pair(graph, uri, predicate, name, value):
@@ -36,6 +38,7 @@ def _add_name_value_pair(graph, uri, predicate, name, value):
     graph.add((blank_node, RDF.type, ALPACA.NameValuePair))
     graph.add((blank_node, ALPACA.pairName, Literal(name)))
     graph.add((blank_node, ALPACA.pairValue, Literal(value)))
+    return blank_node
 
 
 class AlpacaProvDocument(object):
@@ -63,6 +66,10 @@ class AlpacaProvDocument(object):
         namespace_manager = self.graph.namespace_manager
         namespace_manager.bind('alpaca', ALPACA)
         namespace_manager.bind('prov', PROV)
+
+        # Gets all OntologyInformation objects generated with annotation
+        # information during the run. Update the current graph namespaces
+        # accordingly
         OntologyInformation.bind_namespaces(namespace_manager)
 
         # Metadata plugins are used for packages (e.g., Neo) that require
@@ -113,23 +120,24 @@ class AlpacaProvDocument(object):
                         Literal(function_info.version)))
         return uri
 
-    def _add_ontology_information(self, uri, info, information_type,
+    def _add_ontology_information(self, uri, info_id, information_type,
                                   element=None):
-        ontology_info = info.ontology
-        if ontology_info and ontology_info.has_information(information_type):
+        ontology_info = ONTOLOGY_INFORMATION.get(info_id)
+        if ontology_info:
             class_iri = ontology_info.get_iri(information_type, element)
             if class_iri:
                 self.graph.add((uri, RDF.type, class_iri))
 
     def _add_FunctionExecution(self, script_info, session_id, execution_id,
                                function_info, params, execution_order,
-                               code_statement, start, end, function):
+                               code_statement, start, end, function,
+                               ontology_info=None):
         # Adds a FunctionExecution record from the Alpaca PROV model
         uri = URIRef(execution_identifier(
             script_info, function_info, session_id, execution_id))
         self.graph.add((uri, RDF.type, ALPACA.FunctionExecution))
 
-        self._add_ontology_information(uri, function_info, 'function')
+        self._add_ontology_information(uri, ontology_info, 'function')
 
         self.graph.add((uri, PROV.startedAtTime,
                         Literal(start, datatype=XSD.dateTime)))
@@ -142,8 +150,11 @@ class AlpacaProvDocument(object):
 
         for name, value in params.items():
             value = _ensure_type(value)
-            _add_name_value_pair(self.graph, uri, ALPACA.hasParameter,
-                                 name, value)
+            parameter_node = _add_name_value_pair(self.graph, uri,
+                                                  ALPACA.hasParameter,
+                                                  name, value)
+            self._add_ontology_information(parameter_node,
+                                           ontology_info, 'arguments', name)
         return uri
 
     # Entity methods
@@ -238,6 +249,9 @@ class AlpacaProvDocument(object):
             # This is a function execution. Add Function activity
             cur_function = self._add_Function(function_info)
 
+            # ID to identify ontology annotations
+            info_id = _get_function_name(function_info)
+
             # Get the FunctionExecution node with function parameters and
             # other provenance info
             cur_activity = self._add_FunctionExecution(
@@ -248,7 +262,7 @@ class AlpacaProvDocument(object):
                 code_statement=execution.code_statement,
                 start=execution.time_stamp_start,
                 end=execution.time_stamp_end,
-                function=cur_function,
+                function=cur_function, ontology_info=info_id
             )
 
             # Add all the inputs as entities, and create a `used` association
@@ -280,6 +294,8 @@ class AlpacaProvDocument(object):
                 output_entities.append(cur_entity)
                 self._wasGeneratedBy(entity=cur_entity, activity=cur_activity)
                 self._wasAttributedTo(entity=cur_entity, agent=script_agent)
+                self._add_ontology_information(cur_entity, info_id,
+                                               'returns', element=key)
 
             # Iterate over the input/output pairs to add the `wasDerived`
             # relationship

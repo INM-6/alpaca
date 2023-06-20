@@ -149,7 +149,7 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
 
         _check_function_execution(
             actual=Provenance.history[0],
-            exp_function=FunctionInfo('subscript', '', '', None),
+            exp_function=FunctionInfo('subscript', '', ''),
             exp_input={0: TEST_ARRAY_INFO},
             exp_params={'index': 0},
             exp_output={0: ELEMENT_0_INFO},
@@ -159,7 +159,7 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
 
         _check_function_execution(
             actual=Provenance.history[1],
-            exp_function=FunctionInfo('subscript', '', '', None),
+            exp_function=FunctionInfo('subscript', '', ''),
             exp_input={0: TEST_ARRAY_INFO},
             exp_params={'index': 1},
             exp_output={0: ELEMENT_1_INFO},
@@ -170,7 +170,7 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
         _check_function_execution(
             actual=Provenance.history[2],
             exp_function=FunctionInfo('add_numbers',
-                                      'test_code_analysis', '', None),
+                                      'test_code_analysis', ''),
             exp_input={'num1': ELEMENT_0_INFO, 'num2': ELEMENT_1_INFO},
             exp_params={},
             exp_output={0: expected_output},
@@ -197,7 +197,7 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
 
         _check_function_execution(
             actual=Provenance.history[0],
-            exp_function=FunctionInfo('subscript', '', '', None),
+            exp_function=FunctionInfo('subscript', '', ''),
             exp_input={0: TEST_ARRAY_INFO},
             exp_params={'index': -1},
             exp_output={0: ELEMENT_2_INFO},
@@ -207,7 +207,7 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
 
         _check_function_execution(
             actual=Provenance.history[1],
-            exp_function=FunctionInfo('subscript', '', '', None),
+            exp_function=FunctionInfo('subscript', '', ''),
             exp_input={0: TEST_ARRAY_INFO},
             exp_params={'index': -2},
             exp_output={0: ELEMENT_1_INFO},
@@ -218,7 +218,7 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
         _check_function_execution(
             actual=Provenance.history[2],
             exp_function=FunctionInfo('add_numbers',
-                                      'test_code_analysis', '', None),
+                                      'test_code_analysis', ''),
             exp_input={'num1': ELEMENT_2_INFO, 'num2': ELEMENT_1_INFO},
             exp_params={},
             exp_output={0: expected_output},
@@ -250,7 +250,7 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
 
         _check_function_execution(
             actual=Provenance.history[0],
-            exp_function=FunctionInfo('subscript', '', '', None),
+            exp_function=FunctionInfo('subscript', '', ''),
             exp_input={0: TEST_ARRAY_INFO},
             exp_params={'slice': '0:2'},
             exp_output={0: expected_slice_output},
@@ -261,7 +261,7 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
         _check_function_execution(
             actual=Provenance.history[1],
             exp_function=FunctionInfo('add_numbers_array',
-                                      'test_code_analysis', '', None),
+                                      'test_code_analysis', ''),
             exp_input={'array': expected_slice_output},
             exp_params={},
             exp_output={0: expected_output},
@@ -293,7 +293,7 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
 
         _check_function_execution(
             actual=Provenance.history[0],
-            exp_function=FunctionInfo('subscript', '', '', None),
+            exp_function=FunctionInfo('subscript', '', ''),
             exp_input={0: TEST_ARRAY_INFO},
             exp_params={'slice': ':2'},
             exp_output={0: expected_slice_output},
@@ -304,7 +304,7 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
         _check_function_execution(
             actual=Provenance.history[1],
             exp_function=FunctionInfo('add_numbers_array',
-                                      'test_code_analysis', '', None),
+                                      'test_code_analysis', ''),
             exp_input={'array': expected_slice_output},
             exp_params={},
             exp_output={0: expected_output},
@@ -336,7 +336,7 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
 
         _check_function_execution(
             actual=Provenance.history[0],
-            exp_function=FunctionInfo('subscript', '', '', None),
+            exp_function=FunctionInfo('subscript', '', ''),
             exp_input={0: TEST_ARRAY_INFO},
             exp_params={'slice': '1:'},
             exp_output={0: expected_slice_output},
@@ -347,7 +347,7 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
         _check_function_execution(
             actual=Provenance.history[1],
             exp_function=FunctionInfo('add_numbers_array',
-                                      'test_code_analysis', '', None),
+                                      'test_code_analysis', ''),
             exp_input={'array': expected_slice_output},
             exp_params={},
             exp_output={0: expected_output},
@@ -379,7 +379,7 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
 
         _check_function_execution(
             actual=Provenance.history[0],
-            exp_function=FunctionInfo('subscript', '', '', None),
+            exp_function=FunctionInfo('subscript', '', ''),
             exp_input={0: TEST_ARRAY_INFO},
             exp_params={'slice': '::2'},
             exp_output={0: expected_slice_output},
@@ -390,7 +390,7 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
         _check_function_execution(
             actual=Provenance.history[1],
             exp_function=FunctionInfo('add_numbers_array',
-                                      'test_code_analysis', '', None),
+                                      'test_code_analysis', ''),
             exp_input={'array': expected_slice_output},
             exp_params={},
             exp_output={0: expected_output},
@@ -417,7 +417,7 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
 
         _check_function_execution(
             actual=Provenance.history[0],
-            exp_function=FunctionInfo('subscript', '', '', None),
+            exp_function=FunctionInfo('subscript', '', ''),
             exp_input={0: TEST_DICT_INFO},
             exp_params={'index': 'numbers'},
             exp_output={0: TEST_ARRAY_INFO},
@@ -428,7 +428,7 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
         _check_function_execution(
             actual=Provenance.history[1],
             exp_function=FunctionInfo('add_numbers_array',
-                                      'test_code_analysis', '', None),
+                                      'test_code_analysis', ''),
             exp_input={'array': TEST_ARRAY_INFO},
             exp_params={},
             exp_output={0: expected_output},
@@ -456,7 +456,7 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
 
         _check_function_execution(
             actual=Provenance.history[0],
-            exp_function=FunctionInfo('subscript', '', '', None),
+            exp_function=FunctionInfo('subscript', '', ''),
             exp_input={0: TEST_DICT_INFO},
             exp_params={'index': 'numbers'},
             exp_output={0: TEST_ARRAY_INFO},
@@ -467,7 +467,7 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
         _check_function_execution(
             actual=Provenance.history[1],
             exp_function=FunctionInfo('add_numbers_array',
-                                      'test_code_analysis', '', None),
+                                      'test_code_analysis', ''),
             exp_input={'array': TEST_ARRAY_INFO},
             exp_params={},
             exp_output={0: expected_output},
@@ -499,7 +499,7 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
 
         _check_function_execution(
             actual=Provenance.history[0],
-            exp_function=FunctionInfo('attribute', '', '', None),
+            exp_function=FunctionInfo('attribute', '', ''),
             exp_input={0: expected_container_info},
             exp_params={'name': 'array'},
             exp_output={0: TEST_ARRAY_INFO},
@@ -510,7 +510,7 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
         _check_function_execution(
             actual=Provenance.history[1],
             exp_function=FunctionInfo('add_numbers_array',
-                                      'test_code_analysis', '', None),
+                                      'test_code_analysis', ''),
             exp_input={'array': TEST_ARRAY_INFO},
             exp_params={},
             exp_output={0: expected_output},
