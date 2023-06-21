@@ -1,42 +1,53 @@
-@prefix : <https://github.com/INM-6/alpaca/ontology/alpaca.owl#> .
+@prefix : <http://purl.org/alpaca#> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix xml: <http://www.w3.org/XML/1998/namespace> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 @prefix prov: <http://www.w3.org/ns/prov#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-@base <https://github.com/INM-6/alpaca/ontology/alpaca.owl#> .
+@prefix dcterms: <http://purl.org/dc/terms/> .
+@base <http://purl.org/alpaca#> .
 
-<https://github.com/INM-6/alpaca/ontology/alpaca.owl#> rdf:type owl:Ontology ;
-                                                        owl:imports <http://www.w3.org/ns/prov-o-20130430> ;
-                                                        rdfs:comment "An extension to PROV-O to support the serialization of provenance information captured with Alpaca as RDF triples." .
+<http://purl.org/alpaca#> rdf:type owl:Ontology ;
+                           owl:imports <http://www.w3.org/ns/prov-o-20130430> ;
+                           dcterms:creator "Cristiano Köhler (c.koehler@fz-juelich.de)" ;
+                           rdfs:comment "An extension to PROV-O to support the serialization of provenance information captured with Alpaca as RDF triples."@en ;
+                           owl:versionInfo "0.1.0" .
+
+#################################################################
+#    Annotation properties
+#################################################################
+
+###  http://purl.org/dc/terms/creator
+dcterms:creator rdf:type owl:AnnotationProperty .
+
 
 #################################################################
 #    Object Properties
 #################################################################
 
-###  https://github.com/INM-6/alpaca/ontology/alpaca.owl#hasAnnotation
+###  http://purl.org/alpaca#hasAnnotation
 :hasAnnotation rdf:type owl:ObjectProperty ;
                rdfs:subPropertyOf owl:topObjectProperty ;
                rdfs:domain :DataObjectEntity ;
                rdfs:range :NameValuePair .
 
 
-###  https://github.com/INM-6/alpaca/ontology/alpaca.owl#hasAttribute
+###  http://purl.org/alpaca#hasAttribute
 :hasAttribute rdf:type owl:ObjectProperty ;
               rdfs:subPropertyOf owl:topObjectProperty ;
               rdfs:domain :DataObjectEntity ;
               rdfs:range :NameValuePair .
 
 
-###  https://github.com/INM-6/alpaca/ontology/alpaca.owl#hasParameter
+###  http://purl.org/alpaca#hasParameter
 :hasParameter rdf:type owl:ObjectProperty ;
               rdfs:subPropertyOf owl:topObjectProperty ;
               rdfs:domain :FunctionExecution ;
               rdfs:range :NameValuePair .
 
 
-###  https://github.com/INM-6/alpaca/ontology/alpaca.owl#usedFunction
+###  http://purl.org/alpaca#usedFunction
 :usedFunction rdf:type owl:ObjectProperty ;
               rdfs:domain :FunctionExecution ;
               rdfs:range :Function .
@@ -46,80 +57,80 @@
 #    Data properties
 #################################################################
 
-###  https://github.com/INM-6/alpaca/ontology/alpaca.owl#codeStatement
+###  http://purl.org/alpaca#codeStatement
 :codeStatement rdf:type owl:DatatypeProperty ;
                rdfs:domain :FunctionExecution ;
                rdfs:range xsd:string .
 
 
-###  https://github.com/INM-6/alpaca/ontology/alpaca.owl#containerIndex
+###  http://purl.org/alpaca#containerIndex
 :containerIndex rdf:type owl:DatatypeProperty ;
                 rdfs:domain :DataObjectEntity ;
                 rdfs:range rdfs:Literal .
 
 
-###  https://github.com/INM-6/alpaca/ontology/alpaca.owl#containerSlice
+###  http://purl.org/alpaca#containerSlice
 :containerSlice rdf:type owl:DatatypeProperty ;
                 rdfs:domain :DataObjectEntity ;
                 rdfs:range rdfs:Literal .
 
 
-###  https://github.com/INM-6/alpaca/ontology/alpaca.owl#executionOrder
+###  http://purl.org/alpaca#executionOrder
 :executionOrder rdf:type owl:DatatypeProperty ;
                 rdfs:domain :FunctionExecution ;
                 rdfs:range xsd:int .
 
 
-###  https://github.com/INM-6/alpaca/ontology/alpaca.owl#filePath
+###  http://purl.org/alpaca#filePath
 :filePath rdf:type owl:DatatypeProperty ;
           rdfs:domain :FileEntity ;
           rdfs:range xsd:string .
 
 
-###  https://github.com/INM-6/alpaca/ontology/alpaca.owl#fromAttribute
+###  http://purl.org/alpaca#fromAttribute
 :fromAttribute rdf:type owl:DatatypeProperty ;
                rdfs:domain :DataObjectEntity ;
                rdfs:range xsd:string .
 
 
-###  https://github.com/INM-6/alpaca/ontology/alpaca.owl#functionName
+###  http://purl.org/alpaca#functionName
 :functionName rdf:type owl:DatatypeProperty ;
               rdfs:subPropertyOf owl:topDataProperty ;
               rdfs:domain :Function ;
               rdfs:range xsd:string .
 
 
-###  https://github.com/INM-6/alpaca/ontology/alpaca.owl#functionVersion
+###  http://purl.org/alpaca#functionVersion
 :functionVersion rdf:type owl:DatatypeProperty ;
                  rdfs:domain :Function ;
                  rdfs:range xsd:string .
 
 
-###  https://github.com/INM-6/alpaca/ontology/alpaca.owl#hashSource
+###  http://purl.org/alpaca#hashSource
 :hashSource rdf:type owl:DatatypeProperty ;
             rdfs:domain :DataObjectEntity ;
             rdfs:range xsd:string .
 
 
-###  https://github.com/INM-6/alpaca/ontology/alpaca.owl#implementedIn
+###  http://purl.org/alpaca#implementedIn
 :implementedIn rdf:type owl:DatatypeProperty ;
                rdfs:domain :Function ;
                rdfs:range xsd:string .
 
 
-###  https://github.com/INM-6/alpaca/ontology/alpaca.owl#pairName
+###  http://purl.org/alpaca#pairName
 :pairName rdf:type owl:DatatypeProperty ;
           rdfs:domain :NameValuePair ;
           rdfs:range xsd:string .
 
 
-###  https://github.com/INM-6/alpaca/ontology/alpaca.owl#pairValue
+###  http://purl.org/alpaca#pairValue
 :pairValue rdf:type owl:DatatypeProperty ;
            rdfs:domain :NameValuePair ;
            rdfs:range rdfs:Literal .
 
 
-###  https://github.com/INM-6/alpaca/ontology/alpaca.owl#scriptPath
+###  http://purl.org/alpaca#scriptPath
 :scriptPath rdf:type owl:DatatypeProperty ;
             rdfs:domain :ScriptAgent ;
             rdfs:range xsd:string .
@@ -129,35 +140,35 @@
 #    Classes
 #################################################################
 
-###  https://github.com/INM-6/alpaca/ontology/alpaca.owl#DataObjectEntity
+###  http://purl.org/alpaca#DataObjectEntity
 :DataObjectEntity rdf:type owl:Class ;
                   rdfs:subClassOf prov:Entity ;
                   rdfs:comment "Represents an object that contains data." .
 
 
-###  https://github.com/INM-6/alpaca/ontology/alpaca.owl#FileEntity
+###  http://purl.org/alpaca#FileEntity
 :FileEntity rdf:type owl:Class ;
             rdfs:subClassOf prov:Entity ;
             rdfs:comment "Represents a file in the system." .
 
 
-###  https://github.com/INM-6/alpaca/ontology/alpaca.owl#Function
+###  http://purl.org/alpaca#Function
 :Function rdf:type owl:Class ;
           rdfs:comment "Represents a function object. It contains code that is executed to perform some action in the script, taking parameters and producing outputs." .
 
 
-###  https://github.com/INM-6/alpaca/ontology/alpaca.owl#FunctionExecution
+###  http://purl.org/alpaca#FunctionExecution
 :FunctionExecution rdf:type owl:Class ;
                    rdfs:subClassOf prov:Activity ;
                    rdfs:comment "The execution of a function with a set of inputs and parameters, that may produce one or more outputs." .
 
 
-###  https://github.com/INM-6/alpaca/ontology/alpaca.owl#NameValuePair
+###  http://purl.org/alpaca#NameValuePair
 :NameValuePair rdf:type owl:Class ;
                rdfs:comment "Represents information defined by a name/value pair. Name is a string and value can be any literal value." .
 
 
-###  https://github.com/INM-6/alpaca/ontology/alpaca.owl#ScriptAgent
+###  http://purl.org/alpaca#ScriptAgent
 :ScriptAgent rdf:type owl:Class ;
              rdfs:subClassOf prov:SoftwareAgent .
 
