@@ -9,9 +9,13 @@ from alpaca.ontology.annotation import (OntologyInformation,
 from alpaca.ontology import ALPACA
 
 
-# Ontology namespace used for the tests
+# Ontology namespace definition used for the tests
 EXAMPLE_NS = {'ontology': "http://example.org/ontology#"}
 
+
+##############################
+# Test objects to be annotated
+##############################
 
 class InputObject:
     pass
@@ -20,8 +24,24 @@ class InputObject:
 class OutputObject:
     def __init__(self, name, channel):
         self.name = name
-        self.annotations= {'channel': channel}
+        self.channel = channel
 
+# Ontology annotation of objects
+
+update_ontology_information(OutputObject, "data_object",
+                            "ontology:OutputObject",
+                            attributes={'name': "ontology:Attribute"},
+                            namespaces=EXAMPLE_NS)
+
+
+update_ontology_information(InputObject, "data_object",
+                            "ontology:InputObject",
+                            namespaces=EXAMPLE_NS)
+
+
+#######################################################
+# Test functions to be annotated and provenance tracked
+#######################################################
 
 @Provenance(inputs=['input'])
 @annotate_function_with_ontology("ontology:ProcessFunction",
@@ -32,19 +52,25 @@ def process(input, param_1):
     return OutputObject("SpikeTrain#1", 45)
 
 
-update_ontology_information(OutputObject, "data_object",
-                            "ontology:OutputObject",
-                            attributes={'name': "ontology:Attribute"},
-                            annotations={'channel': "ontology:Annotation"},
-                            namespaces=EXAMPLE_NS)
+@Provenance(inputs=['input'])
+@annotate_function_with_ontology("ontology:ProcessFunctionMultiple",
+                                arguments={'param_1': "ontology:Parameter"},
+                                returns={1: "ontology:ProcessedDataMultiple"},
+                                namespaces=EXAMPLE_NS)
+def process_multiple(input, param_1):
+    return "not_annotated", OutputObject("SpikeTrain#2", 34)
 
 
-update_ontology_information(InputObject, "data_object",
-                            "ontology:InputObject",
-                            namespaces=EXAMPLE_NS)
-
+############
+# Unit tests
+############
 
 class OntologyAnnotationTestCase(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        # Create namespace for tests
+        cls.ONTOLOGY = Namespace(EXAMPLE_NS['ontology'])
 
     def test_annotation_input(self):
         obj = InputObject()
@@ -59,8 +85,6 @@ class OntologyAnnotationTestCase(unittest.TestCase):
         info = OntologyInformation(obj)
         self.assertEqual(info.get_iri("data_object"),
                          URIRef("http://example.org/ontology#OutputObject"))
-        self.assertEqual(info.get_iri("annotations", "channel"),
-                         URIRef("http://example.org/ontology#Annotation"))
         self.assertEqual(info.get_iri("attributes", "name"),
                          URIRef("http://example.org/ontology#Attribute"))
 
@@ -81,7 +105,7 @@ class OntologyAnnotationTestCase(unittest.TestCase):
 
         output_obj = OutputObject("test", 45)
         output_info = OntologyInformation(output_obj)
-        self.assertIsNone(info.get_iri("attributes", "shape"))
+        self.assertIsNone(info.get_iri("attributes", "channel"))
         self.assertIsNone(info.get_iri("non_existent"))
         self.assertIsNone(info.get_iri("non_existent", "test"))
 
@@ -117,52 +141,158 @@ class OntologyAnnotationTestCase(unittest.TestCase):
         with io.StringIO(prov_data) as data_stream:
             prov_graph.parse(data_stream, format='turtle')
 
-        # Create namespace for tests
-        ONTOLOGY = Namespace(EXAMPLE_NS['ontology'])
-
         # Check that the annotations exist (1 per class is expected)
         self.assertEqual(
             len(list(prov_graph.triples(
-                (None, RDF.type, ONTOLOGY.Parameter)))
+                (None, RDF.type, self.ONTOLOGY.Parameter)))
             ), 1)
         self.assertEqual(
             len(list(prov_graph.triples(
-                (None, RDF.type, ONTOLOGY.ProcessFunction)))
+                (None, RDF.type, self.ONTOLOGY.ProcessFunction)))
             ), 1)
         self.assertEqual(
             len(list(prov_graph.triples(
-                (None, RDF.type, ONTOLOGY.ProcessedData)))
+                (None, RDF.type, self.ONTOLOGY.ProcessedData)))
             ), 1)
         self.assertEqual(
             len(list(prov_graph.triples(
-                (None, RDF.type, ONTOLOGY.InputObject)))
+                (None, RDF.type, self.ONTOLOGY.InputObject)))
             ), 1)
         self.assertEqual(
             len(list(prov_graph.triples(
-                (None, RDF.type, ONTOLOGY.OutputObject)))
+                (None, RDF.type, self.ONTOLOGY.OutputObject)))
             ), 1)
 
         # FunctionExecution is ProcessFunction
         execution_iri = list(
             prov_graph.subjects(RDF.type, ALPACA.FunctionExecution))[0]
-        self.assertTrue((execution_iri, RDF.type, ONTOLOGY.ProcessFunction) in prov_graph)
+        self.assertTrue((execution_iri,
+                         RDF.type,
+                         self.ONTOLOGY.ProcessFunction) in prov_graph)
 
         # Check parameter name
         parameter_node = list(
-            prov_graph.subjects(RDF.type, ONTOLOGY.Parameter))[0]
-        self.assertTrue((parameter_node, ALPACA.pairName, Literal("param_1")) in prov_graph)
-        self.assertTrue((parameter_node, ALPACA.pairValue, Literal(34)) in prov_graph)
+            prov_graph.subjects(RDF.type, self.ONTOLOGY.Parameter))[0]
+        self.assertTrue((parameter_node,
+                         ALPACA.pairName, Literal("param_1")) in prov_graph)
+        self.assertTrue((parameter_node,
+                         ALPACA.pairValue, Literal(34)) in prov_graph)
 
         # Check returned value
         output_node = list(
-            prov_graph.subjects(RDF.type, ONTOLOGY.ProcessedData))[0]
-        self.assertTrue((output_node, PROV.wasGeneratedBy, execution_iri) in prov_graph)
-        self.assertTrue((output_node, RDF.type, ALPACA.DataObjectEntity) in prov_graph)
-        self.assertTrue((output_node, RDF.type, ONTOLOGY.OutputObject) in prov_graph)
+            prov_graph.subjects(RDF.type, self.ONTOLOGY.ProcessedData))[0]
+        self.assertTrue((output_node,
+                         PROV.wasGeneratedBy, execution_iri) in prov_graph)
+        self.assertTrue((output_node,
+                         RDF.type, ALPACA.DataObjectEntity) in prov_graph)
+        self.assertTrue((output_node,
+                         RDF.type, self.ONTOLOGY.OutputObject) in prov_graph)
+
+        # Check attributes of returned value
+        expected_attributes = {
+            'name': "SpikeTrain#1",
+            'channel': 45,
+        }
+        for attribute in prov_graph.objects(output_node, ALPACA.hasAttribute):
+            name = prov_graph.value(attribute, ALPACA.pairName)
+            value = prov_graph.value(attribute, ALPACA.pairValue)
+            self.assertEqual(value.toPython(),
+                             expected_attributes[name.toPython()])
 
         # Check input value
         input_node = list(
-            prov_graph.subjects(RDF.type, ONTOLOGY.InputObject))[0]
+            prov_graph.subjects(RDF.type, self.ONTOLOGY.InputObject))[0]
         self.assertTrue((execution_iri, PROV.used, input_node) in prov_graph)
-        self.assertTrue((input_node, RDF.type, ALPACA.DataObjectEntity) in prov_graph)
-        self.assertTrue((output_node, PROV.wasDerivedFrom, input_node) in prov_graph)
+        self.assertTrue((input_node,
+                         RDF.type, ALPACA.DataObjectEntity) in prov_graph)
+        self.assertTrue((output_node,
+                         PROV.wasDerivedFrom, input_node) in prov_graph)
+
+    def test_provenance_annotation_multiple_returns(self):
+        activate(clear=True)
+        input_object = InputObject()
+        name, output_object = process_multiple(input_object, 45)
+        deactivate()
+
+        prov_data = save_provenance()
+
+        # Read PROV information as RDF
+        prov_graph = Graph()
+        with io.StringIO(prov_data) as data_stream:
+            prov_graph.parse(data_stream, format='turtle')
+
+        # Check that the annotations exist (1 per class is expected)
+        self.assertEqual(
+            len(list(prov_graph.triples(
+                (None, RDF.type, self.ONTOLOGY.Parameter)))
+            ), 1)
+        self.assertEqual(
+            len(list(prov_graph.triples(
+                (None, RDF.type, self.ONTOLOGY.ProcessFunction)))
+            ), 0)
+        self.assertEqual(
+            len(list(prov_graph.triples(
+                (None, RDF.type, self.ONTOLOGY.ProcessedData)))
+            ), 0)
+        self.assertEqual(
+            len(list(prov_graph.triples(
+                (None, RDF.type, self.ONTOLOGY.ProcessFunctionMultiple)))
+            ), 1)
+        self.assertEqual(
+            len(list(prov_graph.triples(
+                (None, RDF.type, self.ONTOLOGY.ProcessedDataMultiple)))
+            ), 1)
+        self.assertEqual(
+            len(list(prov_graph.triples(
+                (None, RDF.type, self.ONTOLOGY.InputObject)))
+            ), 1)
+        self.assertEqual(
+            len(list(prov_graph.triples(
+                (None, RDF.type, self.ONTOLOGY.OutputObject)))
+            ), 1)
+
+        # FunctionExecution is ProcessFunction
+        execution_iri = list(
+            prov_graph.subjects(RDF.type, ALPACA.FunctionExecution))[0]
+        self.assertTrue((execution_iri, RDF.type,
+                         self.ONTOLOGY.ProcessFunctionMultiple) in prov_graph)
+
+        # Check parameter name
+        parameter_node = list(
+            prov_graph.subjects(RDF.type, self.ONTOLOGY.Parameter))[0]
+        self.assertTrue((parameter_node,
+                         ALPACA.pairName, Literal("param_1")) in prov_graph)
+        self.assertTrue((parameter_node,
+                         ALPACA.pairValue, Literal(45)) in prov_graph)
+
+        # Check returned value
+        output_node = list(
+            prov_graph.subjects(RDF.type,
+                                self.ONTOLOGY.ProcessedDataMultiple))[0]
+        self.assertTrue((output_node,
+                         PROV.wasGeneratedBy, execution_iri) in prov_graph)
+        self.assertTrue((output_node,
+                         RDF.type, ALPACA.DataObjectEntity) in prov_graph)
+        self.assertTrue((output_node,
+                         RDF.type, self.ONTOLOGY.OutputObject) in prov_graph)
+
+        # Check attributes of returned value
+        expected_attributes = {
+            'name': "SpikeTrain#2",
+            'channel': 34,
+        }
+        for attribute in prov_graph.objects(output_node, ALPACA.hasAttribute):
+            name = prov_graph.value(attribute, ALPACA.pairName)
+            value = prov_graph.value(attribute, ALPACA.pairValue)
+            self.assertEqual(value.toPython(),
+                             expected_attributes[name.toPython()])
+
+        # Check input value
+        input_node = list(
+            prov_graph.subjects(RDF.type, self.ONTOLOGY.InputObject))[0]
+        self.assertTrue((execution_iri,
+                         PROV.used, input_node) in prov_graph)
+        self.assertTrue((input_node,
+                         RDF.type, ALPACA.DataObjectEntity) in prov_graph)
+        self.assertTrue((output_node,
+                         PROV.wasDerivedFrom, input_node) in prov_graph)
