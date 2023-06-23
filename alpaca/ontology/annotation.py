@@ -1,6 +1,7 @@
 """
 This module implements a class to read annotations inserted into Python
-objects. It expects a dictionary as the `__ontology__` attribute.
+objects. It expects that the object has a dictionary stored as the
+`__ontology__` attribute.
 
 The items that can be stored in the dictionary are:
 
@@ -147,10 +148,12 @@ def update_ontology_information(obj, obj_type, obj_iri, namespaces=None,
         additional information that can be annotated using `kwargs`.
     obj_iri : str
         IRI of the class representing `obj`.
-    namespaces : dict
+    namespaces : dict, optional
         Dictionary where the keys are the prefixes of the namespaces used in
         the annotations, and the values are the IRI representing the namespace.
-    kwargs : dict
+        If None, no namespace is used.
+        Default: None
+    kwargs : dict, optional
         Additional information on the object `obj`. The key is the type of
         information, and the values are a dictionary, where the keys identify
         the elements to be annotated and the values are the IRIs of the
@@ -186,20 +189,20 @@ def update_ontology_information(obj, obj_type, obj_iri, namespaces=None,
     return obj
 
 
-def annotate_function_with_ontology(function_iri, **kwargs):
+def annotate_function(function_iri, **kwargs):
 
     def wrapped(function):
 
-        namespaces = None
-        if 'namespaces' in kwargs:
-            namespaces = kwargs.pop('namespaces')
-
-        if VALID_INFORMATION['data_object'].intersection(set(kwargs.keys())):
-            raise ValueError("Invalid annotations for a function")
-
         return update_ontology_information(function, obj_type='function',
-                                           obj_iri=function_iri,
-                                           namespaces=namespaces,
-                                           **kwargs)
+                                           obj_iri=function_iri, **kwargs)
+
+    return wrapped
+
+
+def annotate_object(object_iri, **kwargs):
+
+    def wrapped(cls):
+        return update_ontology_information(cls, obj_type='data_object',
+                                           obj_iri=object_iri, **kwargs)
 
     return wrapped

@@ -2,8 +2,8 @@ import unittest
 import io
 from rdflib import Literal, URIRef, Namespace, Graph, RDF, PROV
 
-from alpaca import (activate, deactivate, Provenance,
-                    annotate_function_with_ontology, save_provenance)
+from alpaca import (activate, deactivate, Provenance, save_provenance,
+                    annotate_function, annotate_object)
 from alpaca.ontology.annotation import (OntologyInformation,
                                         update_ontology_information)
 from alpaca.ontology import ALPACA
@@ -20,19 +20,14 @@ EXAMPLE_NS = {'ontology': "http://example.org/ontology#"}
 class InputObject:
     pass
 
-
+@annotate_object("ontology:OutputObject", namespaces=EXAMPLE_NS,
+                 attributes={'name': "ontology:Attribute"})
 class OutputObject:
     def __init__(self, name, channel):
         self.name = name
         self.channel = channel
 
-# Ontology annotation of objects
-
-update_ontology_information(OutputObject, "data_object",
-                            "ontology:OutputObject",
-                            attributes={'name': "ontology:Attribute"},
-                            namespaces=EXAMPLE_NS)
-
+# Ontology annotation of objects using function
 
 update_ontology_information(InputObject, "data_object",
                             "ontology:InputObject",
@@ -44,19 +39,17 @@ update_ontology_information(InputObject, "data_object",
 #######################################################
 
 @Provenance(inputs=['input'])
-@annotate_function_with_ontology("ontology:ProcessFunction",
-                                arguments={'param_1': "ontology:Parameter"},
-                                returns={0: "ontology:ProcessedData"},
-                                namespaces=EXAMPLE_NS)
+@annotate_function("ontology:ProcessFunction", namespaces=EXAMPLE_NS,
+                   arguments={'param_1': "ontology:Parameter"},
+                   returns={0: "ontology:ProcessedData"})
 def process(input, param_1):
     return OutputObject("SpikeTrain#1", 45)
 
 
 @Provenance(inputs=['input'])
-@annotate_function_with_ontology("ontology:ProcessFunctionMultiple",
-                                arguments={'param_1': "ontology:Parameter"},
-                                returns={1: "ontology:ProcessedDataMultiple"},
-                                namespaces=EXAMPLE_NS)
+@annotate_function("ontology:ProcessFunctionMultiple", namespaces=EXAMPLE_NS,
+                   arguments={'param_1': "ontology:Parameter"},
+                   returns={1: "ontology:ProcessedDataMultiple"})
 def process_multiple(input, param_1):
     return "not_annotated", OutputObject("SpikeTrain#2", 34)
 
@@ -69,17 +62,17 @@ class OntologyAnnotationTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        # Create namespace for tests
+        # Create rdflib Namespace for tests
         cls.ONTOLOGY = Namespace(EXAMPLE_NS['ontology'])
 
-    def test_annotation_input(self):
+    def test_annotation_object_input(self):
         obj = InputObject()
         self.assertTrue(OntologyInformation.has_ontology(obj))
         info = OntologyInformation(obj)
         self.assertEqual(info.get_iri("data_object"),
                          URIRef("http://example.org/ontology#InputObject"))
 
-    def test_annotation_output(self):
+    def test_annotation_object_output(self):
         obj = OutputObject("test", 45)
         self.assertTrue(OntologyInformation.has_ontology(obj))
         info = OntologyInformation(obj)
@@ -98,7 +91,18 @@ class OntologyAnnotationTestCase(unittest.TestCase):
         self.assertEqual(info.get_iri("returns", 0),
                          URIRef("http://example.org/ontology#ProcessedData"))
 
-    def test_invalid_annotation(self):
+    def test_annotation_function_multiple(self):
+        self.assertTrue(OntologyInformation.has_ontology(process_multiple))
+        info = OntologyInformation(process_multiple)
+        self.assertEqual(info.get_iri("function"),
+                         URIRef("http://example.org/ontology#ProcessFunctionMultiple"))
+        self.assertEqual(info.get_iri("arguments", "param_1"),
+                         URIRef("http://example.org/ontology#Parameter"))
+        self.assertEqual(info.get_iri("returns", 1),
+                         URIRef("http://example.org/ontology#ProcessedDataMultiple"))
+
+
+    def test_invalid_object_annotations(self):
         obj = InputObject()
         info = OntologyInformation(obj)
         self.assertIsNone(info.get_iri("attributes", "name"))
@@ -109,11 +113,10 @@ class OntologyAnnotationTestCase(unittest.TestCase):
         self.assertIsNone(info.get_iri("non_existent"))
         self.assertIsNone(info.get_iri("non_existent", "test"))
 
-    def test_invalid_function_annotation(self):
+    def test_invalid_function_annotation_parameters(self):
         with self.assertRaises(ValueError):
-            annotate_function_with_ontology("iri",
-                attributes={"test": "ontology:Attribute"},
-                namespaces=EXAMPLE_NS)(process)
+            annotate_function("iri", namespaces=EXAMPLE_NS,
+                              attributes={"test": "ontology:Attribute"})(process)
 
     def test_namespaces(self):
         input_obj = InputObject()
@@ -125,7 +128,7 @@ class OntologyAnnotationTestCase(unittest.TestCase):
 
         for info in (input_info, output_info, function_info):
             self.assertEqual(info.namespaces['ontology'],
-                             Namespace(EXAMPLE_NS['ontology']))
+                             self.ONTOLOGY)
             self.assertTupleEqual(tuple(info.namespaces.keys()), ('ontology',))
 
     def test_provenance_annotation(self):
@@ -221,19 +224,12 @@ class OntologyAnnotationTestCase(unittest.TestCase):
         with io.StringIO(prov_data) as data_stream:
             prov_graph.parse(data_stream, format='turtle')
 
-        # Check that the annotations exist (1 per class is expected)
+        # Check that the annotations exist (1 per class is expected. None
+        # are expected for the classes of `process`)
         self.assertEqual(
             len(list(prov_graph.triples(
                 (None, RDF.type, self.ONTOLOGY.Parameter)))
             ), 1)
-        self.assertEqual(
-            len(list(prov_graph.triples(
-                (None, RDF.type, self.ONTOLOGY.ProcessFunction)))
-            ), 0)
-        self.assertEqual(
-            len(list(prov_graph.triples(
-                (None, RDF.type, self.ONTOLOGY.ProcessedData)))
-            ), 0)
         self.assertEqual(
             len(list(prov_graph.triples(
                 (None, RDF.type, self.ONTOLOGY.ProcessFunctionMultiple)))
@@ -250,6 +246,14 @@ class OntologyAnnotationTestCase(unittest.TestCase):
             len(list(prov_graph.triples(
                 (None, RDF.type, self.ONTOLOGY.OutputObject)))
             ), 1)
+        self.assertEqual(
+            len(list(prov_graph.triples(
+                (None, RDF.type, self.ONTOLOGY.ProcessFunction)))
+            ), 0)
+        self.assertEqual(
+            len(list(prov_graph.triples(
+                (None, RDF.type, self.ONTOLOGY.ProcessedData)))
+            ), 0)
 
         # FunctionExecution is ProcessFunction
         execution_iri = list(
