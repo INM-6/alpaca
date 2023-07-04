@@ -27,7 +27,7 @@ from alpaca.serialization.neo import _neo_object_metadata
 
 from alpaca.utils.files import _get_prov_file_format
 from alpaca.alpaca_types import DataObject, File, Container
-from alpaca.ontology.annotation import OntologyInformation, ONTOLOGY_INFORMATION
+from alpaca.ontology.annotation import _OntologyInformation, ONTOLOGY_INFORMATION
 
 
 def _add_name_value_pair(graph, uri, predicate, name, value):
@@ -70,7 +70,7 @@ class AlpacaProvDocument(object):
         # Gets all OntologyInformation objects generated with annotation
         # information during the run. Update the current graph namespaces
         # accordingly
-        OntologyInformation.bind_namespaces(namespace_manager)
+        _OntologyInformation.bind_namespaces(namespace_manager)
 
         # Metadata plugins are used for packages (e.g., Neo) that require
         # special handling of metadata when adding to the PROV records.

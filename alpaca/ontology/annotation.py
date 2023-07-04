@@ -27,9 +27,6 @@ The items that can be stored in the dictionary are:
 * 'namespaces' : dict
    A dictionary where the keys are the names used as prefixes and the values
    are the prefixed IRIs to be expanded.
-
-The decorator `annotate_function_with_ontology` is provided to insert ontology
-information into functions.
 """
 
 import rdflib
@@ -53,7 +50,7 @@ VALID_OBJECTS = set(VALID_INFORMATION.keys())
 ONTOLOGY_INFORMATION = {}
 
 
-class OntologyInformation(object):
+class _OntologyInformation(object):
 
     namespaces = {}
 
@@ -73,16 +70,22 @@ class OntologyInformation(object):
             namespace_manager.bind(name, namespace)
 
     @staticmethod
-    def has_ontology(obj):
-        return hasattr(obj, "__ontology__")
+    def get_ontology_information(obj):
+        if hasattr(obj, "__ontology__"):
+            return getattr(obj, "__ontology__")
+        elif (hasattr(obj, "__wrapped__") and
+              hasattr(obj.__wrapped__, "__ontology__")):
+            return getattr(obj.__wrapped__, "__ontology__")
+        return None
 
     def __init__(self, obj):
 
-        if self.has_ontology(obj):
+        ontology_info = self.get_ontology_information(obj)
+        if ontology_info:
             # An ontology annotation with semantic information is present
             # Store each element inside this object
 
-            for information_type, information in obj.__ontology__.items():
+            for information_type, information in ontology_info.items():
                 if information_type in VALID_OBJECTS:
                     setattr(self, information_type, information)
                 elif information_type == "namespaces":
@@ -121,7 +124,8 @@ class OntologyInformation(object):
         for obj_type in VALID_OBJECTS:
             if self.has_information(obj_type):
                 information.append(f"{obj_type}='{getattr(self, obj_type)}'")
-                for specific_information in VALID_INFORMATION[obj_type]:
+                for specific_information in \
+                        sorted(VALID_INFORMATION[obj_type]):
                     if self.has_information(specific_information):
                         specific_info = getattr(self, specific_information)
                         info_str = str(specific_info) \
@@ -131,78 +135,3 @@ class OntologyInformation(object):
                             f"{specific_information}={info_str}")
                 repr_str = f"{repr_str}{', '.join(information)})"
         return repr_str
-
-
-def update_ontology_information(obj, obj_type, obj_iri, namespaces=None,
-                                **kwargs):
-    """
-    Updates the ontology information in a Python object. This can be a
-    function or an object holding data.
-
-    Parameters
-    ----------
-    obj : object
-        Function or data object. It must allow attribute assignment.
-    obj_type : {'function', 'data_object'}
-        Defines the type of object being annotated. This is also used to filter
-        additional information that can be annotated using `kwargs`.
-    obj_iri : str
-        IRI of the class representing `obj`.
-    namespaces : dict, optional
-        Dictionary where the keys are the prefixes of the namespaces used in
-        the annotations, and the values are the IRI representing the namespace.
-        If None, no namespace is used.
-        Default: None
-    kwargs : dict, optional
-        Additional information on the object `obj`. The key is the type of
-        information, and the values are a dictionary, where the keys identify
-        the elements to be annotated and the values are the IRIs of the
-        ontology identifying the element. The valid types of information
-        depend on `obj_type`:
-        * `obj_type='function'`: `arguments` (identify the names of any argument
-          present in the function definition) or `returns` (annotate one
-          or more returns). In case of tuple returns, the key in the
-          dictionary is an integer with the order of the object returned.
-        * `obj_type='data_object'`: `attributes` (identify the names of object
-          attributes) or `annotations` (identify the names of annotations).
-          Annotations are special values stored in a dictionary that can be
-          acessed by an object attribute.
-    """
-    if obj_type not in VALID_OBJECTS:
-        raise ValueError(f"Invalid object type: {obj_type}")
-
-    obj.__ontology__ = {obj_type: obj_iri}
-
-    if namespaces is not None:
-        kwargs['namespaces'] = namespaces
-
-    valid_info = VALID_INFORMATION[obj_type]
-    for information_type, value in kwargs.items():
-        if information_type in valid_info:
-            if value:
-                obj.__ontology__[information_type] = deepcopy(value)
-        else:
-            raise ValueError(f"Invalid information type for {obj_type}: "
-                             f"{information_type}. Valid information are: "
-                             f"{', '.join(valid_info)}")
-
-    return obj
-
-
-def annotate_function(function_iri, **kwargs):
-
-    def wrapped(function):
-
-        return update_ontology_information(function, obj_type='function',
-                                           obj_iri=function_iri, **kwargs)
-
-    return wrapped
-
-
-def annotate_object(object_iri, **kwargs):
-
-    def wrapped(cls):
-        return update_ontology_information(cls, obj_type='data_object',
-                                           obj_iri=object_iri, **kwargs)
-
-    return wrapped

@@ -22,7 +22,7 @@ from alpaca.serialization import AlpacaProvDocument
 from alpaca.serialization.identifiers import _get_function_name
 from alpaca.utils.files import RDF_FILE_FORMAT_MAP
 from alpaca.settings import _ALPACA_SETTINGS
-from alpaca.ontology.annotation import OntologyInformation, ONTOLOGY_INFORMATION
+from alpaca.ontology.annotation import _OntologyInformation, ONTOLOGY_INFORMATION
 
 from pprint import pprint
 
@@ -346,9 +346,9 @@ class Provenance(object):
 
         function_id = _get_function_name(function_info)
         if not ONTOLOGY_INFORMATION.get(function_id):
-            if OntologyInformation.has_ontology(function):
+            if _OntologyInformation.get_ontology_information(function):
                 ONTOLOGY_INFORMATION[function_id] = \
-                    OntologyInformation(function)
+                    _OntologyInformation(function)
 
         return source_line, ast_tree, return_targets, function_info
 

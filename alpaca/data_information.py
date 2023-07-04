@@ -23,7 +23,7 @@ import numpy as np
 from dill._dill import save_function
 
 from alpaca.alpaca_types import DataObject, File
-from alpaca.ontology.annotation import OntologyInformation, ONTOLOGY_INFORMATION
+from alpaca.ontology.annotation import _OntologyInformation, ONTOLOGY_INFORMATION
 
 # Need to use `dill` pickling function to support lambdas.
 # Some objects may have attributes that are lambdas. One example is the
@@ -294,8 +294,8 @@ class _ObjectInformation(object):
 
         # Add ontology information if not present
         if (not ONTOLOGY_INFORMATION.get(obj_type) and
-            OntologyInformation.has_ontology(obj)):
-            ONTOLOGY_INFORMATION[obj_type] = OntologyInformation(obj)
+            _OntologyInformation.get_ontology_information(obj)):
+            ONTOLOGY_INFORMATION[obj_type] = _OntologyInformation(obj)
 
         return DataObject(hash=obj_hash, hash_method=hash_method,
                           type=obj_type, id=obj_id, details=details)

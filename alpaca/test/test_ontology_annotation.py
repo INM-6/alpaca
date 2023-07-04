@@ -2,10 +2,8 @@ import unittest
 import io
 from rdflib import Literal, URIRef, Namespace, Graph, RDF, PROV
 
-from alpaca import (activate, deactivate, Provenance, save_provenance,
-                    annotate_function, annotate_object)
-from alpaca.ontology.annotation import (OntologyInformation,
-                                        update_ontology_information)
+from alpaca import activate, deactivate, Provenance, save_provenance
+from alpaca.ontology.annotation import _OntologyInformation
 from alpaca.ontology import ALPACA
 
 
@@ -18,20 +16,23 @@ EXAMPLE_NS = {'ontology': "http://example.org/ontology#"}
 ##############################
 
 class InputObject:
-    pass
+    __ontology__ = {
+        "data_object": "ontology:InputObject",
+        "namespaces": EXAMPLE_NS}
 
-@annotate_object("ontology:OutputObject", namespaces=EXAMPLE_NS,
-                 attributes={'name': "ontology:Attribute"})
+
 class OutputObject:
+    __ontology__ = {
+        "data_object": "ontology:OutputObject",
+        "attributes": {'name': "ontology:Attribute"},
+        "namespaces": EXAMPLE_NS}
+
     def __init__(self, name, channel):
         self.name = name
         self.channel = channel
 
-# Ontology annotation of objects using function
-
-update_ontology_information(InputObject, "data_object",
-                            "ontology:InputObject",
-                            namespaces=EXAMPLE_NS)
+class InputObjectIRI:
+    __ontology__ = {"data_object": "<http://purl.org/ontology#InputObject>"}
 
 
 #######################################################
@@ -39,20 +40,27 @@ update_ontology_information(InputObject, "data_object",
 #######################################################
 
 @Provenance(inputs=['input'])
-@annotate_function("ontology:ProcessFunction", namespaces=EXAMPLE_NS,
-                   arguments={'param_1': "ontology:Parameter"},
-                   returns={0: "ontology:ProcessedData"})
 def process(input, param_1):
     return OutputObject("SpikeTrain#1", 45)
 
+process.__wrapped__.__ontology__ = {
+    "function": "ontology:ProcessFunction",
+    "namespaces": EXAMPLE_NS,
+    "arguments": {'param_1': "ontology:Parameter"},
+    "returns": {0: "ontology:ProcessedData"}
+}
+
 
 @Provenance(inputs=['input'])
-@annotate_function("ontology:ProcessFunctionMultiple", namespaces=EXAMPLE_NS,
-                   arguments={'param_1': "ontology:Parameter"},
-                   returns={1: "ontology:ProcessedDataMultiple"})
 def process_multiple(input, param_1):
     return "not_annotated", OutputObject("SpikeTrain#2", 34)
 
+process_multiple.__wrapped__.__ontology__ = {
+    "function": "ontology:ProcessFunctionMultiple",
+    "namespaces": EXAMPLE_NS,
+    "arguments": {'param_1': "ontology:Parameter"},
+    "returns": {1: "ontology:ProcessedDataMultiple"}
+}
 
 ############
 # Unit tests
@@ -65,70 +73,137 @@ class OntologyAnnotationTestCase(unittest.TestCase):
         # Create rdflib Namespace for tests
         cls.ONTOLOGY = Namespace(EXAMPLE_NS['ontology'])
 
+    def setUp(self):
+        _OntologyInformation.namespaces.clear()
+
+    def test_redefine_namespaces(self):
+        obj = InputObject()
+        self.assertDictEqual(_OntologyInformation.namespaces, {})
+        info = _OntologyInformation(obj)
+
+        # At this point, the class should be updated with the 'ontology'
+        # namespace
+        with self.assertRaises(ValueError):
+            info.add_namespace('ontology', "http://purl.org/ontology")
+
+        info.add_namespace('purl_ontology', "http://purl.org/ontology")
+        self.assertEqual(len(info.namespaces), 2)
+
+        self.assertEqual(info.namespaces['ontology'], self.ONTOLOGY)
+        self.assertEqual(info.namespaces['purl_ontology'],
+                         Namespace("http://purl.org/ontology"))
+
+    def test_annotation_object_input_iri(self):
+        obj = InputObjectIRI()
+        self.assertIsNotNone(
+            _OntologyInformation.get_ontology_information(obj))
+        info = _OntologyInformation(obj)
+        self.assertEqual(
+            info.get_iri("data_object"),
+            URIRef("http://purl.org/ontology#InputObject"))
+
+        # Namespaces included in representation as this is a class attribute
+        self.assertEqual(
+            str(info),
+            "OntologyInformation(data_object='"
+            "<http://purl.org/ontology#InputObject>', namespaces={})"
+        )
+
     def test_annotation_object_input(self):
         obj = InputObject()
-        self.assertTrue(OntologyInformation.has_ontology(obj))
-        info = OntologyInformation(obj)
-        self.assertEqual(info.get_iri("data_object"),
-                         URIRef("http://example.org/ontology#InputObject"))
+        self.assertIsNotNone(
+            _OntologyInformation.get_ontology_information(obj))
+        info = _OntologyInformation(obj)
+        self.assertEqual(
+            info.get_iri("data_object"),
+            URIRef("http://example.org/ontology#InputObject"))
+        self.assertEqual(
+            str(info),
+            "OntologyInformation(data_object='ontology:InputObject', "
+            f"namespaces={{'ontology': {repr(self.ONTOLOGY)}}})"
+        )
 
     def test_annotation_object_output(self):
         obj = OutputObject("test", 45)
-        self.assertTrue(OntologyInformation.has_ontology(obj))
-        info = OntologyInformation(obj)
-        self.assertEqual(info.get_iri("data_object"),
-                         URIRef("http://example.org/ontology#OutputObject"))
-        self.assertEqual(info.get_iri("attributes", "name"),
-                         URIRef("http://example.org/ontology#Attribute"))
+        self.assertIsNotNone(
+            _OntologyInformation.get_ontology_information(obj))
+        info = _OntologyInformation(obj)
+        self.assertEqual(
+            info.get_iri("data_object"),
+            URIRef("http://example.org/ontology#OutputObject"))
+        self.assertEqual(
+            info.get_iri("attributes", "name"),
+            URIRef("http://example.org/ontology#Attribute"))
+        self.assertEqual(
+            str(info),
+            "OntologyInformation(data_object='ontology:OutputObject', "
+            "attributes={'name': 'ontology:Attribute'}, "
+            f"namespaces={{'ontology': {repr(self.ONTOLOGY)}}})"
+        )
 
     def test_annotation_function(self):
-        self.assertTrue(OntologyInformation.has_ontology(process))
-        info = OntologyInformation(process)
-        self.assertEqual(info.get_iri("function"),
-                         URIRef("http://example.org/ontology#ProcessFunction"))
-        self.assertEqual(info.get_iri("arguments", "param_1"),
-                         URIRef("http://example.org/ontology#Parameter"))
-        self.assertEqual(info.get_iri("returns", 0),
-                         URIRef("http://example.org/ontology#ProcessedData"))
+        self.assertIsNotNone(
+            _OntologyInformation.get_ontology_information(process))
+        info = _OntologyInformation(process)
+        self.assertEqual(
+            info.get_iri("function"),
+            URIRef("http://example.org/ontology#ProcessFunction"))
+        self.assertEqual(
+            info.get_iri("arguments", "param_1"),
+            URIRef("http://example.org/ontology#Parameter"))
+        self.assertEqual(
+            info.get_iri("returns", 0),
+            URIRef("http://example.org/ontology#ProcessedData"))
+        self.assertEqual(
+            str(info),
+            "OntologyInformation(function='ontology:ProcessFunction', "
+            "arguments={'param_1': 'ontology:Parameter'}, "
+            f"namespaces={{'ontology': {repr(self.ONTOLOGY)}}}, "
+            "returns={0: 'ontology:ProcessedData'})"
+        )
 
     def test_annotation_function_multiple(self):
-        self.assertTrue(OntologyInformation.has_ontology(process_multiple))
-        info = OntologyInformation(process_multiple)
-        self.assertEqual(info.get_iri("function"),
-                         URIRef("http://example.org/ontology#ProcessFunctionMultiple"))
-        self.assertEqual(info.get_iri("arguments", "param_1"),
-                         URIRef("http://example.org/ontology#Parameter"))
-        self.assertEqual(info.get_iri("returns", 1),
-                         URIRef("http://example.org/ontology#ProcessedDataMultiple"))
-
+        self.assertIsNotNone(
+            _OntologyInformation.get_ontology_information(process_multiple))
+        info = _OntologyInformation(process_multiple)
+        self.assertEqual(
+            info.get_iri("function"),
+            URIRef("http://example.org/ontology#ProcessFunctionMultiple"))
+        self.assertEqual(
+            info.get_iri("arguments", "param_1"),
+            URIRef("http://example.org/ontology#Parameter"))
+        self.assertEqual(
+            info.get_iri("returns", 1),
+            URIRef("http://example.org/ontology#ProcessedDataMultiple"))
+        self.assertEqual(
+            str(info),
+            "OntologyInformation(function='ontology:ProcessFunctionMultiple', "
+            "arguments={'param_1': 'ontology:Parameter'}, "
+            f"namespaces={{'ontology': {repr(self.ONTOLOGY)}}}, "
+            "returns={1: 'ontology:ProcessedDataMultiple'})"
+        )
 
     def test_invalid_object_annotations(self):
         obj = InputObject()
-        info = OntologyInformation(obj)
+        info = _OntologyInformation(obj)
         self.assertIsNone(info.get_iri("attributes", "name"))
 
         output_obj = OutputObject("test", 45)
-        output_info = OntologyInformation(output_obj)
+        output_info = _OntologyInformation(output_obj)
         self.assertIsNone(info.get_iri("attributes", "channel"))
         self.assertIsNone(info.get_iri("non_existent"))
         self.assertIsNone(info.get_iri("non_existent", "test"))
-
-    def test_invalid_function_annotation_parameters(self):
-        with self.assertRaises(ValueError):
-            annotate_function("iri", namespaces=EXAMPLE_NS,
-                              attributes={"test": "ontology:Attribute"})(process)
 
     def test_namespaces(self):
         input_obj = InputObject()
         output_obj = OutputObject("test", 45)
 
-        input_info = OntologyInformation(input_obj)
-        output_info = OntologyInformation(output_obj)
-        function_info = OntologyInformation(process)
+        input_info = _OntologyInformation(input_obj)
+        output_info = _OntologyInformation(output_obj)
+        function_info = _OntologyInformation(process)
 
         for info in (input_info, output_info, function_info):
-            self.assertEqual(info.namespaces['ontology'],
-                             self.ONTOLOGY)
+            self.assertEqual(info.namespaces['ontology'], self.ONTOLOGY)
             self.assertTupleEqual(tuple(info.namespaces.keys()), ('ontology',))
 
     def test_provenance_annotation(self):
