@@ -258,6 +258,10 @@ class _ObjectInformation(object):
                 Reference for the object.
             * details : dict
                 Extended information (metadata) on the object.
+            * value : object
+                For builtin objects (`str`, `int`, `float`, `bool`) or
+                equivalent objects (e.g. `numpy.float64`), the value is
+                stored.
         """
         type_information = type(obj)
         obj_type = f"{type_information.__module__}.{type_information.__name__}"
@@ -267,7 +271,8 @@ class _ObjectInformation(object):
         if obj is None:
             unique_id = uuid.uuid4()
             return DataObject(hash=unique_id, hash_method="UUID",
-                              type=obj_type, id=obj_id, details={})
+                              type=obj_type, id=obj_id, details={},
+                              value=None)
 
         # Here we can extract specific metadata to record
         details = {}
@@ -290,5 +295,9 @@ class _ObjectInformation(object):
                                                       obj_id=obj_id,
                                                       package=package)
 
+        obj_value = obj if isinstance(obj, (str, int, bool, complex, float,
+                                            np.number)) else None
+
         return DataObject(hash=obj_hash, hash_method=hash_method,
-                          type=obj_type, id=obj_id, details=details)
+                          type=obj_type, id=obj_id, details=details,
+                          value=obj_value)

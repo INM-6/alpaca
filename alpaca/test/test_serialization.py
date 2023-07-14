@@ -23,14 +23,15 @@ from alpaca.serialization.neo import _neo_to_prov
 TEST_FUNCTION = FunctionInfo("test_function", "test", "0.0.1")
 
 # Object without metadata
-INPUT = DataObject("12345", "joblib_SHA1", "test.InputObject", 12345, {})
+INPUT = DataObject("12345", "joblib_SHA1", "test.InputObject", 12345, {}, None)
 
 # Object with all main types of metadata
 INPUT_METADATA = DataObject("12345", "joblib_SHA1", "test.InputObject", 12345,
                             details={'metadata_1': "value1",
                                      'metadata_2': 5,
                                      'metadata_3': 5.0,
-                                     'metadata_4': True})
+                                     'metadata_4': True},
+                            value=None)
 
 OUTPUT_METADATA_NEO = DataObject("54321", "joblib_SHA1",
                                  "neo.core.SpikeTrain", 54321,
@@ -42,7 +43,8 @@ OUTPUT_METADATA_NEO = DataObject("54321", "joblib_SHA1",
                                                   [0, 1, 2, 3]),
                                               'event': np.array(
                                                   [True, False, False])}
-                                          })
+                                          },
+                                 value=None)
 
 # Object with special metadata
 
@@ -51,15 +53,20 @@ INPUT_FILE = File("56789", "sha256", "/test_file_input")
 OUTPUT_FILE = File("98765", "sha256", "/test_file_output")
 
 # Simple objects to test multiple inputs/outputs handling
-INPUT_2 = DataObject("212345", "joblib_SHA1", "test.InputObject", 212345, {})
-OUTPUT = DataObject("54321", "joblib_SHA1", "test.OutputObject", 54321, {})
-OUTPUT_2 = DataObject("254321", "joblib_SHA1", "test.OutputObject", 254321, {})
+INPUT_2 = DataObject("212345", "joblib_SHA1", "test.InputObject", 212345, {},
+                     None)
+OUTPUT = DataObject("54321", "joblib_SHA1", "test.OutputObject", 54321, {},
+                    None)
+OUTPUT_2 = DataObject("254321", "joblib_SHA1", "test.OutputObject", 254321, {},
+                      None)
 
 # None output
-NONE_OUTPUT = DataObject("777777", "UUID", "builtins.NoneType", 777777, {})
+NONE_OUTPUT = DataObject("777777", "UUID", "builtins.NoneType", 777777, {},
+                         None)
 
 # Object collections
-COLLECTION = DataObject("888888", "joblib_SHA1", "builtins.list", 888888, {})
+COLLECTION = DataObject("888888", "joblib_SHA1", "builtins.list", 888888, {},
+                        None)
 
 # General information. Will be fixed across the tests
 TIMESTAMP_START = "2022-05-02T12:34:56.123456"
@@ -166,7 +173,7 @@ class AlpacaProvSerializationTestCase(unittest.TestCase):
             hash_method="joblib_SHA1",
             type="test.ObjectWithMethod",
             id=232323,
-            details={})
+            details={}, value=None)
 
         function_execution = FunctionExecution(
             function=FunctionInfo('ObjectWithMethod.process',
@@ -437,16 +444,16 @@ class MultipleMembershipSerializationTestCase(unittest.TestCase):
         self.ttl_path = Path(__file__).parent / "res"
 
         super_container = DataObject("2333333", "joblib_SHA1",
-                                     "test.SuperContainer", 2333333, {})
+                                     "test.SuperContainer", 2333333, {}, None)
 
         super_container_list = DataObject("23333332", "joblib_SHA1",
-                                          "builtins.list", 23333332, {})
+                                          "builtins.list", 23333332, {}, None)
 
         container = DataObject("333333", "joblib_SHA1", "test.Container", 333333,
-                               {})
+                               {}, None)
 
         container_list = DataObject("3333332", "joblib_SHA1", "builtins.list",
-                                    3333332, {})
+                                    3333332, {}, None)
 
         attribute_access_container = FunctionExecution(
             function=FunctionInfo(name='attribute', module="", version=""),

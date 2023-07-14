@@ -28,28 +28,32 @@ TEST_ARRAY = np.array([1, 2, 3])
 TEST_ARRAY_INFO = DataObject(hash=joblib_hash(TEST_ARRAY),
                              hash_method="joblib_SHA1",
                              type="numpy.ndarray", id=id(TEST_ARRAY),
-                             details={'shape': (3,), 'dtype': np.int64})
+                             details={'shape': (3,), 'dtype': np.int64},
+                             value=None)
 
 ELEMENT_0_INFO = DataObject(hash=joblib_hash(TEST_ARRAY[0]),
                             hash_method="joblib_SHA1", type="numpy.int64",
                             id=id(TEST_ARRAY[0]),
-                            details={'shape': (), 'dtype': np.int64})
+                            details={'shape': (), 'dtype': np.int64},
+                            value=1)
 
 ELEMENT_1_INFO = DataObject(hash=joblib_hash(TEST_ARRAY[1]),
                             hash_method="joblib_SHA1", type="numpy.int64",
                             id=id(TEST_ARRAY[1]),
-                            details={'shape': (), 'dtype': np.int64})
+                            details={'shape': (), 'dtype': np.int64},
+                            value=2)
 
 ELEMENT_2_INFO = DataObject(hash=joblib_hash(TEST_ARRAY[2]),
                             hash_method="joblib_SHA1", type="numpy.int64",
                             id=id(TEST_ARRAY[2]),
-                            details={'shape': (), 'dtype': np.int64})
+                            details={'shape': (), 'dtype': np.int64},
+                            value=3)
 
 TEST_DICT = {'numbers': TEST_ARRAY}
 TEST_DICT_INFO = DataObject(hash=joblib_hash(TEST_DICT),
                             hash_method="joblib_SHA1",
                             type="builtins.dict", id=id(TEST_DICT),
-                            details={})
+                            details={}, value=None)
 
 
 # To test attributes
@@ -95,7 +99,8 @@ def _check_function_execution(actual, exp_function, exp_input, exp_params,
                               exp_code_stmnt, exp_return_targets, exp_order,
                               test_case):
 
-    data_object_attributes = ('hash', 'hash_method', 'type', 'details')
+    data_object_attributes = ('hash', 'hash_method', 'type', 'details',
+                              'value')
 
     # Check function
     test_case.assertTupleEqual(actual.function, exp_function)
@@ -157,7 +162,7 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
             hash=joblib_hash(TEST_ARRAY[0]+TEST_ARRAY[1]),
             hash_method="joblib_SHA1",
             type="numpy.int64", id=id(res),
-            details={'shape': (), 'dtype': np.int64})
+            details={'shape': (), 'dtype': np.int64}, value=3)
 
         _check_function_execution(
             actual=Provenance.history[0],
@@ -205,7 +210,7 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
             hash=joblib_hash(TEST_ARRAY[-1]+TEST_ARRAY[-2]),
             hash_method="joblib_SHA1",
             type="numpy.int64", id=id(res),
-            details={'shape': (), 'dtype': np.int64})
+            details={'shape': (), 'dtype': np.int64}, value=5)
 
         _check_function_execution(
             actual=Provenance.history[0],
@@ -253,12 +258,12 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
             hash=joblib_hash(TEST_ARRAY[0]+TEST_ARRAY[1]),
             hash_method="joblib_SHA1",
             type="numpy.int64", id=id(res),
-            details={'shape': (), 'dtype': np.int64})
+            details={'shape': (), 'dtype': np.int64}, value=3)
 
         expected_slice_output = DataObject(
             hash=joblib_hash(TEST_ARRAY[0:2]), hash_method="joblib_SHA1",
             type="numpy.ndarray", id=id(TEST_ARRAY[0:2]),
-            details={'shape': (2,), 'dtype': np.int64})
+            details={'shape': (2,), 'dtype': np.int64}, value=None)
 
         _check_function_execution(
             actual=Provenance.history[0],
@@ -296,12 +301,12 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
             hash=joblib_hash(TEST_ARRAY[0]+TEST_ARRAY[1]),
             hash_method="joblib_SHA1",
             type="numpy.int64", id=id(res),
-            details={'shape': (), 'dtype': np.int64})
+            details={'shape': (), 'dtype': np.int64}, value=3)
 
         expected_slice_output = DataObject(
             hash=joblib_hash(TEST_ARRAY[:2]), hash_method="joblib_SHA1",
             type="numpy.ndarray", id=id(TEST_ARRAY[:2]),
-            details={'shape': (2,), 'dtype': np.int64})
+            details={'shape': (2,), 'dtype': np.int64}, value=None)
 
         _check_function_execution(
             actual=Provenance.history[0],
@@ -339,12 +344,12 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
             hash=joblib_hash(TEST_ARRAY[1]+TEST_ARRAY[2]),
             hash_method="joblib_SHA1",
             type="numpy.int64", id=id(res),
-            details={'shape': (), 'dtype': np.int64})
+            details={'shape': (), 'dtype': np.int64}, value=5)
 
         expected_slice_output = DataObject(
             hash=joblib_hash(TEST_ARRAY[1:]), hash_method="joblib_SHA1",
             type="numpy.ndarray", id=id(TEST_ARRAY[1:]),
-            details={'shape': (2,), 'dtype': np.int64})
+            details={'shape': (2,), 'dtype': np.int64}, value=None)
 
         _check_function_execution(
             actual=Provenance.history[0],
@@ -382,12 +387,12 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
             hash=joblib_hash(TEST_ARRAY[0]+TEST_ARRAY[2]),
             hash_method="joblib_SHA1",
             type="numpy.int64", id=id(res),
-            details={'shape': (), 'dtype': np.int64})
+            details={'shape': (), 'dtype': np.int64}, value=4)
 
         expected_slice_output = DataObject(
             hash=joblib_hash(TEST_ARRAY[::2]), hash_method="joblib_SHA1",
             type="numpy.ndarray", id=id(TEST_ARRAY[::2]),
-            details={'shape': (2,), 'dtype': np.int64})
+            details={'shape': (2,), 'dtype': np.int64}, value=None)
 
         _check_function_execution(
             actual=Provenance.history[0],
@@ -425,7 +430,7 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
             hash=joblib_hash(np.sum(TEST_ARRAY)),
             hash_method="joblib_SHA1",
             type="numpy.int64", id=id(res),
-            details={'shape': (), 'dtype': np.int64})
+            details={'shape': (), 'dtype': np.int64}, value=6)
 
         _check_function_execution(
             actual=Provenance.history[0],
@@ -464,7 +469,7 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
             hash=joblib_hash(np.sum(TEST_ARRAY)),
             hash_method="joblib_SHA1",
             type="numpy.int64", id=id(res),
-            details={'shape': (), 'dtype': np.int64})
+            details={'shape': (), 'dtype': np.int64}, value=6)
 
         _check_function_execution(
             actual=Provenance.history[0],
@@ -502,12 +507,13 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
             hash=joblib_hash(np.sum(TEST_ARRAY)),
             hash_method="joblib_SHA1",
             type="numpy.int64", id=id(res),
-            details={'shape': (), 'dtype': np.int64})
+            details={'shape': (), 'dtype': np.int64}, value=6)
 
         expected_container_info = DataObject(
             hash=joblib_hash(container_of_array), hash_method="joblib_SHA1",
             type="test_code_analysis.ContainerOfArray",
-            id=id(container_of_array), details={'array': TEST_ARRAY})
+            id=id(container_of_array), details={'array': TEST_ARRAY},
+            value=None)
 
         _check_function_execution(
             actual=Provenance.history[0],
