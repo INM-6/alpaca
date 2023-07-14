@@ -1,0 +1,104 @@
+@prefix alpaca: <http://purl.org/alpaca#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<urn:fz-juelich.de:alpaca:object:Python:test.OutputObject:54321> a alpaca:DataObjectEntity ;
+    prov:wasDerivedFrom <urn:fz-juelich.de:alpaca:object:Python:test.InputObject:12345> ;
+    prov:wasAttributedTo <urn:fz-juelich.de:alpaca:script:Python:script.py:111111#999999> ;
+    prov:wasGeneratedBy <urn:fz-juelich.de:alpaca:function_execution:Python:111111:999999:test.test_function#12345> ;
+    alpaca:hashSource "joblib_SHA1" .
+
+<urn:fz-juelich.de:alpaca:object:Python:builtins.int:543211> a alpaca:DataObjectEntity ;
+    prov:wasDerivedFrom <urn:fz-juelich.de:alpaca:object:Python:test.InputObject:12345> ;
+    prov:wasAttributedTo <urn:fz-juelich.de:alpaca:script:Python:script.py:111111#999999> ;
+    prov:wasGeneratedBy <urn:fz-juelich.de:alpaca:function_execution:Python:111111:999999:test.test_function#12345> ;
+    alpaca:hashSource "joblib_SHA1" ;
+    prov:value 1 .
+
+<urn:fz-juelich.de:alpaca:object:Python:builtins.float:543212> a alpaca:DataObjectEntity ;
+    prov:wasDerivedFrom <urn:fz-juelich.de:alpaca:object:Python:test.InputObject:12345> ;
+    prov:wasAttributedTo <urn:fz-juelich.de:alpaca:script:Python:script.py:111111#999999> ;
+    prov:wasGeneratedBy <urn:fz-juelich.de:alpaca:function_execution:Python:111111:999999:test.test_function#12345> ;
+    alpaca:hashSource "joblib_SHA1" ;
+    prov:value 1.1e+00 .
+
+<urn:fz-juelich.de:alpaca:object:Python:builtins.str:543213> a alpaca:DataObjectEntity ;
+    prov:wasDerivedFrom <urn:fz-juelich.de:alpaca:object:Python:test.InputObject:12345> ;
+    prov:wasAttributedTo <urn:fz-juelich.de:alpaca:script:Python:script.py:111111#999999> ;
+    prov:wasGeneratedBy <urn:fz-juelich.de:alpaca:function_execution:Python:111111:999999:test.test_function#12345> ;
+    alpaca:hashSource "joblib_SHA1" ;
+    prov:value "test"^^xsd:string .
+
+<urn:fz-juelich.de:alpaca:object:Python:builtins.complex:543214> a alpaca:DataObjectEntity ;
+    prov:wasDerivedFrom <urn:fz-juelich.de:alpaca:object:Python:test.InputObject:12345> ;
+    prov:wasAttributedTo <urn:fz-juelich.de:alpaca:script:Python:script.py:111111#999999> ;
+    prov:wasGeneratedBy <urn:fz-juelich.de:alpaca:function_execution:Python:111111:999999:test.test_function#12345> ;
+    alpaca:hashSource "joblib_SHA1" ;
+    prov:value "(3+5j)"^^xsd:string .
+
+<urn:fz-juelich.de:alpaca:object:Python:builtins.bool:543215> a alpaca:DataObjectEntity ;
+    prov:wasDerivedFrom <urn:fz-juelich.de:alpaca:object:Python:test.InputObject:12345> ;
+    prov:wasAttributedTo <urn:fz-juelich.de:alpaca:script:Python:script.py:111111#999999> ;
+    prov:wasGeneratedBy <urn:fz-juelich.de:alpaca:function_execution:Python:111111:999999:test.test_function#12345> ;
+    alpaca:hashSource "joblib_SHA1" ;
+    prov:value true .
+
+<urn:fz-juelich.de:alpaca:object:Python:numpy.float32:543216> a alpaca:DataObjectEntity ;
+    prov:wasDerivedFrom <urn:fz-juelich.de:alpaca:object:Python:test.InputObject:12345> ;
+    prov:wasAttributedTo <urn:fz-juelich.de:alpaca:script:Python:script.py:111111#999999> ;
+    prov:wasGeneratedBy <urn:fz-juelich.de:alpaca:function_execution:Python:111111:999999:test.test_function#12345> ;
+    alpaca:hashSource "joblib_SHA1" ;
+    prov:value 1.2e+00 .
+
+<urn:fz-juelich.de:alpaca:object:Python:numpy.float64:543217> a alpaca:DataObjectEntity ;
+    prov:wasDerivedFrom <urn:fz-juelich.de:alpaca:object:Python:test.InputObject:12345> ;
+    prov:wasAttributedTo <urn:fz-juelich.de:alpaca:script:Python:script.py:111111#999999> ;
+    prov:wasGeneratedBy <urn:fz-juelich.de:alpaca:function_execution:Python:111111:999999:test.test_function#12345> ;
+    alpaca:hashSource "joblib_SHA1" ;
+    prov:value 1.3e+00 .
+
+<urn:fz-juelich.de:alpaca:object:Python:numpy.int64:543218> a alpaca:DataObjectEntity ;
+    prov:wasDerivedFrom <urn:fz-juelich.de:alpaca:object:Python:test.InputObject:12345> ;
+    prov:wasAttributedTo <urn:fz-juelich.de:alpaca:script:Python:script.py:111111#999999> ;
+    prov:wasGeneratedBy <urn:fz-juelich.de:alpaca:function_execution:Python:111111:999999:test.test_function#12345> ;
+    alpaca:hashSource "joblib_SHA1" ;
+    prov:value 2 .
+
+<urn:fz-juelich.de:alpaca:object:Python:numpy.int32:543219> a alpaca:DataObjectEntity ;
+    prov:wasDerivedFrom <urn:fz-juelich.de:alpaca:object:Python:test.InputObject:12345> ;
+    prov:wasAttributedTo <urn:fz-juelich.de:alpaca:script:Python:script.py:111111#999999> ;
+    prov:wasGeneratedBy <urn:fz-juelich.de:alpaca:function_execution:Python:111111:999999:test.test_function#12345> ;
+    alpaca:hashSource "joblib_SHA1" ;
+    prov:value 3 .
+
+<urn:fz-juelich.de:alpaca:object:Python:numpy.int16:5432110> a alpaca:DataObjectEntity ;
+    prov:wasDerivedFrom <urn:fz-juelich.de:alpaca:object:Python:test.InputObject:12345> ;
+    prov:wasAttributedTo <urn:fz-juelich.de:alpaca:script:Python:script.py:111111#999999> ;
+    prov:wasGeneratedBy <urn:fz-juelich.de:alpaca:function_execution:Python:111111:999999:test.test_function#12345> ;
+    alpaca:hashSource "joblib_SHA1" ;
+    prov:value -4 .
+
+<urn:fz-juelich.de:alpaca:object:Python:test.InputObject:12345> a alpaca:DataObjectEntity ;
+    prov:wasAttributedTo <urn:fz-juelich.de:alpaca:script:Python:script.py:111111#999999> ;
+    alpaca:hashSource "joblib_SHA1" .
+
+
+<urn:fz-juelich.de:alpaca:function_execution:Python:111111:999999:test.test_function#12345> a alpaca:FunctionExecution ;
+    prov:startedAtTime "2022-05-02T12:34:56.123456"^^xsd:dateTime ;
+    prov:endedAtTime "2022-05-02T12:35:56.123456"^^xsd:dateTime ;
+    prov:used <urn:fz-juelich.de:alpaca:object:Python:test.InputObject:12345> ;
+    prov:wasAssociatedWith <urn:fz-juelich.de:alpaca:script:Python:script.py:111111#999999> ;
+    alpaca:codeStatement "test_function(input_1, 5)" ;
+    alpaca:executionOrder 1 ;
+    alpaca:usedFunction <urn:fz-juelich.de:alpaca:function:Python:test.test_function> ;
+    alpaca:hasParameter [ a alpaca:NameValuePair ;
+        alpaca:pairName "param_1" ;
+        alpaca:pairValue 5 ] .
+
+<urn:fz-juelich.de:alpaca:function:Python:test.test_function> a alpaca:Function ;
+    alpaca:functionName "test_function" ;
+    alpaca:implementedIn "test" ;
+    alpaca:functionVersion "0.0.1" .
+
+<urn:fz-juelich.de:alpaca:script:Python:script.py:111111#999999> a alpaca:ScriptAgent ;
+    alpaca:scriptPath "/script.py" .

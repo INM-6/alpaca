@@ -90,6 +90,58 @@ class AlpacaProvSerializationTestCase(unittest.TestCase):
         cls.ttl_path = Path(__file__).parent / "res"
         alpaca_setting('authority', "fz-juelich.de")
 
+    def test_value_serialization(self):
+        # DataObject tuples for each type that should be captured
+        # They are output of the simulated output
+
+        INT = DataObject("543211", "joblib_SHA1", "builtins.int", 543211,
+                         {}, 1)
+        FLOAT = DataObject("543212", "joblib_SHA1", "builtins.float", 543212,
+                           {}, 1.1)
+        STR = DataObject("543213", "joblib_SHA1", "builtins.str", 543213,
+                         {}, "test")
+        COMPLEX = DataObject("543214", "joblib_SHA1", "builtins.complex",
+                             543214, {}, 3+5j)
+        BOOL = DataObject("543215", "joblib_SHA1", "builtins.bool", 543215,
+                          {}, True)
+        NUMPY_FLOAT32 = DataObject("543216", "joblib_SHA1", "numpy.float32",
+                                   543216, {}, np.float32(1.2))
+        NUMPY_FLOAT64 = DataObject("543217", "joblib_SHA1", "numpy.float64",
+                                   543217, {}, np.float64(1.3))
+        NUMPY_INT64 = DataObject("543218", "joblib_SHA1", "numpy.int64",
+                                 543218, {}, np.int64(2))
+        NUMPY_INT32 = DataObject("543219", "joblib_SHA1", "numpy.int32",
+                                 543219, {}, np.int32(3))
+        NUMPY_INT16 = DataObject("5432110", "joblib_SHA1", "numpy.int16",
+                                 5432110, {}, np.int16(-4))
+
+        function_execution = FunctionExecution(
+            function=TEST_FUNCTION,
+            input={'input_1': INPUT}, params={'param_1': 5},
+            output={0: OUTPUT, 1: INT, 2: FLOAT, 3: STR, 4: COMPLEX,
+                    5: BOOL, 6: NUMPY_FLOAT32, 7: NUMPY_FLOAT64,
+                    8: NUMPY_INT64, 9: NUMPY_INT32, 10: NUMPY_INT16},
+            call_ast=None,
+            arg_map=['input_1', 'param_1'], kwarg_map=[], return_targets=[],
+            time_stamp_start=TIMESTAMP_START, time_stamp_end=TIMESTAMP_END,
+            execution_id="12345", order=1,
+            code_statement="test_function(input_1, 5)"
+        )
+
+        # Load expected RDF graph
+        expected_graph_file = self.ttl_path / "values.ttl"
+        expected_graph = rdflib.Graph()
+        expected_graph.parse(expected_graph_file, format='turtle')
+
+        # Serialize the history using AlpacaProv document
+        alpaca_prov = AlpacaProvDocument()
+        alpaca_prov.add_history(SCRIPT_INFO, SCRIPT_SESSION_ID,
+                                history=[function_execution])
+
+        # Check if graphs are equal
+        self.assertTrue(assert_rdf_graphs_equal(alpaca_prov.graph,
+                                                expected_graph))
+
     def test_input_output_serialization(self):
         function_execution = FunctionExecution(
             function=TEST_FUNCTION,
