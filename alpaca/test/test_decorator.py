@@ -15,7 +15,7 @@ import quantities as pq
 import neo
 
 from alpaca import (Provenance, activate, deactivate, save_provenance,
-                    print_history)
+                    print_history, alpaca_setting)
 from alpaca.alpaca_types import (FunctionInfo, Container, DataObject, File)
 
 # Define some data and expected values test tracking
@@ -1299,6 +1299,79 @@ class ProvenanceDecoratorClassMethodsTestCase(unittest.TestCase):
             exp_kwarg_map=[],
             exp_code_stmnt="obj = NonIterableContainerOutputObject(2)",
             exp_return_targets=['obj'],
+            exp_order=1,
+            test_case=self)
+
+
+@Provenance(inputs=['source'])
+def use_dict(source):
+    return 3
+
+class ProvenanceDecoratorStoreValuesTestCase(unittest.TestCase):
+
+    def setUp(self):
+        alpaca_setting('store_values', [])
+
+    def test_capture_dict(self):
+        # This should have values for both the input dictionary and the
+        # integer return
+        alpaca_setting('store_values', ['builtins.dict'])
+        activate(clear=True)
+        test_dict = dict(id=[1, 2, 3], value={4, 5, 6})
+        res = use_dict(test_dict)
+        deactivate()
+
+        dict_info = DataObject(hash=joblib.hash(test_dict, hash_name='sha1'),
+                               hash_method="joblib_SHA1",
+                               type="builtins.dict", id=id(test_dict),
+                               details={},
+                               value="{'id': [1, 2, 3], 'value': {4, 5, 6}}")
+
+        expected_output = DataObject(hash=joblib.hash(3, hash_name='sha1'),
+                                     hash_method="joblib_SHA1",
+                                     type="builtins.int", id=id(res),
+                                     details={}, value=3)
+
+        _check_function_execution(
+            actual=Provenance.history[0],
+            exp_function=FunctionInfo('use_dict', 'test_decorator', ''),
+            exp_input={'source': dict_info},
+            exp_params={},
+            exp_output={0: expected_output},
+            exp_arg_map=['source'],
+            exp_kwarg_map=[],
+            exp_code_stmnt="res = use_dict(test_dict)",
+            exp_return_targets=['res'],
+            exp_order=1,
+            test_case=self)
+
+    def test_capture_builtins_only(self):
+        # This should have values only for the integer return
+        activate(clear=True)
+        test_dict = dict(id=[1, 2, 3], value={4, 5, 6})
+        res = use_dict(test_dict)
+        deactivate()
+
+        dict_info = DataObject(hash=joblib.hash(test_dict, hash_name='sha1'),
+                               hash_method="joblib_SHA1",
+                               type="builtins.dict", id=id(test_dict),
+                               details={}, value=None)
+
+        expected_output = DataObject(hash=joblib.hash(3, hash_name='sha1'),
+                                     hash_method="joblib_SHA1",
+                                     type="builtins.int", id=id(res),
+                                     details={}, value=3)
+
+        _check_function_execution(
+            actual=Provenance.history[0],
+            exp_function=FunctionInfo('use_dict', 'test_decorator', ''),
+            exp_input={'source': dict_info},
+            exp_params={},
+            exp_output={0: expected_output},
+            exp_arg_map=['source'],
+            exp_kwarg_map=[],
+            exp_code_stmnt="res = use_dict(test_dict)",
+            exp_return_targets=['res'],
             exp_order=1,
             test_case=self)
 

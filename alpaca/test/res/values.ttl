@@ -78,6 +78,13 @@
     alpaca:hashSource "joblib_SHA1" ;
     prov:value -4 .
 
+<urn:fz-juelich.de:alpaca:object:Python:builtins.dict:5432111> a alpaca:DataObjectEntity ;
+    prov:wasDerivedFrom <urn:fz-juelich.de:alpaca:object:Python:test.InputObject:12345> ;
+    prov:wasAttributedTo <urn:fz-juelich.de:alpaca:script:Python:script.py:111111#999999> ;
+    prov:wasGeneratedBy <urn:fz-juelich.de:alpaca:function_execution:Python:111111:999999:test.test_function#12345> ;
+    alpaca:hashSource "joblib_SHA1" ;
+    prov:value "{'id': [1, 2, 3], 'value': {4, 5, 6}}"^^xsd:string .
+
 <urn:fz-juelich.de:alpaca:object:Python:test.InputObject:12345> a alpaca:DataObjectEntity ;
     prov:wasAttributedTo <urn:fz-juelich.de:alpaca:script:Python:script.py:111111#999999> ;
     alpaca:hashSource "joblib_SHA1" .

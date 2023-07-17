@@ -90,9 +90,13 @@ class AlpacaProvSerializationTestCase(unittest.TestCase):
         cls.ttl_path = Path(__file__).parent / "res"
         alpaca_setting('authority', "fz-juelich.de")
 
+    def setUp(self):
+        alpaca_setting('store_values', [])
+
     def test_value_serialization(self):
         # DataObject tuples for each type that should be captured
         # They are output of the simulated output
+        alpaca_setting('store_values', ['builtins.dict'])
 
         INT = DataObject("543211", "joblib_SHA1", "builtins.int", 543211,
                          {}, 1)
@@ -115,12 +119,17 @@ class AlpacaProvSerializationTestCase(unittest.TestCase):
         NUMPY_INT16 = DataObject("5432110", "joblib_SHA1", "numpy.int16",
                                  5432110, {}, np.int16(-4))
 
+        DICT = DataObject("5432111", "joblib_SHA1", "builtins.dict",
+                          5432111, {},
+                          str(dict(id=[1, 2, 3], value={4, 5, 6})))
+
         function_execution = FunctionExecution(
             function=TEST_FUNCTION,
             input={'input_1': INPUT}, params={'param_1': 5},
             output={0: OUTPUT, 1: INT, 2: FLOAT, 3: STR, 4: COMPLEX,
                     5: BOOL, 6: NUMPY_FLOAT32, 7: NUMPY_FLOAT64,
-                    8: NUMPY_INT64, 9: NUMPY_INT32, 10: NUMPY_INT16},
+                    8: NUMPY_INT64, 9: NUMPY_INT32, 10: NUMPY_INT16,
+                    11: DICT},
             call_ast=None,
             arg_map=['input_1', 'param_1'], kwarg_map=[], return_targets=[],
             time_stamp_start=TIMESTAMP_START, time_stamp_end=TIMESTAMP_END,

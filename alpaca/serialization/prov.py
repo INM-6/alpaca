@@ -164,6 +164,12 @@ class AlpacaProvDocument(object):
         if value_class in cls.XSD_TYPES:
             return cls.XSD_TYPES[value_class]
 
+        # Check if object is include in the `store_values` setting.
+        # In this case, they are always stored as strings
+        obj_type = info.type
+        if obj_type in _ALPACA_SETTINGS['store_values']:
+            return XSD.string
+
         for possible_type in (numbers.Integral, numbers.Real, numbers.Complex):
             if issubclass(value_class, possible_type):
                 return cls.XSD_TYPES[possible_type]

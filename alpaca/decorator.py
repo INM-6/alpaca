@@ -365,7 +365,8 @@ class Provenance(object):
         return source_line, ast_tree, return_targets, function_info
 
     def _capture_input_and_parameters_provenance(self, function, args, kwargs,
-        ast_tree, function_info, time_stamp_start, builtin_object_hash):
+        ast_tree, function_info, time_stamp_start, builtin_object_hash,
+        store_values):
 
         # 1. Extract the parameters passed to the function and store them in
         # the `input_data` dictionary.
@@ -389,7 +390,8 @@ class Provenance(object):
         # After this step, all hashes and metadata of input parameters/files
         # are going to be stored in the dictionary `inputs`.
 
-        data_info = _ObjectInformation(use_builtin_hash=builtin_object_hash)
+        data_info = _ObjectInformation(use_builtin_hash=builtin_object_hash,
+                                       store_values=store_values)
 
         # Initialize parameter list with all default arguments that were not
         # passed to the function
@@ -502,11 +504,12 @@ class Provenance(object):
     def _capture_output_provenance(self, function_output, return_targets,
                                    input_data, builtin_object_hash,
                                    time_stamp_start, execution_id,
-                                   constructed_object=None):
+                                   store_values, constructed_object=None):
 
         # In case in-place operations were performed, lets not use
         # memoization
-        data_info = _ObjectInformation(use_builtin_hash=builtin_object_hash)
+        data_info = _ObjectInformation(use_builtin_hash=builtin_object_hash,
+                                       store_values=store_values)
 
         # 6. Create hash for the output using `_ObjectInformation` to follow
         # individual returns. The hashes will be stored in the `outputs`
@@ -552,7 +555,8 @@ class Provenance(object):
 
             builtin_object_hash = _ALPACA_SETTINGS[
                 'use_builtin_hash_for_module']
-            logger.debug(f"Builtin object hash: {builtin_object_hash}")
+            store_values = _ALPACA_SETTINGS['store_values']
+            logging.debug(f"Builtin object hash: {builtin_object_hash}")
 
             lineno = None
 
@@ -593,7 +597,8 @@ class Provenance(object):
                                 function=function, args=args, kwargs=kwargs,
                                 ast_tree=ast_tree, function_info=function_info,
                                 time_stamp_start=time_stamp_start,
-                                builtin_object_hash=builtin_object_hash)
+                                builtin_object_hash=builtin_object_hash,
+                                store_values=store_values)
 
             # Call the function
             function_output = function(*args, **kwargs)
@@ -620,6 +625,7 @@ class Provenance(object):
                     builtin_object_hash=builtin_object_hash,
                     time_stamp_start=time_stamp_start,
                     execution_id=execution_id,
+                    store_values=store_values,
                     constructed_object=constructed_object)
 
                 # Get the end time stamp

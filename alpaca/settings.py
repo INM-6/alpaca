@@ -51,6 +51,16 @@ Currently, the following settings can be defined:
 
         Default: "my-authority"
 
+* **store_values**: list of str
+        The values of the objects from the types in the list will be stored
+        together with the provenance information. Note that objects of the
+        builtin types `str`, `bool`, `int`, `float` and `complex`, as well as
+        the NumPy numeric types (e.g. `numpy.float64`) are stored by default.
+        This option should be used to store values of more complex types, such
+        as dictionaries. In this case, the list in this setting should have
+        the `builtins.dict` entry. The strings are the full path to the Python
+        object, i.e., `[module].[...].[object_class]`.
+
 
 To set/read a setting, use the function :func:`alpaca_setting`.
 
@@ -61,7 +71,8 @@ To set/read a setting, use the function :func:`alpaca_setting`.
 # Should be modified only through the `alpaca_setting` function.
 
 _ALPACA_SETTINGS = {'use_builtin_hash_for_module': [],
-                    'authority': "my-authority"}
+                    'authority': "my-authority",
+                    'store_values': []}
 
 
 def alpaca_setting(name, value=None):
