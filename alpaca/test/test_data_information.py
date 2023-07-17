@@ -106,6 +106,35 @@ class ObjectInformationTestCase(unittest.TestCase):
         self.assertEqual(info.hash_method, "UUID")
         self.assertDictEqual(info.details, {})
 
+    def test_store_value_requested(self):
+        object_info = _ObjectInformation(store_values=['builtins.dict'])
+        test_dict = dict(key=['3', '4'])
+        info = object_info.info(test_dict)
+        self.assertEqual(info.hash, joblib.hash(test_dict, hash_name='sha1'))
+        self.assertEqual(info.type, "builtins.dict")
+        self.assertEqual(info.hash_method, "joblib_SHA1")
+        self.assertDictEqual(info.details, {})
+        self.assertEqual(info.value, "{'key': ['3', '4']}")
+
+    def test_store_value_not_requested(self):
+        object_info = _ObjectInformation()
+        test_dict = dict(key=['3', '4'])
+        info = object_info.info(test_dict)
+        self.assertEqual(info.hash, joblib.hash(test_dict, hash_name='sha1'))
+        self.assertEqual(info.type, "builtins.dict")
+        self.assertEqual(info.hash_method, "joblib_SHA1")
+        self.assertDictEqual(info.details, {})
+        self.assertEqual(info.value, None)
+
+    def test_store_value_builtins(self):
+        object_info = _ObjectInformation()
+        info = object_info.info(5)
+        self.assertEqual(info.hash, joblib.hash(5, hash_name='sha1'))
+        self.assertEqual(info.type, "builtins.int")
+        self.assertEqual(info.hash_method, "joblib_SHA1")
+        self.assertDictEqual(info.details, {})
+        self.assertEqual(info.value, 5)
+
     def test_custom_class(self):
         custom_object_1 = ObjectClass(param=4)
         custom_object_2 = ObjectClass(param=3)
