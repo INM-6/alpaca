@@ -68,9 +68,17 @@ class Provenance(object):
         the elements inside the container, instead of the container itself.
         Default: None
     container_output : bool or int, optional
-        The function outputs data inside a container (e.g., a list). Alpaca
-        will track and identify the elements inside the container, instead of
-        the container itself.
+        The function outputs data inside a container (e.g., a list).
+        If True, Alpaca will track and identify the elements inside the
+        container, instead of the container itself. It will iterate over the
+        function output object and identify the individual elements. However,
+        for dictionary outputs, the dictionary object is identified together
+        with its elements, to retain information on the keys. For other
+        containers, the container object is not identified.
+        If an integer, this defines a multiple-level (nested) container. The
+        number defines the depth for which to identify and serialize the
+        objects. In this case, the function output object will always be
+        identified together with the element tree.
         Default: False
 
     Attributes
