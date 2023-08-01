@@ -67,7 +67,7 @@ class Provenance(object):
         data structures used by the function). Alpaca will track and identify
         the elements inside the container, instead of the container itself.
         Default: None
-    container_output : bool, optional
+    container_output : bool or int, optional
         The function outputs data inside a container (e.g., a list). Alpaca
         will track and identify the elements inside the container, instead of
         the container itself.
@@ -419,8 +419,66 @@ class Provenance(object):
         return inputs, parameters, input_args_names, input_kwargs_names, \
             input_data
 
+    def _add_container_relationships(self, container, data_info, level,
+                                     time_stamp_start, execution_id):
+        # For every element of the container, add a subscript relationship
+        # This ensures that the indexing information is captured and
+        # described. The hash memoization will prevent multiple hashing.
+        input_object = data_info.info(container)
+
+        if isinstance(container, dict):
+            iterator = container.items()
+        elif isinstance(container, Iterable):
+            iterator = enumerate(container)
+        else:
+            iterator = enumerate([container])
+
+        for index, element in iterator:
+            output_object = data_info.info(element)
+            self.history.append(
+                FunctionExecution(
+                    function=FunctionInfo(name='subscript', module="",
+                                          version=""),
+                    input={0: input_object},
+                    params={'index': index},
+                    output={0: output_object},
+                    arg_map=None,
+                    kwarg_map=None,
+                    call_ast=None,
+                    code_statement=None,
+                    time_stamp_start=time_stamp_start,
+                    time_stamp_end=time_stamp_start,
+                    return_targets=[],
+                    order=None,
+                    execution_id=execution_id))
+
+            # If multilevel requested, process the next level.
+            # This will work whether the main container is a dictionary or
+            # other iterable.
+            if level is not None and level < self.container_output and \
+                    isinstance(element, Iterable):
+                self._add_container_relationships(element, data_info, level+1,
+                                                  time_stamp_start,
+                                                  execution_id)
+
+    def _capture_container_output(self, function_output, data_info,
+                                  time_stamp_start, execution_id):
+        level = None if isinstance(self.container_output, bool) else 0
+
+        if isinstance(function_output, dict) or level is not None:
+            self._add_container_relationships(function_output, data_info,
+                                              level, time_stamp_start,
+                                              execution_id)
+            return {0: data_info.info(function_output)}
+
+        # Process simple container.
+        # The container objet will not be identified.
+        return {index: data_info.info(item)
+                for index, item in enumerate(function_output)}
+
     def _capture_output_provenance(self, function_output, return_targets,
-                                   input_data, builtin_object_hash):
+                                   input_data, builtin_object_hash,
+                                   time_stamp_start, execution_id):
 
         # In case in-place operations were performed, lets not use
         # memoization
@@ -431,16 +489,17 @@ class Provenance(object):
         # dictionary, with the index as the order of each returned object.
         # If the decorator was initialized with `container_output=True`, the
         # elements of the output will be hashed, if iterable.
-        outputs = {}
         if self.container_output and isinstance(function_output, Iterable):
-            iterator = enumerate(function_output)
+            outputs = self._capture_container_output(function_output,
+                                                     data_info,
+                                                     time_stamp_start,
+                                                     execution_id)
         else:
             if len(return_targets) < 2:
                 function_output = [function_output]
-            iterator = enumerate(function_output)
 
-        for index, item in iterator:
-            outputs[index] = data_info.info(item)
+            outputs = {index: data_info.info(item)
+                       for index, item in enumerate(function_output)}
 
         # If there is a file output as defined in the decorator
         # initialization, create the hash and add as output using
@@ -513,7 +572,9 @@ class Provenance(object):
                 outputs = self._capture_output_provenance(
                     function_output=function_output,
                     return_targets=return_targets, input_data=input_data,
-                    builtin_object_hash=builtin_object_hash)
+                    builtin_object_hash=builtin_object_hash,
+                    time_stamp_start=time_stamp_start,
+                    execution_id=execution_id)
 
                 # Get the end time stamp
                 time_stamp_end = datetime.datetime.utcnow().isoformat()
