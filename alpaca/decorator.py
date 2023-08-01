@@ -598,10 +598,12 @@ class Provenance(object):
     @classmethod
     def clear(cls):
         """
-        Clears all the history and reset the execution counter to zero.
+        Clears all the history, resets the execution counter to zero,
+        and removes script information.
         """
         cls.history.clear()
         cls._call_count = 0
+        cls.script_info = None
 
 
 ##############################################################################
