@@ -171,6 +171,13 @@ class ProvenanceDecoratorInterfaceFunctionsTestCase(unittest.TestCase):
                 self.assertEqual(len(in_first), 0)
                 self.assertEqual(len(in_second), 0)
 
+    def test_save_provenance_no_capture(self):
+        Provenance.clear()
+        res = simple_function(TEST_ARRAY, 1, 2)
+
+        serialization = save_provenance(None, file_format='turtle')
+        self.assertIsNone(serialization)
+
     def test_print_history(self):
         activate(clear=True)
         res = simple_function(TEST_ARRAY, 1, 2)
