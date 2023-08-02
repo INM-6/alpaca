@@ -598,10 +598,12 @@ class Provenance(object):
     @classmethod
     def clear(cls):
         """
-        Clears all the history and reset the execution counter to zero.
+        Clears all the history, resets the execution counter to zero,
+        and removes script information.
         """
         cls.history.clear()
         cls._call_count = 0
+        cls.script_info = None
 
 
 ##############################################################################
@@ -673,6 +675,11 @@ def save_provenance(file_name=None, file_format='ttl'):
         If `file_name` is None, the function returns the PROV information as
         a string. If a file destination was informed, the return is None.
     """
+    # If provenance was not captured, there will be no information for the
+    # script. No information will be serialized.
+    if not Provenance.script_info:
+        return
+
     if file_format in RDF_FILE_FORMAT_MAP:
         file_format = RDF_FILE_FORMAT_MAP[file_format]
 
