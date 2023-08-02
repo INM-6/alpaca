@@ -405,12 +405,12 @@ class Provenance(object):
                 inputs[key] = _FileInformation(input_value).info()
 
             elif key in self.container_inputs and \
-                    isinstance(input_value, Iterable):
+                    (isinstance(input_value, Iterable) or
+                     hasattr(input_value, "__getitem__")):
                 # This is a container. Iterate over elements and store inside
                 # a `Container` namedtuple
-                container_elements = []
-                for element in input_value:
-                    container_elements.append(data_info.info(element))
+                container_elements = [data_info.info(element)
+                                      for element in input_value]
                 inputs[key] = Container(tuple(container_elements))
 
             elif key not in self.file_outputs:
@@ -436,7 +436,8 @@ class Provenance(object):
 
         if isinstance(container, dict):
             iterator = container.items()
-        elif isinstance(container, Iterable):
+        elif isinstance(container, Iterable) or \
+                hasattr(container, "__getitem__"):
             iterator = enumerate(container)
         else:
             iterator = enumerate([container])
@@ -463,8 +464,10 @@ class Provenance(object):
             # If multilevel requested, process the next level.
             # This will work whether the main container is a dictionary or
             # other iterable.
-            if level is not None and level < self.container_output and \
-                    isinstance(element, Iterable):
+            if (level is not None and
+                level < self.container_output and
+                (isinstance(element, Iterable) or
+                    hasattr(container, "__getitem__"))):
                 self._add_container_relationships(element, data_info, level+1,
                                                   time_stamp_start,
                                                   execution_id)
@@ -497,7 +500,9 @@ class Provenance(object):
         # dictionary, with the index as the order of each returned object.
         # If the decorator was initialized with `container_output=True`, the
         # elements of the output will be hashed, if iterable.
-        if self.container_output and isinstance(function_output, Iterable):
+        if self.container_output and \
+                (isinstance(function_output, Iterable) or
+                        hasattr(container, "__getitem__")):
             outputs = self._capture_container_output(function_output,
                                                      data_info,
                                                      time_stamp_start,
