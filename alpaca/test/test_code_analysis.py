@@ -58,6 +58,13 @@ class ContainerOfArray:
         self.array = array
 
 
+# To test attribute calls
+class ObjectWithMethod:
+    @Provenance(inputs=['self', 'array'])
+    def add_numbers(self, array):
+        return np.sum(array)
+
+
 # Define some test functions to use different relationships
 
 @Provenance(inputs=['num1', 'num2'])
@@ -516,6 +523,57 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
             exp_arg_map=['array'],
             exp_kwarg_map=[],
             exp_code_stmnt="res = add_numbers_array(container_of_array.array)",
+            exp_return_targets=['res'],
+            exp_order=1,
+            test_case=self)
+
+    def test_attribute_method_call(self):
+        activate(clear=True)
+        object_with_method = ObjectWithMethod()
+        container_of_array = ContainerOfArray(TEST_ARRAY)
+        res = object_with_method.add_numbers(container_of_array.array)
+        deactivate()
+
+        self.assertEqual(len(Provenance.history), 2)
+
+        expected_output = DataObject(
+            hash=joblib_hash(np.sum(TEST_ARRAY)),
+            hash_method="joblib_SHA1",
+            type="numpy.int64", id=id(res),
+            details={'shape': (), 'dtype': np.int64})
+
+        object_info = DataObject(
+            hash=joblib_hash(object_with_method),
+            hash_method="joblib_SHA1",
+            type="test_code_analysis.ObjectWithMethod",
+            id=id(object_with_method),
+            details={})
+
+        expected_container_info = DataObject(
+            hash=joblib_hash(container_of_array), hash_method="joblib_SHA1",
+            type="test_code_analysis.ContainerOfArray",
+            id=id(container_of_array), details={'array': TEST_ARRAY})
+
+        _check_function_execution(
+            actual=Provenance.history[0],
+            exp_function=FunctionInfo('attribute', '', ''),
+            exp_input={0: expected_container_info},
+            exp_params={'name': 'array'},
+            exp_output={0: TEST_ARRAY_INFO},
+            exp_arg_map=None, exp_kwarg_map=None, exp_code_stmnt=None,
+            exp_return_targets=[], exp_order=None,
+            test_case=self)
+
+        _check_function_execution(
+            actual=Provenance.history[1],
+            exp_function=FunctionInfo('ObjectWithMethod.add_numbers',
+                                      'test_code_analysis', ''),
+            exp_input={'self': object_info, 'array': TEST_ARRAY_INFO},
+            exp_params={},
+            exp_output={0: expected_output},
+            exp_arg_map=['self', 'array'],
+            exp_kwarg_map=[],
+            exp_code_stmnt="res = object_with_method.add_numbers(container_of_array.array)",
             exp_return_targets=['res'],
             exp_order=1,
             test_case=self)
