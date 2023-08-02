@@ -80,6 +80,11 @@ def container_output_function(array, param1, param2):
     return [array + i for i in range(3, 5)]
 
 
+@Provenance(inputs=[])
+def comprehension_function(param):
+    return np.float64(param)
+
+
 # Function to help verifying FunctionExecution tuples
 def _check_function_execution(actual, exp_function, exp_input, exp_params,
                               exp_output, exp_arg_map, exp_kwarg_map,
@@ -534,6 +539,85 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
             exp_return_targets=['res'],
             exp_order=1,
             test_case=self)
+
+    def test_comprehensions(self):
+        activate(clear=True)
+        num_list = [comprehension_function(i) for i in range(3)]
+        num_set = {comprehension_function(i) for i in range(3, 6)}
+        num_dict = {i: comprehension_function(v) for i, v in enumerate(range(6, 9), start=1)}
+        deactivate()
+
+        self.assertEqual(len(Provenance.history), 9)
+        self.assertEqual(len(num_list), 3)
+        self.assertEqual(len(num_set), 3)
+        self.assertEqual(list(num_dict.keys()), [1, 2, 3])
+
+        # Check executions of the list comprehension
+        for history, element in zip((0, 1, 2), num_list):
+            expected_output = DataObject(
+                hash=joblib.hash(element, hash_name='sha1'),
+                hash_method="joblib_SHA1",
+                type="numpy.float64", id=id(element),
+                details={'shape': (), 'dtype': np.float64})
+
+            _check_function_execution(
+                actual=Provenance.history[history],
+                exp_function=FunctionInfo('comprehension_function',
+                                          'test_decorator', ''),
+                exp_input={},
+                exp_params={'param': history},
+                exp_output={0: expected_output},
+                exp_arg_map=['param'],
+                exp_kwarg_map=[],
+                exp_code_stmnt="num_list = [comprehension_function(i) for i in range(3)]",
+                exp_return_targets=['num_list'],
+                exp_order=1+history,
+                test_case=self)
+
+        # Check executions of the set comprehension
+        for history, element in zip((3, 4, 5), num_set):
+            expected_output = DataObject(
+                hash=joblib.hash(element, hash_name='sha1'),
+                hash_method="joblib_SHA1",
+                type="numpy.float64", id=id(element),
+                details={'shape': (), 'dtype': np.float64})
+
+            _check_function_execution(
+                actual=Provenance.history[history],
+                exp_function=FunctionInfo('comprehension_function',
+                                          'test_decorator', ''),
+                exp_input={},
+                exp_params={'param': history},
+                exp_output={0: expected_output},
+                exp_arg_map=['param'],
+                exp_kwarg_map=[],
+                exp_code_stmnt="num_set = {comprehension_function(i) for i in range(3, 6)}",
+                exp_return_targets=['num_set'],
+                exp_order=1+history,
+                test_case=self)
+
+        # Check executions of the dict comprehension
+        for history, element in zip((6, 7, 8), num_dict.values()):
+            expected_output = DataObject(
+                hash=joblib.hash(element, hash_name='sha1'),
+                hash_method="joblib_SHA1",
+                type="numpy.float64", id=id(element),
+                details={'shape': (), 'dtype': np.float64})
+
+            _check_function_execution(
+                actual=Provenance.history[history],
+                exp_function=FunctionInfo('comprehension_function',
+                                          'test_decorator', ''),
+                exp_input={},
+                exp_params={'param': history},
+                exp_output={0: expected_output},
+                exp_arg_map=['param'],
+                exp_kwarg_map=[],
+                exp_code_stmnt="num_dict = {i: comprehension_function(v) for i, v in enumerate(range(6, 9), start=1)}",
+                exp_return_targets=['num_dict'],
+                exp_order=1+history,
+                test_case=self)
+
 
 @Provenance(inputs=None, file_input=['file_name'])
 def extract_words_from_file(file_name):
