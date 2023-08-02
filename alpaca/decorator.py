@@ -24,6 +24,7 @@ from pprint import pprint
 
 
 VAR_POSITIONAL = inspect.Parameter.VAR_POSITIONAL
+COMPREHENSION_FRAMES = ("<listcomp>", "<dictcomp>", "<setcomp>")
 
 
 # Create logger and set configuration
@@ -281,11 +282,11 @@ class Provenance(object):
         frame_info = inspect.getframeinfo(frame)
         function_name = frame_info.function
 
-        if function_name == '<listcomp>':
-            # For list comprehensions, we need to check the frame above,
-            # as this creates a function named <listcomp>. We use a while loop
-            # in case of nested list comprehensions.
-            while function_name == '<listcomp>':
+        if function_name in COMPREHENSION_FRAMES:
+            # For comprehensions, we need to check the frame above,
+            # as this creates a function named <*comp>. We use a while loop
+            # in case of nested comprehensions.
+            while function_name in COMPREHENSION_FRAMES:
                 frame = frame.f_back
                 frame_info = inspect.getframeinfo(frame)
                 function_name = frame_info.function
