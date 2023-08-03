@@ -465,28 +465,30 @@ class Provenance(object):
             # This will work whether the main container is a dictionary or
             # other iterable.
             if (level is not None and
-                level < self.container_output and
-                (isinstance(element, Iterable) or
-                    hasattr(container, "__getitem__"))):
-                self._add_container_relationships(element, data_info, level+1,
+                    level < self.container_output and
+                    (isinstance(element, Iterable) or
+                     hasattr(container, "__getitem__"))):
+                self._add_container_relationships(element, data_info,
+                                                  level + 1,
                                                   time_stamp_start,
                                                   execution_id)
+
+        return input_object
 
     def _capture_container_output(self, function_output, data_info,
                                   time_stamp_start, execution_id):
         level = None if isinstance(self.container_output, bool) else 0
 
         if isinstance(function_output, dict) or level is not None:
-            self._add_container_relationships(function_output, data_info,
-                                              level, time_stamp_start,
-                                              execution_id)
-            return {0: data_info.info(function_output)}
+            container_info = self._add_container_relationships(
+                function_output, data_info, level, time_stamp_start,
+                execution_id)
+            return {0: container_info}
 
         # Process simple container.
-        # The container objet will not be identified.
+        # The container object will not be identified.
         return {index: data_info.info(item)
                 for index, item in enumerate(function_output)}
-
     def _capture_output_provenance(self, function_output, return_targets,
                                    input_data, builtin_object_hash,
                                    time_stamp_start, execution_id):
