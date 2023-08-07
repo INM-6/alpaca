@@ -232,19 +232,21 @@ class ProvenanceDecoratorFunctionsTestCase(unittest.TestCase):
     def test_get_module_version(self):
         expected_numpy_version = np.__version__
 
-        numpy_version = Provenance._get_module_version("numpy", "mean")
+        numpy_version = Provenance._get_module_version("numpy")
         self.assertEqual(numpy_version, expected_numpy_version)
 
         numpy_version_submodule = Provenance._get_module_version(
-            "numpy.random", "normal")
+            "numpy.random")
         self.assertEqual(numpy_version_submodule, expected_numpy_version)
 
-        main_version = Provenance._get_module_version("__main__",
-                                                      "test_function")
+        main_version = Provenance._get_module_version("__main__")
         self.assertEqual(main_version, "")
 
-        invalid = Provenance._get_module_version("non_existent", "test")
+        invalid = Provenance._get_module_version("non_existent")
         self.assertEqual(invalid, "")
+
+        none = Provenance._get_module_version(None)
+        self.assertEqual(none, "")
 
 
 class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
