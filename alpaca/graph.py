@@ -19,6 +19,7 @@ visualize GEXF files.
 import re
 from itertools import chain
 from collections import defaultdict
+import logging
 
 import networkx as nx
 from networkx.algorithms.summarization import (_snap_eligible_group,
@@ -31,6 +32,15 @@ from alpaca.serialization import AlpacaProvDocument
 from alpaca.serialization.identifiers import (NSS_FUNCTION, NSS_FILE,
                                               entity_info, activity_info)
 from alpaca.utils.files import _get_file_format
+
+
+# Create logger and set configuration
+logger = logging.getLogger(__file__)
+log_handler = logging.StreamHandler()
+log_handler.setFormatter(logging.Formatter("[%(asctime)s] alpaca.graph -"
+                                           " %(levelname)s: %(message)s"))
+logger.addHandler(log_handler)
+logger.propagate = False
 
 
 # String constants to use in the output
@@ -307,7 +317,7 @@ class ProvenanceGraph:
         transformed = nx.DiGraph()
         none_nodes = []
 
-        print("Creating nodes")
+        logger.debug("Creating nodes")
 
         # Copy all the Entity nodes, while adding the requested attributes and
         # annotations as node data.
@@ -323,11 +333,11 @@ class ProvenanceGraph:
                                     strip_namespace=strip_namespace)
             transformed.add_node(node_id, **data)
 
-        print("Creating edges")
         # Add all the edges.
         # If usage/generation, create additional nodes for the function call,
         # with the parameters as node data.
         # If membership, membership flag is set to True, as this will be used.
+        logger.debug("Creating edges")
 
         for s, func_execution in graph.subject_objects(PROV.wasGeneratedBy):
 
