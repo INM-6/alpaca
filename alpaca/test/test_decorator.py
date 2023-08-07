@@ -135,6 +135,37 @@ class ProvenanceDecoratorInterfaceFunctionsTestCase(unittest.TestCase):
         self.assertEqual(Provenance.history[1].code_statement,
                          "simple_function(TEST_ARRAY, 3, 4)")
 
+    def test_save_provenance_show_progress(self):
+        activate(clear=True)
+        res = simple_function(TEST_ARRAY, 1, 2)
+        deactivate()
+
+        # Capture STDERR and serialize
+        captured = StringIO()
+        sys.stderr = captured
+        save_provenance(file_name=None, show_progress=True)
+        sys.stderr = sys.__stderr__
+
+        captured_stderr = captured.getvalue()
+
+        self.assertTrue("Serializing provenance history: 100%" in
+                        captured_stderr)
+
+    def test_save_provenance_no_progress(self):
+        activate(clear=True)
+        res = simple_function(TEST_ARRAY, 1, 2)
+        deactivate()
+
+        # Capture STDERR and serialize
+        captured = StringIO()
+        sys.stderr = captured
+        save_provenance(file_name=None)
+        sys.stderr = sys.__stderr__
+
+        captured_stderr = captured.getvalue()
+
+        self.assertEqual(captured_stderr, "")
+
     def test_save_provenance(self):
         activate(clear=True)
         res = simple_function(TEST_ARRAY, 1, 2)
