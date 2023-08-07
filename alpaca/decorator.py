@@ -579,10 +579,17 @@ class Provenance(object):
         cls.script_info = _FileInformation(cls.source_file).info()
 
     @classmethod
-    def get_prov_info(cls):
+    def get_prov_info(cls, show_progress=False):
         """
-        Returns the representation of the captured provenance information
+        Returns the RDF representation of the captured provenance information
         according to the Alpaca ontology based on the W3C PROV-O.
+
+        Parameters
+        ----------
+        show_progress : bool, optional
+            If True, show a bar with the progress of the conversion of the
+            captured provenance information to RDF.
+            Default: False
 
         Returns
         -------
@@ -592,7 +599,8 @@ class Provenance(object):
         prov_document = AlpacaProvDocument()
         prov_document.add_history(script_info=cls.script_info,
                                   session_id=cls.session_id,
-                                  history=cls.history)
+                                  history=cls.history,
+                                  show_progress=show_progress)
         return prov_document
 
     @classmethod
@@ -646,10 +654,10 @@ def print_history():
     pprint(Provenance.history)
 
 
-def save_provenance(file_name=None, file_format='ttl'):
+def save_provenance(file_name=None, file_format='ttl',show_progress=False):
     """
-    Serialize provenance information according to the Alpaca ontology based
-    on the W3C PROV Ontology (PROV-O).
+    Serialize provenance information to RDF according to the Alpaca ontology
+    based on the W3C PROV Ontology (PROV-O).
 
     Parameters
     ----------
@@ -668,6 +676,9 @@ def save_provenance(file_name=None, file_format='ttl'):
         * 'json': JSON-LD
 
         Default: 'ttl'
+    show_progress : bool, optional
+        If True, show a bar with the progress of the serialization to RDF.
+        Default: False
 
     Returns
     -------
@@ -683,6 +694,6 @@ def save_provenance(file_name=None, file_format='ttl'):
     if file_format in RDF_FILE_FORMAT_MAP:
         file_format = RDF_FILE_FORMAT_MAP[file_format]
 
-    prov_document = Provenance.get_prov_info()
+    prov_document = Provenance.get_prov_info(show_progress=show_progress)
     prov_data = prov_document.serialize(file_name, file_format=file_format)
     return prov_data
