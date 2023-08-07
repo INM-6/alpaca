@@ -259,7 +259,7 @@ class Provenance(object):
     @staticmethod
     def _get_module_version(module):
 
-        if not module.startswith("__main__") or module is None:
+        if not (module is None or module.startswith("__main__")):
             # User-defined functions in the running script do not have a
             # version
             package = module.split(".")[0]
