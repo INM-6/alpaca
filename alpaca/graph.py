@@ -77,8 +77,6 @@ def _get_function_call_data(activity, function_name, execution_order, params,
     for param, value in params.items():
         data[f"{prefix}:{param}"] = value
 
-    _add_gephi_interval(data, data["execution_order"])
-
     return data
 
 
@@ -108,7 +106,6 @@ def _get_entity_data(graph, entity, annotations=None, attributes=None,
          ALPACA.hasAttribute: attributes if attributes else []})
 
     data = entity_info(entity)
-    data["gephi_interval"] = []
 
     if annotations or attributes:
         for attr_type in (ALPACA.hasAttribute, ALPACA.hasAnnotation):
@@ -218,6 +215,11 @@ class ProvenanceGraph:
         False, only the method name will appear in the node label (e.g.,
         `method_name`).
         Default: True
+    time_intervals : bool, optional
+        If True, the nodes will have the `Time Interval` attribute containing
+        time interval strings in the format supported by the Gephi timeline
+        feature. If False, the attribute is not included.
+        Default: True
 
     Attributes
     ----------
@@ -230,7 +232,7 @@ class ProvenanceGraph:
     def __init__(self, prov_file, annotations=None, attributes=None,
                  strip_namespace=True, remove_none=True,
                  use_name_in_parameter=True, use_class_in_method_name=True,
-                 *args, **kwargs):
+                 time_intervals=True, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         # Load PROV records from the file
@@ -244,16 +246,18 @@ class ProvenanceGraph:
             doc.graph, annotations=annotations, attributes=attributes,
             strip_namespace=strip_namespace, remove_none=remove_none,
             use_name_in_parameter=use_name_in_parameter,
-            use_class_in_method_name=use_class_in_method_name
+            use_class_in_method_name=use_class_in_method_name,
+            time_intervals=time_intervals
         )
 
-        # Nodes that are not directly connected to function call nodes, need
-        # to have the execution counter set, so that the Gephi timeline
-        # visualization works
-        self._find_missing_intervals(self.graph)
+        if time_intervals:
+            # Nodes that are not directly connected to function call nodes,
+            # need to have the execution counter set, so that the Gephi
+            # timeline visualization works
+            self._find_missing_intervals(self.graph)
 
-        # Generate the interval according to Gephi format
-        self._generate_interval_strings(self.graph)
+            # Generate the interval according to Gephi format
+            self._generate_interval_strings(self.graph)
 
     @staticmethod
     def _find_missing_intervals(graph):
@@ -280,7 +284,10 @@ class ProvenanceGraph:
                 successors = subgraph.successors(root)
                 interval = subgraph.nodes[root]["gephi_interval"]
                 for succ in successors:
-                    graph.nodes[succ]["gephi_interval"].extend(interval)
+                    attrs = graph.nodes[succ]
+                    if not "gephi_interval" in attrs:
+                        attrs["gephi_interval"] = []
+                    attrs["gephi_interval"].extend(interval)
 
             processed_nodes.extend(root_nodes)
             subgraph_nodes = []
@@ -308,7 +315,8 @@ class ProvenanceGraph:
     def _transform_graph(graph, annotations=None, attributes=None,
                          strip_namespace=True, remove_none=True,
                          use_name_in_parameter=True,
-                         use_class_in_method_name=True):
+                         use_class_in_method_name=True,
+                         time_intervals=True):
         # Transform an RDFlib graph obtained from the PROV data, so that the
         # visualization is simplified. A new `nx.DiGraph` object is created
         # and returned. Annotations and attributes of the entities stored in
@@ -372,6 +380,9 @@ class ProvenanceGraph:
                 use_name_in_parameter=use_name_in_parameter,
                 use_class_in_name=use_class_in_method_name)
 
+            if time_intervals:
+                _add_gephi_interval(node_data, node_data["execution_order"])
+
             # Add a new node for the function execution, with the activity
             # data
             node_id = str(func_execution)
@@ -382,12 +393,14 @@ class ProvenanceGraph:
             # to targets
             for source in source_entities:
                 transformed.add_edge(source, node_id, membership=False)
-                _add_gephi_interval(transformed.nodes[source],
+                if time_intervals:
+                    _add_gephi_interval(transformed.nodes[source],
                                     node_data['execution_order'])
 
             if not remove_none or (remove_none and target not in none_nodes):
                 transformed.add_edge(node_id, target, membership=False)
-                _add_gephi_interval(transformed.nodes[target],
+                if time_intervals:
+                    _add_gephi_interval(transformed.nodes[target],
                                     node_data['execution_order'])
 
         for container, member in graph.subject_objects(PROV.hadMember):
@@ -500,7 +513,8 @@ class ProvenanceGraph:
         self._condense_memberships(self.graph, preserve=preserve)
 
     @staticmethod
-    def _snap_build_graph(graph, groups, neighbor_info, record_members=True):
+    def _snap_build_graph(graph, groups, neighbor_info, remove_attributes,
+                          record_members=True):
         # Function modified from NetworkX 2.6, to build the aggregated graph
         # after SNAP aggregation.
         #
@@ -518,14 +532,16 @@ class ProvenanceGraph:
                 key: str(next(iter(value)))
                 if len(value) == 1 else ";".join(map(str, sorted(list(value))))
                 for key, value in raw_attributes.items()
+                if remove_attributes is None or key not in remove_attributes
             }
 
             # Organize time intervals
-            intervals = re.findall(r"(\[[\d+.,]+\])",
-                                   attributes['Time Interval'])
-            intervals.sort()
-            intervals_str = ";".join(intervals)
-            attributes['Time Interval'] = f"<{intervals_str}>"
+            if 'Time Interval' in attributes:
+                intervals = re.findall(r"(\[[\d+.,]+\])",
+                                       attributes['Time Interval'])
+                intervals.sort()
+                intervals_str = ";".join(intervals)
+                attributes['Time Interval'] = f"<{intervals_str}>"
 
             return attributes
 
@@ -570,7 +586,8 @@ class ProvenanceGraph:
         return output
 
     def aggregate(self, group_node_attributes, use_function_parameters=True,
-                  output_file=None, record_members=True):
+                  output_file=None, remove_attributes=None,
+                  record_members=True):
         """
         Creates a summary graph based on a selection of attributes of the
         nodes in the graph.
@@ -611,6 +628,10 @@ class ProvenanceGraph:
             return None. The file must have either the `.gexf` or the
             `.graphml` extension, to save as either GEXF or GraphML formats
             respectively.
+            Default: None
+        remove_attributes : str or tuple of str, optional
+            Remove the specified node attributes from the aggregated graph.
+            Default: None
         record_members : bool, optional
             If True, the summarized nodes will have the `members` attribute
             with the identifiers of all nodes that are part of the group.
@@ -699,6 +720,7 @@ class ProvenanceGraph:
                 self.graph, groups, group_lookup, edge_types=edge_types)
 
         aggregated = self._snap_build_graph(self.graph, groups, neighbor_info,
+                                            remove_attributes,
                                             record_members=record_members)
 
         if output_file is None:
@@ -713,6 +735,27 @@ class ProvenanceGraph:
             raise ValueError("Unknown graph format. Please provide an output"
                              "file with either '.gexf' or '.graphml'"
                              "extension")
+
+    def remove_attributes(self, *attributes):
+        """
+        Remove one or more attributes from the nodes.
+
+        Parameters
+        ----------
+        attributes : str
+            Key(s) identifying the attribute(s) to be removed from the node
+            attribute dictionary.
+        """
+        if len(attributes) > 1:
+            for _, node_attrs in self.graph.nodes(data=True):
+                for attr in attributes:
+                    node_attrs.pop(attr, None)
+        else:
+            # Algorithm has O(N) complexity. In the case of a single attribute,
+            # there is no need for a nested loop, which will improve run time.
+            attr = attributes[0]
+            for _, node_attrs in self.graph.nodes(data=True):
+                node_attrs.pop(attr, None)
 
     def save_gexf(self, file_name):
         """
