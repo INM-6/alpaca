@@ -500,7 +500,7 @@ class ProvenanceGraph:
         self._condense_memberships(self.graph, preserve=preserve)
 
     @staticmethod
-    def _snap_build_graph(graph, groups, neighbor_info):
+    def _snap_build_graph(graph, groups, neighbor_info, record_members=True):
         # Function modified from NetworkX 2.6, to build the aggregated graph
         # after SNAP aggregation.
         #
@@ -543,12 +543,15 @@ class ProvenanceGraph:
             supernode_attributes = _aggregate_attributes(graph.nodes,
                                                          group_set)
 
-            # Save a string with the identifiers of all member nodes
-            members = ";".join(group_set)
             count = len(group_set)
+            supernode_attributes['member_count'] = count
 
-            output.add_node(supernode, members=members, member_count=count,
-                            **supernode_attributes)
+            # Save a string with the identifiers of all member nodes if
+            # requested
+            if record_members:
+                supernode_attributes['members'] = ";".join(group_set)
+
+            output.add_node(supernode, **supernode_attributes)
 
         for group_id in groups:
             group_set = groups[group_id]
@@ -567,7 +570,7 @@ class ProvenanceGraph:
         return output
 
     def aggregate(self, group_node_attributes, use_function_parameters=True,
-                  output_file=None):
+                  output_file=None, record_members=True):
         """
         Creates a summary graph based on a selection of attributes of the
         nodes in the graph.
@@ -578,9 +581,10 @@ class ProvenanceGraph:
         possible to generate visualizations with different levels of detail
         to progressively inspect the provenance trace.
 
-        In the summarized nodes, the node attribute `members` stores the list
-        with the IDs of the original nodes that are part of that group, and
-        `member_count` stores the number of nodes in the group.
+        In the summarized nodes, the `member_count` node attribute stores the
+        number of nodes in the group. If requested, the list with the IDs of
+        the original nodes that are part of that group can be stored in the
+        `members` node attribute.
 
         Parameters
         ----------
@@ -601,12 +605,16 @@ class ProvenanceGraph:
             If False, a single supernode will be produced, regardless of the
             different parameters used.
             Default: True
-        output_file : str or Path-like
+        output_file : str or Path-like, optional
             If None, a `nx.DiGraph` object will be returned. If not None, the
             graph will be saved in the provided path, and the function will
             return None. The file must have either the `.gexf` or the
             `.graphml` extension, to save as either GEXF or GraphML formats
             respectively.
+        record_members : bool, optional
+            If True, the summarized nodes will have the `members` attribute
+            with the identifiers of all nodes that are part of the group.
+            Default: True
 
         Returns
         -------
@@ -690,7 +698,8 @@ class ProvenanceGraph:
             eligible_group_id, neighbor_info = _snap_eligible_group(
                 self.graph, groups, group_lookup, edge_types=edge_types)
 
-        aggregated = self._snap_build_graph(self.graph, groups, neighbor_info)
+        aggregated = self._snap_build_graph(self.graph, groups, neighbor_info,
+                                            record_members=record_members)
 
         if output_file is None:
             return aggregated
