@@ -108,7 +108,10 @@ class _CallAST(ast.NodeVisitor):
 
     def visit_Call(self, node):
 
-        func_name = self.function
+        # In case of initializers, the AST function name will not have
+        # `__init__` in the method name
+        func_name = self.function[:-9] \
+            if self.function.endswith(".__init__") else self.function
 
         # Check if the Call is for the function being executed.
         # If a function is called using a namespace or as a method, the `func`
