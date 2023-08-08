@@ -13,7 +13,7 @@ data processing, it is not possible to tell what was done to the input
 data without the need to study the script, and more often than not, observe the
 execution of the script in a debugger to track the individual variables.
 
-**A**\utomated **L**\ight-weight **P**\roven\ **a**\nce **Ca**\pture (Alpaca)
+**A**\utomated **L**\ightweight **P**\roven\ **a**\nce **Ca**\pture (Alpaca)
 is a toolbox to easily capture and serialize more detailed provenance information
 when running Python scripts. To this end, Alpaca generates an additional file with
 the provenance information as metadata to accompany the output files of a script.

@@ -113,9 +113,17 @@ class _CallAST(ast.NodeVisitor):
         func_name = self.function[:-9] \
             if self.function.endswith(".__init__") else self.function
 
-        # Check if the Call is for the function being executed
-        if isinstance(node.func, ast.Name) and node.func.id == func_name:
+        # Check if the Call is for the function being executed.
+        # If a function is called using a namespace or as a method, the `func`
+        # attribute will be `ast.Attribute`.
+        function_in_execution = False
+        if isinstance(node.func, ast.Attribute):
+            attr_name = node.func.attr
+            function_in_execution = func_name.endswith(f".{attr_name}")
+        elif isinstance(node.func, ast.Name):
+            function_in_execution = node.func.id == func_name
 
+        if function_in_execution:
             # Fetch static information of Attribute and Subscript nodes that
             # were inputs. This should capture hierarchical information for
             # inputs that are class members or items in accessed in iterables

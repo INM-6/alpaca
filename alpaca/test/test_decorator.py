@@ -11,6 +11,8 @@ import rdflib
 from rdflib.compare import graph_diff
 
 import numpy as np
+import quantities as pq
+import neo
 
 from alpaca import (Provenance, activate, deactivate, save_provenance,
                     print_history)
@@ -80,6 +82,41 @@ def container_output_function(array, param1, param2):
     return [array + i for i in range(3, 5)]
 
 
+@Provenance(inputs=['array'], container_output=True)
+def dict_output_function(array, param1, param2):
+    """ Takes as single input and outputs multiple elements in a dictionary """
+    return {f"key.{i}": array + i + 3 for i in range(0, 2)}
+
+
+@Provenance(inputs=['array'], container_output=1)
+def container_output_function_level(array, param1, param2):
+    """ Takes a single input and outputs multiple elements in a container"""
+    return [array + i for i in range(3, 5)]
+
+
+@Provenance(inputs=['array'], container_output=1)
+def dict_output_function_level(array, param1, param2):
+    """ Takes as single input and outputs multiple elements in a dictionary """
+    return {f"key.{i}": array + i + 3 for i in range(0, 2)}
+
+
+class NonIterableContainer(object):
+
+    def __init__(self, start):
+        self.data = np.arange(start, start+3)
+
+    def __getitem__(self, item):
+        return  self.data[item]
+
+@Provenance(inputs=[], container_output=0)
+def non_iterable_container_output(param1):
+    return NonIterableContainer(param1)
+
+@Provenance(inputs=[])
+def comprehension_function(param):
+    return np.float64(param)
+
+
 # Function to help verifying FunctionExecution tuples
 def _check_function_execution(actual, exp_function, exp_input, exp_params,
                               exp_output, exp_arg_map, exp_kwarg_map,
@@ -89,21 +126,38 @@ def _check_function_execution(actual, exp_function, exp_input, exp_params,
     test_case.assertTupleEqual(actual.function, exp_function)
 
     # Check inputs
-    for input_arg, value in actual.input.items():
-        test_case.assertTrue(input_arg in exp_input)
-        test_case.assertTupleEqual(value, exp_input[input_arg])
+    for input_arg, value in exp_input.items():
+        test_case.assertTrue(input_arg in actual.input)
+        actual_input = actual.input[input_arg]
+        for attr in value._fields:
+            actual_value = getattr(actual_input, attr)
+            exp_value = getattr(value, attr)
+            if attr != 'id' or (attr == 'id' and exp_value is not None):
+                test_case.assertEqual(actual_value, exp_value)
 
     # Check parameters
     test_case.assertDictEqual(actual.params, exp_params)
 
     # Check outputs
-    for output, value in actual.output.items():
-        test_case.assertTrue(output in exp_output)
-        test_case.assertTupleEqual(value, exp_output[output])
+    for output, value in exp_output.items():
+        test_case.assertTrue(output in actual.output)
+        actual_output = actual.output[output]
+        for attr in value._fields:
+            actual_value = getattr(actual_output, attr)
+            exp_value = getattr(value, attr)
+            if attr != 'id' or (attr == 'id' and exp_value is not None):
+                test_case.assertEqual(actual_value, exp_value)
 
     # Check args and kwargs
-    test_case.assertListEqual(actual.arg_map, exp_arg_map)
-    test_case.assertListEqual(actual.kwarg_map, exp_kwarg_map)
+    if actual.arg_map is not None:
+        test_case.assertListEqual(actual.arg_map, exp_arg_map)
+    else:
+        test_case.assertIsNone(exp_arg_map)
+
+    if actual.kwarg_map is not None:
+        test_case.assertListEqual(actual.kwarg_map, exp_kwarg_map)
+    else:
+        test_case.assertIsNone(exp_kwarg_map)
 
     # Check other information
     test_case.assertEqual(actual.code_statement, exp_code_stmnt)
@@ -134,6 +188,37 @@ class ProvenanceDecoratorInterfaceFunctionsTestCase(unittest.TestCase):
                          "simple_function(TEST_ARRAY, 1, 2)")
         self.assertEqual(Provenance.history[1].code_statement,
                          "simple_function(TEST_ARRAY, 3, 4)")
+
+    def test_save_provenance_show_progress(self):
+        activate(clear=True)
+        res = simple_function(TEST_ARRAY, 1, 2)
+        deactivate()
+
+        # Capture STDERR and serialize
+        captured = StringIO()
+        sys.stderr = captured
+        save_provenance(file_name=None, show_progress=True)
+        sys.stderr = sys.__stderr__
+
+        captured_stderr = captured.getvalue()
+
+        self.assertTrue("Serializing provenance history: 100%" in
+                        captured_stderr)
+
+    def test_save_provenance_no_progress(self):
+        activate(clear=True)
+        res = simple_function(TEST_ARRAY, 1, 2)
+        deactivate()
+
+        # Capture STDERR and serialize
+        captured = StringIO()
+        sys.stderr = captured
+        save_provenance(file_name=None)
+        sys.stderr = sys.__stderr__
+
+        captured_stderr = captured.getvalue()
+
+        self.assertEqual(captured_stderr, "")
 
     def test_save_provenance(self):
         activate(clear=True)
@@ -171,6 +256,13 @@ class ProvenanceDecoratorInterfaceFunctionsTestCase(unittest.TestCase):
                 self.assertEqual(len(in_first), 0)
                 self.assertEqual(len(in_second), 0)
 
+    def test_save_provenance_no_capture(self):
+        Provenance.clear()
+        res = simple_function(TEST_ARRAY, 1, 2)
+
+        serialization = save_provenance(None, file_format='turtle')
+        self.assertIsNone(serialization)
+
     def test_print_history(self):
         activate(clear=True)
         res = simple_function(TEST_ARRAY, 1, 2)
@@ -192,19 +284,21 @@ class ProvenanceDecoratorFunctionsTestCase(unittest.TestCase):
     def test_get_module_version(self):
         expected_numpy_version = np.__version__
 
-        numpy_version = Provenance._get_module_version("numpy", "mean")
+        numpy_version = Provenance._get_module_version("numpy")
         self.assertEqual(numpy_version, expected_numpy_version)
 
         numpy_version_submodule = Provenance._get_module_version(
-            "numpy.random", "normal")
+            "numpy.random")
         self.assertEqual(numpy_version_submodule, expected_numpy_version)
 
-        main_version = Provenance._get_module_version("__main__",
-                                                      "test_function")
+        main_version = Provenance._get_module_version("__main__")
         self.assertEqual(main_version, "")
 
-        invalid = Provenance._get_module_version("non_existent", "test")
+        invalid = Provenance._get_module_version("non_existent")
         self.assertEqual(invalid, "")
+
+        none = Provenance._get_module_version(None)
+        self.assertEqual(none, "")
 
 
 class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
@@ -528,6 +622,396 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
             exp_order=1,
             test_case=self)
 
+    def test_container_output_function_level(self):
+        activate(clear=True)
+        res = container_output_function_level(TEST_ARRAY, 4, 6)
+        deactivate()
+
+        self.assertEqual(len(Provenance.history), 9)
+
+        elements = [[], []]
+        for idx, container in enumerate(res):
+            for el_idx, element in enumerate(container):
+                element_info = DataObject(
+                    hash=joblib.hash(element, hash_name="sha1"),
+                    hash_method="joblib_SHA1",
+                    type="numpy.int64", id=None,
+                    details={'shape': (), 'dtype': np.int64})
+                elements[idx].append(element_info)
+
+        expected_output = DataObject(
+            hash=joblib.hash(res, hash_name="sha1"), hash_method="joblib_SHA1",
+            type="builtins.list", id=id(res), details={})
+
+        expected_container_1 = DataObject(
+            hash=joblib.hash(TEST_ARRAY + 3, hash_name='sha1'),
+            hash_method="joblib_SHA1",
+            type="numpy.ndarray", id=id(res[0]),
+            details={'shape': (3,), 'dtype': np.int64})
+
+        expected_container_2 = DataObject(
+            hash=joblib.hash(TEST_ARRAY + 4, hash_name='sha1'),
+            hash_method="joblib_SHA1",
+            type="numpy.ndarray", id=id(res[1]),
+            details={'shape': (3,), 'dtype': np.int64})
+
+        # Check subscript of each element with respect to the array
+        containers = [expected_container_1, expected_container_2]
+        for history_index, element_index in zip(
+                (1, 2, 3, 5, 6, 7),
+                ((0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2))):
+            container = element_index[0]
+            element = element_index[1]
+            _check_function_execution(
+                actual=Provenance.history[history_index],
+                exp_function=FunctionInfo('subscript', '', ''),
+                exp_input={0: containers[container]},
+                exp_params={'index': element},
+                exp_output={0: elements[container][element]},
+                exp_arg_map=None,
+                exp_kwarg_map=None,
+                exp_code_stmnt=None,
+                exp_return_targets=[],
+                exp_order=None,
+                test_case=self)
+
+        # Check the subscript of each array with respect to the list returned
+        _check_function_execution(
+            actual=Provenance.history[0],
+            exp_function=FunctionInfo('subscript', '', ''),
+            exp_input={0: expected_output},
+            exp_params={'index': 0},
+            exp_output={0: expected_container_1},
+            exp_arg_map=None,
+            exp_kwarg_map=None,
+            exp_code_stmnt=None,
+            exp_return_targets=[],
+            exp_order=None,
+            test_case=self)
+
+        _check_function_execution(
+            actual=Provenance.history[4],
+            exp_function=FunctionInfo('subscript', '', ''),
+            exp_input={0: expected_output},
+            exp_params={'index': 1},
+            exp_output={0: expected_container_2},
+            exp_arg_map=None,
+            exp_kwarg_map=None,
+            exp_code_stmnt=None,
+            exp_return_targets=[],
+            exp_order=None,
+            test_case=self)
+
+        # Main function execution
+        _check_function_execution(
+            actual=Provenance.history[8],
+            exp_function=FunctionInfo('container_output_function_level',
+                                      'test_decorator', ''),
+            exp_input={'array': TEST_ARRAY_INFO},
+            exp_params={'param1': 4, 'param2': 6},
+            exp_output={0: expected_output},
+            exp_arg_map=['array', 'param1', 'param2'],
+            exp_kwarg_map=[],
+            exp_code_stmnt="res = container_output_function_level(TEST_ARRAY, 4, 6)",
+            exp_return_targets=['res'],
+            exp_order=1,
+            test_case=self)
+
+    def test_dict_output_function(self):
+        activate(clear=True)
+        res = dict_output_function(TEST_ARRAY, 3, 7)
+        deactivate()
+
+        self.assertEqual(len(Provenance.history), 3)
+
+        expected_output = DataObject(
+            hash=joblib.hash(res, hash_name="sha1"), hash_method="joblib_SHA1",
+            type="builtins.dict", id=id(res), details={})
+
+        expected_container_1 = DataObject(
+            hash=joblib.hash(TEST_ARRAY + 3, hash_name='sha1'),
+            hash_method="joblib_SHA1",
+            type="numpy.ndarray", id=id(res['key.0']),
+            details={'shape': (3,), 'dtype': np.int64})
+
+        expected_container_2 = DataObject(
+            hash=joblib.hash(TEST_ARRAY + 4, hash_name='sha1'),
+            hash_method="joblib_SHA1",
+            type="numpy.ndarray", id=id(res['key.1']),
+            details={'shape': (3,), 'dtype': np.int64})
+
+        _check_function_execution(
+            actual=Provenance.history[0],
+            exp_function=FunctionInfo('subscript', '', ''),
+            exp_input={0: expected_output},
+            exp_params={'index': 'key.0'},
+            exp_output={0: expected_container_1},
+            exp_arg_map=None,
+            exp_kwarg_map=None,
+            exp_code_stmnt=None,
+            exp_return_targets=[],
+            exp_order=None,
+            test_case=self)
+
+        _check_function_execution(
+            actual=Provenance.history[1],
+            exp_function=FunctionInfo('subscript', '', ''),
+            exp_input={0: expected_output},
+            exp_params={'index': 'key.1'},
+            exp_output={0: expected_container_2},
+            exp_arg_map=None,
+            exp_kwarg_map=None,
+            exp_code_stmnt=None,
+            exp_return_targets=[],
+            exp_order=None,
+            test_case=self)
+
+        # Main function execution
+        _check_function_execution(
+            actual=Provenance.history[2],
+            exp_function=FunctionInfo('dict_output_function',
+                                      'test_decorator', ''),
+            exp_input={'array': TEST_ARRAY_INFO},
+            exp_params={'param1': 3, 'param2': 7},
+            exp_output={0: expected_output},
+            exp_arg_map=['array', 'param1', 'param2'],
+            exp_kwarg_map=[],
+            exp_code_stmnt="res = dict_output_function(TEST_ARRAY, 3, 7)",
+            exp_return_targets=['res'],
+            exp_order=1,
+            test_case=self)
+
+    def test_dict_output_function_level(self):
+        activate(clear=True)
+        res = dict_output_function_level(TEST_ARRAY, 3, 8)
+        deactivate()
+
+        self.assertEqual(len(Provenance.history), 9)
+
+        elements = {'key.0': [], 'key.1': []}
+        for key, container in res.items():
+            for el_idx, element in enumerate(container):
+                element_info = DataObject(
+                    hash=joblib.hash(element, hash_name="sha1"),
+                    hash_method="joblib_SHA1",
+                    type="numpy.int64", id=None,
+                    details={'shape': (), 'dtype': np.int64})
+                elements[key].append(element_info)
+
+        expected_output = DataObject(
+            hash=joblib.hash(res, hash_name="sha1"), hash_method="joblib_SHA1",
+            type="builtins.dict", id=id(res), details={})
+
+        expected_container_1 = DataObject(
+            hash=joblib.hash(TEST_ARRAY + 3, hash_name='sha1'),
+            hash_method="joblib_SHA1",
+            type="numpy.ndarray", id=id(res['key.0']),
+            details={'shape': (3,), 'dtype': np.int64})
+
+        expected_container_2 = DataObject(
+            hash=joblib.hash(TEST_ARRAY + 4, hash_name='sha1'),
+            hash_method="joblib_SHA1",
+            type="numpy.ndarray", id=id(res['key.1']),
+            details={'shape': (3,), 'dtype': np.int64})
+
+        # Check subscript of each element with respect to the array
+        containers = {
+            'key.0': expected_container_1,
+            'key.1': expected_container_2
+        }
+        for history_index, element_index in zip(
+                (1, 2, 3, 5, 6, 7),
+                (('key.0', 0), ('key.0', 1), ('key.0', 2),
+                 ('key.1', 0), ('key.1', 1), ('key.1', 2))):
+            container = element_index[0]
+            element = element_index[1]
+            _check_function_execution(
+                actual=Provenance.history[history_index],
+                exp_function=FunctionInfo('subscript', '', ''),
+                exp_input={0: containers[container]},
+                exp_params={'index': element},
+                exp_output={0: elements[container][element]},
+                exp_arg_map=None,
+                exp_kwarg_map=None,
+                exp_code_stmnt=None,
+                exp_return_targets=[],
+                exp_order=None,
+                test_case=self)
+
+        # Check subscript of each array with respect to the dictionary returned
+        _check_function_execution(
+            actual=Provenance.history[0],
+            exp_function=FunctionInfo('subscript', '', ''),
+            exp_input={0: expected_output},
+            exp_params={'index': 'key.0'},
+            exp_output={0: expected_container_1},
+            exp_arg_map=None,
+            exp_kwarg_map=None,
+            exp_code_stmnt=None,
+            exp_return_targets=[],
+            exp_order=None,
+            test_case=self)
+
+        _check_function_execution(
+            actual=Provenance.history[4],
+            exp_function=FunctionInfo('subscript', '', ''),
+            exp_input={0: expected_output},
+            exp_params={'index': 'key.1'},
+            exp_output={0: expected_container_2},
+            exp_arg_map=None,
+            exp_kwarg_map=None,
+            exp_code_stmnt=None,
+            exp_return_targets=[],
+            exp_order=None,
+            test_case=self)
+
+        # Main function execution
+        _check_function_execution(
+            actual=Provenance.history[8],
+            exp_function=FunctionInfo('dict_output_function_level',
+                                      'test_decorator', ''),
+            exp_input={'array': TEST_ARRAY_INFO},
+            exp_params={'param1': 3, 'param2': 8},
+            exp_output={0: expected_output},
+            exp_arg_map=['array', 'param1', 'param2'],
+            exp_kwarg_map=[],
+            exp_code_stmnt="res = dict_output_function_level(TEST_ARRAY, 3, 8)",
+            exp_return_targets=['res'],
+            exp_order=1,
+            test_case=self)
+
+    def test_non_iterable_container_output(self):
+        activate(clear=True)
+        res = non_iterable_container_output(3)
+        deactivate()
+
+        self.assertEqual(len(Provenance.history), 4)
+
+        elements = []
+        for el_idx, element in enumerate(res):
+                element_info = DataObject(
+                    hash=joblib.hash(element, hash_name="sha1"),
+                    hash_method="joblib_SHA1",
+                    type="numpy.int64", id=None,
+                    details={'shape': (), 'dtype': np.int64})
+                elements.append(element_info)
+
+        expected_output = DataObject(
+            hash=joblib.hash(res, hash_name="sha1"), hash_method="joblib_SHA1",
+            type="test_decorator.NonIterableContainer", id=id(res),
+            details={'data': res.data})
+
+        # Check subscript of each element with respect to the container
+        for history_index in (0, 1, 2):
+            element = elements[history_index]
+            _check_function_execution(
+                actual=Provenance.history[history_index],
+                exp_function=FunctionInfo('subscript', '', ''),
+                exp_input={0: expected_output},
+                exp_params={'index': history_index},
+                exp_output={0: element},
+                exp_arg_map=None,
+                exp_kwarg_map=None,
+                exp_code_stmnt=None,
+                exp_return_targets=[],
+                exp_order=None,
+                test_case=self)
+
+        # Main function execution
+        _check_function_execution(
+            actual=Provenance.history[3],
+            exp_function=FunctionInfo('non_iterable_container_output',
+                                      'test_decorator', ''),
+            exp_input={},
+            exp_params={'param1': 3},
+            exp_output={0: expected_output},
+            exp_arg_map=['param1'],
+            exp_kwarg_map=[],
+            exp_code_stmnt="res = non_iterable_container_output(3)",
+            exp_return_targets=['res'],
+            exp_order=1,
+            test_case=self)
+
+
+    def test_comprehensions(self):
+        activate(clear=True)
+        num_list = [comprehension_function(i) for i in range(3)]
+        num_set = {comprehension_function(i) for i in range(3, 6)}
+        num_dict = {i: comprehension_function(v) for i, v in enumerate(range(6, 9), start=1)}
+        deactivate()
+
+        self.assertEqual(len(Provenance.history), 9)
+        self.assertEqual(len(num_list), 3)
+        self.assertEqual(len(num_set), 3)
+        self.assertEqual(list(num_dict.keys()), [1, 2, 3])
+
+        # Check executions of the list comprehension
+        for history, element in zip((0, 1, 2), num_list):
+            expected_output = DataObject(
+                hash=joblib.hash(element, hash_name='sha1'),
+                hash_method="joblib_SHA1",
+                type="numpy.float64", id=id(element),
+                details={'shape': (), 'dtype': np.float64})
+
+            _check_function_execution(
+                actual=Provenance.history[history],
+                exp_function=FunctionInfo('comprehension_function',
+                                          'test_decorator', ''),
+                exp_input={},
+                exp_params={'param': history},
+                exp_output={0: expected_output},
+                exp_arg_map=['param'],
+                exp_kwarg_map=[],
+                exp_code_stmnt="num_list = [comprehension_function(i) for i in range(3)]",
+                exp_return_targets=['num_list'],
+                exp_order=1+history,
+                test_case=self)
+
+        # Check executions of the set comprehension
+        for history, element in zip((3, 4, 5), num_set):
+            expected_output = DataObject(
+                hash=joblib.hash(element, hash_name='sha1'),
+                hash_method="joblib_SHA1",
+                type="numpy.float64", id=id(element),
+                details={'shape': (), 'dtype': np.float64})
+
+            _check_function_execution(
+                actual=Provenance.history[history],
+                exp_function=FunctionInfo('comprehension_function',
+                                          'test_decorator', ''),
+                exp_input={},
+                exp_params={'param': history},
+                exp_output={0: expected_output},
+                exp_arg_map=['param'],
+                exp_kwarg_map=[],
+                exp_code_stmnt="num_set = {comprehension_function(i) for i in range(3, 6)}",
+                exp_return_targets=['num_set'],
+                exp_order=1+history,
+                test_case=self)
+
+        # Check executions of the dict comprehension
+        for history, element in zip((6, 7, 8), num_dict.values()):
+            expected_output = DataObject(
+                hash=joblib.hash(element, hash_name='sha1'),
+                hash_method="joblib_SHA1",
+                type="numpy.float64", id=id(element),
+                details={'shape': (), 'dtype': np.float64})
+
+            _check_function_execution(
+                actual=Provenance.history[history],
+                exp_function=FunctionInfo('comprehension_function',
+                                          'test_decorator', ''),
+                exp_input={},
+                exp_params={'param': history},
+                exp_output={0: expected_output},
+                exp_arg_map=['param'],
+                exp_kwarg_map=[],
+                exp_code_stmnt="num_dict = {i: comprehension_function(v) for i, v in enumerate(range(6, 9), start=1)}",
+                exp_return_targets=['num_dict'],
+                exp_order=1+history,
+                test_case=self)
+
+
 @Provenance(inputs=None, file_input=['file_name'])
 def extract_words_from_file(file_name):
     with open(file_name, "r") as input_file:
@@ -631,10 +1115,60 @@ class ObjectWithMethod(object):
 ObjectWithMethod.process = Provenance(inputs=['self', 'array'])(
     ObjectWithMethod.process)
 
+# Apply decorator to method that uses the descriptor protocol
+neo.AnalogSignal.reshape = Provenance(inputs=[0])(neo.AnalogSignal.reshape)
+
+
 ObjectWithMethod.__init__ = Provenance(inputs=[])(ObjectWithMethod.__init__)
 
 
 class ProvenanceDecoratorClassMethodsTestCase(unittest.TestCase):
+
+    def test_method_descriptor(self):
+        activate(clear=True)
+        ansig = neo.AnalogSignal(TEST_ARRAY, units='mV', sampling_rate=1*pq.Hz)
+        reshaped = ansig.reshape((1, -1))
+        deactivate()
+
+        self.assertEqual(len(Provenance.history), 1)
+
+        expected_input = DataObject(
+            hash=joblib.hash(ansig, hash_name='sha1'),
+            hash_method="joblib_SHA1",
+            type="neo.core.analogsignal.AnalogSignal", id=id(ansig),
+            details={'_dimensionality': pq.mV.dimensionality,
+                     '_t_start': 0 * pq.s, '_sampling_rate': 1 * pq.Hz,
+                     'annotations': {}, 'array_annotations': {}, 'name': None,
+                     'file_origin': None, 'description': None, 'segment': None,
+                     'units': pq.mV.units, 'shape': (3, 1), 'dtype': np.int64,
+                     't_start': 0 * pq.s, 't_stop': 3 * pq.s,
+                     'dimensionality': pq.mV.dimensionality})
+
+        expected_output = DataObject(
+            hash=joblib.hash(reshaped, hash_name='sha1'),
+            hash_method="joblib_SHA1",
+            type="neo.core.analogsignal.AnalogSignal", id=id(reshaped),
+            details={'_dimensionality': pq.mV.dimensionality,
+                     '_t_start': 0 * pq.s, '_sampling_rate': 1 * pq.Hz,
+                     'annotations': {}, 'array_annotations': {}, 'name': None,
+                     'file_origin': None, 'description': None, 'segment': None,
+                     'units': pq.mV.units, 'shape': (1, 3), 'dtype': np.int64,
+                     't_start': 0 * pq.s, 't_stop': 1 * pq.s,
+                     'dimensionality': pq.mV.dimensionality})
+
+        _check_function_execution(
+            actual=Provenance.history[0],
+            exp_function=FunctionInfo('ndarray.reshape',
+                                      'numpy', np.__version__),
+            exp_input={0: expected_input},
+            exp_params={1: (1, -1)},
+            exp_output={0: expected_output},
+            exp_arg_map=[0, 1],
+            exp_kwarg_map=[],
+            exp_code_stmnt="reshaped = ansig.reshape((1, -1))",
+            exp_return_targets=['reshaped'],
+            exp_order=1,
+            test_case=self)
 
     def test_class_constructor(self):
         activate(clear=True)
