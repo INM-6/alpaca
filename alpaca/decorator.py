@@ -492,6 +492,7 @@ class Provenance(object):
         # The container object will not be identified.
         return {index: data_info.info(item)
                 for index, item in enumerate(function_output)}
+
     def _capture_output_provenance(self, function_output, return_targets,
                                    input_data, builtin_object_hash,
                                    time_stamp_start, execution_id):
