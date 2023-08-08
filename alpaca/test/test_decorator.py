@@ -102,8 +102,8 @@ def dict_output_function_level(array, param1, param2):
 
 class NonIterableContainer(object):
 
-    def __init__(self, num_elements):
-        self.data = np.random.random(num_elements)
+    def __init__(self, start):
+        self.data = np.arange(start, start+3)
 
     def __getitem__(self, item):
         return  self.data[item]
@@ -880,7 +880,53 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
         res = non_iterable_container_output(3)
         deactivate()
 
-        self.assertEqual(len(Provenance.history), 5)
+        self.assertEqual(len(Provenance.history), 4)
+
+        elements = []
+        for el_idx, element in enumerate(res):
+                element_info = DataObject(
+                    hash=joblib.hash(element, hash_name="sha1"),
+                    hash_method="joblib_SHA1",
+                    type="numpy.int64", id=None,
+                    details={'shape': (), 'dtype': np.int64})
+                elements.append(element_info)
+
+        expected_output = DataObject(
+            hash=joblib.hash(res, hash_name="sha1"), hash_method="joblib_SHA1",
+            type="test_decorator.NonIterableContainer", id=id(res),
+            details={'data': res.data})
+
+        # Check subscript of each element with respect to the container
+        for history_index in (0, 1, 2):
+            element = elements[history_index]
+            _check_function_execution(
+                actual=Provenance.history[history_index],
+                exp_function=FunctionInfo('subscript', '', ''),
+                exp_input={0: expected_output},
+                exp_params={'index': history_index},
+                exp_output={0: element},
+                exp_arg_map=None,
+                exp_kwarg_map=None,
+                exp_code_stmnt=None,
+                exp_return_targets=[],
+                exp_order=None,
+                test_case=self)
+
+        # Main function execution
+        _check_function_execution(
+            actual=Provenance.history[3],
+            exp_function=FunctionInfo('non_iterable_container_output',
+                                      'test_decorator', ''),
+            exp_input={},
+            exp_params={'param1': 3},
+            exp_output={0: expected_output},
+            exp_arg_map=['param1'],
+            exp_kwarg_map=[],
+            exp_code_stmnt="res = non_iterable_container_output(3)",
+            exp_return_targets=['res'],
+            exp_order=1,
+            test_case=self)
+
 
 @Provenance(inputs=None, file_input=['file_name'])
 def extract_words_from_file(file_name):
