@@ -27,8 +27,10 @@ from alpaca.serialization.neo import _neo_object_metadata
 
 from alpaca.utils.files import _get_prov_file_format
 from alpaca.alpaca_types import DataObject, File, Container
+from alpaca.settings import _ALPACA_SETTINGS
 from alpaca.ontology.annotation import _OntologyInformation, ONTOLOGY_INFORMATION
 
+from tqdm import tqdm
 
 def _add_name_value_pair(graph, uri, predicate, name, value):
     # Add a relationship defined by `predicate` using a blank node as object.
@@ -66,6 +68,7 @@ class AlpacaProvDocument(object):
         namespace_manager = self.graph.namespace_manager
         namespace_manager.bind('alpaca', ALPACA)
         namespace_manager.bind('prov', PROV)
+        self._authority = _ALPACA_SETTINGS['authority']
 
         # Gets all OntologyInformation objects generated with annotation
         # information during the run. Update the current graph namespaces
@@ -79,6 +82,10 @@ class AlpacaProvDocument(object):
         self._metadata_plugins = {
             'neo': _neo_object_metadata
         }
+
+        # Set to store all entity URIs that are added to the graph, so that
+        # there is a fast lookup
+        self._entity_uris = set()
 
     # PROV relationships methods
 
@@ -101,7 +108,8 @@ class AlpacaProvDocument(object):
 
     def _add_ScriptAgent(self, script_info, session_id):
         # Adds a ScriptAgent record from the Alpaca PROV model
-        uri = URIRef(script_identifier(script_info, session_id))
+        uri = URIRef(script_identifier(script_info, session_id,
+                                       self._authority))
         self.graph.add((uri, RDF.type, ALPACA.ScriptAgent))
         self.graph.add((uri, ALPACA.scriptPath, Literal(script_info.path)))
         return uri
@@ -110,7 +118,7 @@ class AlpacaProvDocument(object):
 
     def _add_Function(self, function_info):
         # Adds a Function record from the Alpaca PROV model
-        uri = URIRef(function_identifier(function_info))
+        uri = URIRef(function_identifier(function_info, self._authority))
         self.graph.add((uri, RDF.type, ALPACA.Function))
         self.graph.add((uri, ALPACA.functionName,
                         Literal(function_info.name)))
@@ -134,7 +142,8 @@ class AlpacaProvDocument(object):
                                ontology_info=None):
         # Adds a FunctionExecution record from the Alpaca PROV model
         uri = URIRef(execution_identifier(
-            script_info, function_info, session_id, execution_id))
+            script_info, function_info, session_id, execution_id,
+            self._authority))
         self.graph.add((uri, RDF.type, ALPACA.FunctionExecution))
 
         self._add_ontology_information(uri, ontology_info, 'function')
@@ -162,19 +171,20 @@ class AlpacaProvDocument(object):
     def _add_DataObjectEntity(self, info):
         # Adds a DataObjectEntity from the Alpaca PROV model
         # If the entity already exists, skip it
-        uri = URIRef(data_object_identifier(info))
+        uri = URIRef(data_object_identifier(info, self._authority))
 
-        if uri in self.graph.subjects(RDF.type, ALPACA.DataObjectEntity):
+        if uri in self._entity_uris:
             return uri
         self.graph.add((uri, RDF.type, ALPACA.DataObjectEntity))
         self.graph.add((uri, ALPACA.hashSource, Literal(info.hash_method)))
         self._add_ontology_information(uri, info.type, 'data_object')
         self._add_entity_metadata(uri, info)
+        self._entity_uris.add(uri)
         return uri
 
     def _add_FileEntity(self, info):
         # Adds a FileEntity from the Alpaca PROV model
-        uri = URIRef(file_identifier(info))
+        uri = URIRef(file_identifier(info, self._authority))
         self.graph.add((uri, RDF.type, ALPACA.FileEntity))
         self.graph.add((uri, ALPACA.filePath,
                         Literal(info.path, datatype=XSD.string)))
@@ -308,10 +318,11 @@ class AlpacaProvDocument(object):
             # Associate the activity to the script
             self._wasAssociatedWith(activity=cur_activity, agent=script_agent)
 
-    def add_history(self, script_info, session_id, history):
+    def add_history(self, script_info, session_id, history,
+                    show_progress=False):
         """
-        Adds a history of `FunctionExecution` records captured by Alpaca to a
-        PROV document using the Alpaca PROV ontology. The script is added as
+        Adds a history of `FunctionExecution` records captured by Alpaca to an
+        RDF document using the Alpaca PROV ontology. The script is added as
         a `ScriptAgent` agent.
 
         Parameters
@@ -322,10 +333,14 @@ class AlpacaProvDocument(object):
         session_id : str
             Unique identifier for this script execution.
         history : list of FunctionExecution
-            Provenance history to be serialized as PROV.
+            Provenance history to be serialized as RDF using PROV.
+        show_progress : bool, optional
+            If True, show the progress of the provenance history serialization.
+            Default: False
         """
         script_agent = self._add_ScriptAgent(script_info, session_id)
-        for execution in history:
+        for execution in tqdm(history, desc="Serializing provenance history",
+                              disable=not show_progress):
             self._add_function_execution(execution, script_agent, script_info,
                                          session_id)
 

@@ -22,8 +22,8 @@ sys.path.insert(0, os.path.abspath('.'))
 
 project = 'Alpaca'
 authors = 'Alpaca authors and contributors'
-copyright = u"2019-{this_year}, {authors}".format(this_year=date.today().year,
-                                                  authors=authors)
+copyright = u"2022-{this_year}, Forschungszentrum Jülich GmbH, INM-6, IAS-6."\
+    "All rights reserved.".format(this_year=date.today().year,)
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

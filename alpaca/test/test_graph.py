@@ -6,7 +6,7 @@ import networkx as nx
 from functools import partial
 from collections import Counter
 
-from alpaca import ProvenanceGraph
+from alpaca import ProvenanceGraph, alpaca_setting
 
 
 class ProvenanceGraphTestCase(unittest.TestCase):
@@ -31,6 +31,7 @@ class ProvenanceGraphTestCase(unittest.TestCase):
                                                    suffix="tmp")
         cls.graph_comparison = partial(nx.is_isomorphic,
                                        node_match=cls._attr_comparison)
+        alpaca_setting('authority', "my-authority")
 
     def test_graph_behavior_and_serialization(self):
         input_file = self.ttl_path / "input_output.ttl"
@@ -83,6 +84,18 @@ class ProvenanceGraphTestCase(unittest.TestCase):
         self.assertFalse(node in graph_without_none.graph.nodes)
         self.assertEqual(len(graph_with_none.graph.nodes), 4)
         self.assertEqual(len(graph_without_none.graph.nodes), 3)
+
+    def test_remove_none_no_output_function(self):
+        node = "urn:fz-juelich.de:alpaca:object:Python:builtins.NoneType:777777"
+        input_file = self.ttl_path / "none_output.ttl"
+        graph_with_none = ProvenanceGraph(input_file, remove_none=False)
+        graph_without_none = ProvenanceGraph(input_file, remove_none=True)
+
+        self.assertTrue(node in graph_with_none.graph.nodes)
+        self.assertFalse(node in graph_without_none.graph.nodes)
+        self.assertEqual(len(graph_with_none.graph.nodes), 3)
+        self.assertEqual(len(graph_without_none.graph.nodes), 2)
+
 
     def test_memberships(self):
         input_file = self.ttl_path / "multiple_memberships.ttl"
@@ -215,6 +228,28 @@ class ProvenanceGraphTestCase(unittest.TestCase):
         self.assertEqual(node_attrs["name"], "Spiketrain#1")
         self.assertEqual(node_attrs["sua"], "false")
 
+    def test_use_class_in_method_name(self):
+        input_file = self.ttl_path / "class_method.ttl"
+
+        graph = ProvenanceGraph(input_file, attributes=None,
+                                annotations=None,
+                                use_class_in_method_name=True)
+        node_attrs = graph.graph.nodes[
+            "urn:fz-juelich.de:alpaca:function_execution:Python:111111:999999:test.ObjectWithMethod.process#12345"]
+
+        self.assertEqual(node_attrs["label"], "ObjectWithMethod.process")
+
+    def test_no_use_class_in_method_name(self):
+        input_file = self.ttl_path / "class_method.ttl"
+
+        graph = ProvenanceGraph(input_file, attributes=None,
+                                annotations=None,
+                                use_class_in_method_name=False)
+        node_attrs = graph.graph.nodes[
+            "urn:fz-juelich.de:alpaca:function_execution:Python:111111:999999:test.ObjectWithMethod.process#12345"]
+
+        self.assertEqual(node_attrs["label"], "process")
+
     def test_no_strip_namespace(self):
         input_file = self.ttl_path / "metadata.ttl"
 
@@ -311,6 +346,147 @@ class ProvenanceGraphTestCase(unittest.TestCase):
             self.assertTrue(key in node_attrs)
             self.assertEqual(node_attrs[key], value)
 
+    def test_remove_multiple_attributes(self):
+        input_file = self.ttl_path / "metadata.ttl"
+        graph = ProvenanceGraph(input_file, attributes='all',
+                                annotations='all')
+
+        graph.remove_attributes('metadata_4', 'sua', 'Time Interval')
+
+        annotations_node = "urn:fz-juelich.de:alpaca:object:Python:neo.core.SpikeTrain:54321"
+
+        expected_annotations = {"channel": "56",
+                                "complexity": "[0 1 2 3]",
+                                "event": "[ True False False]"}
+
+        attributes_node = "urn:fz-juelich.de:alpaca:object:Python:test.InputObject:12345"
+
+        expected_attributes = {"metadata_1": "value1",
+                               "metadata_2": "5",
+                               "metadata_3": "5.0"}
+
+        node_attrs = graph.graph.nodes[annotations_node]
+        for key, value in expected_annotations.items():
+            self.assertTrue(key in node_attrs)
+            self.assertEqual(node_attrs[key], value)
+
+        self.assertEqual(node_attrs['name'], "Spiketrain#1")
+
+        node_attrs = graph.graph.nodes[attributes_node]
+        for key, value in expected_attributes.items():
+            self.assertTrue(key in node_attrs)
+            self.assertEqual(node_attrs[key], value)
+
+        for _, node_attrs in graph.graph.nodes(data=True):
+            self.assertTrue("Time Interval" not in node_attrs)
+            self.assertTrue("sua" not in node_attrs)
+            self.assertTrue("metadata_4" not in node_attrs)
+
+
+    def test_remove_attributes(self):
+        input_file = self.ttl_path / "metadata.ttl"
+        graph = ProvenanceGraph(input_file, attributes='all',
+                                annotations='all')
+
+        graph.remove_attributes('metadata_4')
+
+        annotations_node = "urn:fz-juelich.de:alpaca:object:Python:neo.core.SpikeTrain:54321"
+
+        expected_annotations = {"sua": "false",
+                                "channel": "56",
+                                "complexity": "[0 1 2 3]",
+                                "event": "[ True False False]"}
+
+        attributes_node = "urn:fz-juelich.de:alpaca:object:Python:test.InputObject:12345"
+
+        expected_attributes = {"metadata_1": "value1",
+                               "metadata_2": "5",
+                               "metadata_3": "5.0"}
+
+        node_attrs = graph.graph.nodes[annotations_node]
+        for key, value in expected_annotations.items():
+            self.assertTrue(key in node_attrs)
+            self.assertEqual(node_attrs[key], value)
+
+        self.assertEqual(node_attrs['name'], "Spiketrain#1")
+
+        node_attrs = graph.graph.nodes[attributes_node]
+        for key, value in expected_attributes.items():
+            self.assertTrue(key in node_attrs)
+            self.assertEqual(node_attrs[key], value)
+
+        for _, node_attrs in graph.graph.nodes(data=True):
+            self.assertTrue("Time Interval" in node_attrs)
+            self.assertTrue("metadata_4" not in node_attrs)
+
+    def test_remove_attributes_aggregation(self):
+        input_file = self.ttl_path / "metadata.ttl"
+        graph = ProvenanceGraph(input_file, attributes='all',
+                                annotations='all')
+        aggregated = graph.aggregate({},
+                                     remove_attributes="Time Interval")
+
+        for _, node_attrs in aggregated.nodes(data=True):
+            self.assertTrue("Time Interval" not in node_attrs)
+
+    def test_remove_multiple_attributes_aggregation(self):
+        input_file = self.ttl_path / "metadata.ttl"
+        graph = ProvenanceGraph(input_file, attributes='all',
+                                annotations='all')
+        aggregated = graph.aggregate({},
+                                     remove_attributes=("Time Interval",
+                                                        "sua"))
+
+        for _, node_attrs in aggregated.nodes(data=True):
+            self.assertTrue("Time Interval" not in node_attrs)
+            self.assertTrue("sua" not in node_attrs)
+
+class GraphTimeIntervalTestCase(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        ttl_path = Path(__file__).parent / "res"
+        cls.input_file = ttl_path / "parallel_graph.ttl"
+        alpaca_setting('authority', "my-authority")
+
+    def test_use_time_interval(self):
+        graph = ProvenanceGraph(self.input_file, time_intervals=True)
+        for _, attrs in graph.graph.nodes(data=True):
+            self.assertFalse("gephi_interval" in attrs)
+            self.assertTrue("Time Interval" in attrs)
+
+    def test_not_use_time_interval(self):
+        graph = ProvenanceGraph(self.input_file, time_intervals=False)
+        for _, attrs in graph.graph.nodes(data=True):
+            self.assertFalse("gephi_interval" in attrs)
+            self.assertFalse("Time Interval" in attrs)
+
+    def test_intervals(self):
+        expected_intervals = {
+"urn:fz-juelich.de:alpaca:object:Python:__main__.OutputObject:3934c99ea6197963f4bc7413932f6ce6dd800b08": "<[3.0,3.0]>",
+            "urn:fz-juelich.de:alpaca:object:Python:__main__.OutputObject:4ef19b49bcf029faae5349020a54096d53398c95": "<[1.0,1.0]>",
+            "urn:fz-juelich.de:alpaca:object:Python:__main__.OutputObject:93f4a32cb869a3e115e3382fd0fd49ab4ea0c8df": "<[2.0,2.0]>",
+            "urn:fz-juelich.de:alpaca:object:Python:__main__.OutputObject:97ce94acf4ec4e2cb7d1319b798dbdd187df9558": "<[4.0,4.0]>",
+            "urn:fz-juelich.de:alpaca:object:Python:builtins.list:f801594e5cebdc73ba8815e8ad66cab5cd86d2bf": "<[1.0,1.0];[2.0,2.0];[3.0,3.0];[4.0,4.0]>",
+            "urn:fz-juelich.de:alpaca:function_execution:Python:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393:13495a29-65e6-4853-90b1-05bb4dba9040:__main__.process#3dbe5e02-a5e6-48b6-8cb8-e3f0447d7a40": "<[1.0,1.0]>",
+            "urn:fz-juelich.de:alpaca:function_execution:Python:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393:13495a29-65e6-4853-90b1-05bb4dba9040:__main__.process#6ef55dd9-35f5-4519-aed5-80906c7fa341": "<[4.0,4.0]>",
+                        "urn:fz-juelich.de:alpaca:function_execution:Python:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393:13495a29-65e6-4853-90b1-05bb4dba9040:__main__.process#7e3565c0-4313-4229-a0dc-8fa81e4301a1": "<[3.0,3.0]>",
+                        "urn:fz-juelich.de:alpaca:function_execution:Python:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393:13495a29-65e6-4853-90b1-05bb4dba9040:__main__.process#f635dbb8-ad01-4c3d-99ca-5496940143cc": "<[2.0,2.0]>",
+                        "urn:fz-juelich.de:alpaca:object:Python:__main__.InputObject:84fa33edca00abb3c664c3b994e455ae10fbefa1": "<[2.0,2.0]>",
+            "urn:fz-juelich.de:alpaca:object:Python:__main__.InputObject:9dbee0f2b42ba928138d4eb3cc3059f2d7086716": "<[4.0,4.0]>",
+            "urn:fz-juelich.de:alpaca:object:Python:__main__.InputObject:b443853aa145342288afaae4f68b6b421683f411": "<[1.0,1.0]>",
+            "urn:fz-juelich.de:alpaca:object:Python:__main__.InputObject:eed23509f67bfc5dd108fe361ce57a1b9737a286": "<[3.0,3.0]>",
+        }
+        graph = ProvenanceGraph(self.input_file)
+        for node, time_interval in graph.graph.nodes(data='Time Interval'):
+            self.assertEqual(time_interval, expected_intervals[node])
+
+    def test_aggregation_without_intervals(self):
+        graph = ProvenanceGraph(self.input_file, time_intervals=False)
+        aggregated = graph.aggregate({})
+        for _, attrs in aggregated.nodes(data=True):
+            self.assertFalse("gephi_interval" in attrs)
+            self.assertFalse("Time Interval" in attrs)
 
 class GraphAggregationTestCase(unittest.TestCase):
 
@@ -319,6 +495,7 @@ class GraphAggregationTestCase(unittest.TestCase):
         cls.ttl_path = Path(__file__).parent / "res"
         input_file = cls.ttl_path / "parallel_graph.ttl"
         cls.graph = ProvenanceGraph(input_file, attributes=['shape', 'metadata'])
+        alpaca_setting('authority', "my-authority")
 
     def test_serialization(self):
         temp_dir = tempfile.TemporaryDirectory(dir=self.ttl_path, suffix="tmp")
@@ -432,6 +609,57 @@ class GraphAggregationTestCase(unittest.TestCase):
                         self.assertEqual(attrs[key], value)
                     else:
                         self.assertTrue(attrs[key] in value)
+
+    def test_aggregation_member_info(self):
+        aggregated = self.graph.aggregate({}, use_function_parameters=False,
+                                          output_file=None)
+        nodes = aggregated.nodes
+
+        self.assertEqual(len(nodes), 4)
+
+        expected = {
+            'OutputObject': {'member_count': 4,
+                             'members': "urn:fz-juelich.de:alpaca:object:Python:__main__.OutputObject:4ef19b49bcf029faae5349020a54096d53398c95;urn:fz-juelich.de:alpaca:object:Python:__main__.OutputObject:3934c99ea6197963f4bc7413932f6ce6dd800b08;urn:fz-juelich.de:alpaca:object:Python:__main__.OutputObject:93f4a32cb869a3e115e3382fd0fd49ab4ea0c8df;urn:fz-juelich.de:alpaca:object:Python:__main__.OutputObject:97ce94acf4ec4e2cb7d1319b798dbdd187df9558"},
+            'InputObject': {'member_count': 4,
+                            'members': "urn:fz-juelich.de:alpaca:object:Python:__main__.InputObject:84fa33edca00abb3c664c3b994e455ae10fbefa1;urn:fz-juelich.de:alpaca:object:Python:__main__.InputObject:9dbee0f2b42ba928138d4eb3cc3059f2d7086716;urn:fz-juelich.de:alpaca:object:Python:__main__.InputObject:eed23509f67bfc5dd108fe361ce57a1b9737a286;urn:fz-juelich.de:alpaca:object:Python:__main__.InputObject:b443853aa145342288afaae4f68b6b421683f411"},
+            'process': {'member_count': 4,
+                        'members': "urn:fz-juelich.de:alpaca:function_execution:Python:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393:13495a29-65e6-4853-90b1-05bb4dba9040:__main__.process#6ef55dd9-35f5-4519-aed5-80906c7fa341;urn:fz-juelich.de:alpaca:function_execution:Python:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393:13495a29-65e6-4853-90b1-05bb4dba9040:__main__.process#7e3565c0-4313-4229-a0dc-8fa81e4301a1;urn:fz-juelich.de:alpaca:function_execution:Python:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393:13495a29-65e6-4853-90b1-05bb4dba9040:__main__.process#3dbe5e02-a5e6-48b6-8cb8-e3f0447d7a40;urn:fz-juelich.de:alpaca:function_execution:Python:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393:13495a29-65e6-4853-90b1-05bb4dba9040:__main__.process#f635dbb8-ad01-4c3d-99ca-5496940143cc"},
+            'list': {'member_count': 1,
+                     'members': "urn:fz-juelich.de:alpaca:object:Python:builtins.list:f801594e5cebdc73ba8815e8ad66cab5cd86d2bf"}
+        }
+
+        for node, attrs in nodes.items():
+            label = attrs['label']
+            with self.subTest(f"Node label {label}"):
+                expected_info = expected[label]
+                self.assertTrue('members' in attrs)
+                self.assertEqual(attrs['member_count'],
+                                 expected_info['member_count'])
+                graph_members = sorted(attrs['members'].split(";"))
+                expected_members = sorted(expected_info['members'].split(";"))
+                self.assertListEqual(graph_members, expected_members)
+
+    def test_aggregation_member_info_count_only(self):
+        aggregated = self.graph.aggregate({}, use_function_parameters=False,
+                                          output_file=None,
+                                          record_members=False)
+        nodes = aggregated.nodes
+
+        self.assertEqual(len(nodes), 4)
+
+        expected_counts = {
+            'OutputObject': 4,
+            'InputObject': 4,
+            'process': 4,
+            'list': 1
+        }
+
+        for node, attrs in nodes.items():
+            label = attrs['label']
+            with self.subTest(f"Node label {label}"):
+                self.assertTrue('members' not in attrs)
+                self.assertEqual(attrs['member_count'], expected_counts[label])
+
 
 if __name__ == "__main__":
     unittest.main()

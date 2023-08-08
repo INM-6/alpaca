@@ -1,4 +1,4 @@
-@prefix alpaca: <https://github.com/INM-6/alpaca/ontology/alpaca.owl#> .
+@prefix alpaca: <http://purl.org/alpaca#> .
 @prefix prov: <http://www.w3.org/ns/prov#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 

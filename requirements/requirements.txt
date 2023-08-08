@@ -3,3 +3,4 @@ networkx>=2.6
 dill==0.3.3
 joblib>=1.2.0
 rdflib>=6.0
+tqdm

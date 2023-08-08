@@ -1,7 +1,6 @@
 """
-Alpaca is a package for easy provenance capture during the execution of
-analysis workflows based on Python scripts and Jupyter notebooks.
-
+Alpaca is a Python package for the capture of provenance information during
+the execution of Python scripts that process data.
 """
 
 from .decorator import (Provenance, activate, deactivate, save_provenance,

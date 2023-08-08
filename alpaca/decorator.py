@@ -28,6 +28,7 @@ from pprint import pprint
 
 
 VAR_POSITIONAL = inspect.Parameter.VAR_POSITIONAL
+COMPREHENSION_FRAMES = ("<listcomp>", "<dictcomp>", "<setcomp>")
 
 
 # Create logger and set configuration
@@ -71,10 +72,18 @@ class Provenance(object):
         data structures used by the function). Alpaca will track and identify
         the elements inside the container, instead of the container itself.
         Default: None
-    container_output : bool, optional
-        The function outputs data inside a container (e.g., a list). Alpaca
-        will track and identify the elements inside the container, instead of
-        the container itself.
+    container_output : bool or int, optional
+        The function outputs data inside a container (e.g., a list).
+        If True, Alpaca will track and identify the elements inside the
+        container, instead of the container itself. It will iterate over the
+        function output object and identify the individual elements. However,
+        for dictionary outputs, the dictionary object is identified together
+        with its elements, to retain information on the keys. For other
+        containers, the container object is not identified.
+        If an integer, this defines a multiple-level (nested) container. The
+        number defines the depth for which to identify and serialize the
+        objects. In this case, the function output object will always be
+        identified together with the element tree.
         Default: False
 
     Attributes
@@ -170,6 +179,9 @@ class Provenance(object):
         self.inputs = inputs
 
         self.container_output = container_output
+        self._tracking_container_output = \
+            ((isinstance(container_output, bool) and container_output) or
+             (not isinstance(container_output, bool) and container_output >= 0))
 
     def _insert_static_information(self, tree, data_info, function,
                                    time_stamp):
@@ -261,9 +273,9 @@ class Provenance(object):
         return input_data, input_args_names, input_kwargs_names, default_args
 
     @staticmethod
-    def _get_module_version(module, function_name):
+    def _get_module_version(module):
 
-        if not module.startswith("__main__"):
+        if not (module is None or module.startswith("__main__")):
             # User-defined functions in the running script do not have a
             # version
             package = module.split(".")[0]
@@ -285,11 +297,11 @@ class Provenance(object):
         frame_info = inspect.getframeinfo(frame)
         function_name = frame_info.function
 
-        if function_name == '<listcomp>':
-            # For list comprehensions, we need to check the frame above,
-            # as this creates a function named <listcomp>. We use a while loop
-            # in case of nested list comprehensions.
-            while function_name == '<listcomp>':
+        if function_name in COMPREHENSION_FRAMES:
+            # For comprehensions, we need to check the frame above,
+            # as this creates a function named <*comp>. We use a while loop
+            # in case of nested comprehensions.
+            while function_name in COMPREHENSION_FRAMES:
                 frame = frame.f_back
                 frame_info = inspect.getframeinfo(frame)
                 function_name = frame_info.function
@@ -307,6 +319,11 @@ class Provenance(object):
 
         return lineno
 
+    @staticmethod
+    def _is_class_constructor(function_name):
+        names = function_name.split(".")
+        return len(names) == 2 and names[-1] == "__init__"
+
     def _capture_code_and_function_provenance(self, lineno, function):
 
         # 1. Capture Abstract Syntax Tree (AST) of the call to the
@@ -316,7 +333,7 @@ class Provenance(object):
         source_line = \
             self._source_code.extract_multiline_statement(lineno)
         ast_tree = ast.parse(source_line)
-        logger.info(f"Line {lineno} -> {source_line}")
+        logger.debug(f"Line {lineno} -> {source_line}")
 
         # 2. Check if there is an assignment to one or more
         # variables. This will be used to identify if there are
@@ -336,11 +353,16 @@ class Provenance(object):
                 raise ValueError("Unknown assign target!")
 
         # 3. Extract function name and information
-        module = getattr(function, '__module__')
         function_name = function.__qualname__
-        module_version = self._get_module_version(module=module,
-                                                  function_name=function_name)
+        module = None
+        try:
+            module = getattr(function, '__module__')
+        except AttributeError:
+            # Case of method descriptors
+            if type(function).__qualname__ == "method_descriptor":
+                module = getattr(function.__objclass__, '__module__')
 
+        module_version = self._get_module_version(module)
         function_info = FunctionInfo(name=function_name, module=module,
                                      version=module_version)
 
@@ -402,12 +424,12 @@ class Provenance(object):
                 inputs[key] = _FileInformation(input_value).info()
 
             elif key in self.container_inputs and \
-                    isinstance(input_value, Iterable):
+                    (isinstance(input_value, Iterable) or
+                     hasattr(input_value, "__getitem__")):
                 # This is a container. Iterate over elements and store inside
                 # a `Container` namedtuple
-                container_elements = []
-                for element in input_value:
-                    container_elements.append(data_info.info(element))
+                container_elements = [data_info.info(element)
+                                      for element in input_value]
                 inputs[key] = Container(tuple(container_elements))
 
             elif key not in self.file_outputs:
@@ -424,8 +446,73 @@ class Provenance(object):
         return inputs, parameters, input_args_names, input_kwargs_names, \
             input_data
 
+    def _add_container_relationships(self, container, data_info, level,
+                                     time_stamp_start, execution_id):
+        # For every element of the container, add a subscript relationship
+        # This ensures that the indexing information is captured and
+        # described. The hash memoization will prevent multiple hashing.
+        input_object = data_info.info(container)
+
+        if isinstance(container, dict):
+            iterator = container.items()
+        elif isinstance(container, Iterable) or \
+                hasattr(container, "__getitem__"):
+            iterator = enumerate(container)
+        else:
+            iterator = enumerate([container])
+
+        for index, element in iterator:
+            output_object = data_info.info(element)
+            self.history.append(
+                FunctionExecution(
+                    function=FunctionInfo(name='subscript', module="",
+                                          version=""),
+                    input={0: input_object},
+                    params={'index': index},
+                    output={0: output_object},
+                    arg_map=None,
+                    kwarg_map=None,
+                    call_ast=None,
+                    code_statement=None,
+                    time_stamp_start=time_stamp_start,
+                    time_stamp_end=time_stamp_start,
+                    return_targets=[],
+                    order=None,
+                    execution_id=execution_id))
+
+            # If multilevel requested, process the next level.
+            # This will work whether the main container is a dictionary or
+            # other iterable.
+            if (level is not None and
+                    level < self.container_output and
+                    (isinstance(element, Iterable) or
+                     hasattr(container, "__getitem__"))):
+                self._add_container_relationships(element, data_info,
+                                                  level + 1,
+                                                  time_stamp_start,
+                                                  execution_id)
+
+        return input_object
+
+    def _capture_container_output(self, function_output, data_info,
+                                  time_stamp_start, execution_id):
+        level = None if isinstance(self.container_output, bool) else 0
+
+        if isinstance(function_output, dict) or level is not None:
+            container_info = self._add_container_relationships(
+                function_output, data_info, level, time_stamp_start,
+                execution_id)
+            return {0: container_info}
+
+        # Process simple container.
+        # The container object will not be identified.
+        return {index: data_info.info(item)
+                for index, item in enumerate(function_output)}
+
     def _capture_output_provenance(self, function_output, return_targets,
-                                   input_data, builtin_object_hash):
+                                   input_data, builtin_object_hash,
+                                   time_stamp_start, execution_id,
+                                   constructed_object=None):
 
         # In case in-place operations were performed, lets not use
         # memoization
@@ -436,16 +523,26 @@ class Provenance(object):
         # dictionary, with the index as the order of each returned object.
         # If the decorator was initialized with `container_output=True`, the
         # elements of the output will be hashed, if iterable.
-        outputs = {}
-        if self.container_output and isinstance(function_output, Iterable):
-            iterator = enumerate(function_output)
+
+        # If this was the `__init__` method, we do not consider the
+        # None object returned, as the call is returning the
+        # constructed object instance
+        function_output = function_output \
+            if constructed_object is None else constructed_object
+
+        if self._tracking_container_output and \
+                (isinstance(function_output, Iterable) or
+                        hasattr(function_output, "__getitem__")):
+            outputs = self._capture_container_output(function_output,
+                                                     data_info,
+                                                     time_stamp_start,
+                                                     execution_id)
         else:
             if len(return_targets) < 2:
                 function_output = [function_output]
-            iterator = enumerate(function_output)
 
-        for index, item in iterator:
-            outputs[index] = data_info.info(item)
+            outputs = {index: data_info.info(item)
+                       for index, item in enumerate(function_output)}
 
         # If there is a file output as defined in the decorator
         # initialization, create the hash and add as output using
@@ -465,7 +562,7 @@ class Provenance(object):
 
             builtin_object_hash = _ALPACA_SETTINGS[
                 'use_builtin_hash_for_module']
-            logging.debug(f"Builtin object hash: {builtin_object_hash}")
+            logger.debug(f"Builtin object hash: {builtin_object_hash}")
 
             lineno = None
 
@@ -514,11 +611,26 @@ class Provenance(object):
             # If capturing provenance, resume capturing the output information
             if Provenance.active and lineno:
 
+                # If this was a constructor, we work with the object defined
+                # by the `self` argument
+                constructed_object = None
+                if self._is_class_constructor(function_info.name):
+                    # Capture information of the `self` object
+                    constructed_object = input_data.get('self', None)
+
+                    # Remove `self` from the parameters, in case it was not
+                    # specified as an input
+                    if 'self' in parameters:
+                        parameters.pop('self')
+
                 # Capture output information
                 outputs = self._capture_output_provenance(
                     function_output=function_output,
                     return_targets=return_targets, input_data=input_data,
-                    builtin_object_hash=builtin_object_hash)
+                    builtin_object_hash=builtin_object_hash,
+                    time_stamp_start=time_stamp_start,
+                    execution_id=execution_id,
+                    constructed_object=constructed_object)
 
                 # Get the end time stamp
                 time_stamp_end = datetime.datetime.utcnow().isoformat()
@@ -590,10 +702,17 @@ class Provenance(object):
         cls.script_info = _FileInformation(cls.source_file).info()
 
     @classmethod
-    def get_prov_info(cls):
+    def get_prov_info(cls, show_progress=False):
         """
-        Returns the representation of the captured provenance information
+        Returns the RDF representation of the captured provenance information
         according to the Alpaca ontology based on the W3C PROV-O.
+
+        Parameters
+        ----------
+        show_progress : bool, optional
+            If True, show a bar with the progress of the conversion of the
+            captured provenance information to RDF.
+            Default: False
 
         Returns
         -------
@@ -603,16 +722,19 @@ class Provenance(object):
         prov_document = AlpacaProvDocument()
         prov_document.add_history(script_info=cls.script_info,
                                   session_id=cls.session_id,
-                                  history=cls.history)
+                                  history=cls.history,
+                                  show_progress=show_progress)
         return prov_document
 
     @classmethod
     def clear(cls):
         """
-        Clears all the history and reset the execution counter to zero.
+        Clears all the history, resets the execution counter to zero,
+        and removes script information.
         """
         cls.history.clear()
         cls._call_count = 0
+        cls.script_info = None
 
 
 ##############################################################################
@@ -655,10 +777,10 @@ def print_history():
     pprint(Provenance.history)
 
 
-def save_provenance(file_name=None, file_format='ttl'):
+def save_provenance(file_name=None, file_format='ttl',show_progress=False):
     """
-    Serialize provenance information according to the Alpaca ontology based
-    on the W3C PROV Ontology (PROV-O).
+    Serialize provenance information to RDF according to the Alpaca ontology
+    based on the W3C PROV Ontology (PROV-O).
 
     Parameters
     ----------
@@ -677,6 +799,9 @@ def save_provenance(file_name=None, file_format='ttl'):
         * 'json': JSON-LD
 
         Default: 'ttl'
+    show_progress : bool, optional
+        If True, show a bar with the progress of the serialization to RDF.
+        Default: False
 
     Returns
     -------
@@ -684,9 +809,14 @@ def save_provenance(file_name=None, file_format='ttl'):
         If `file_name` is None, the function returns the PROV information as
         a string. If a file destination was informed, the return is None.
     """
+    # If provenance was not captured, there will be no information for the
+    # script. No information will be serialized.
+    if not Provenance.script_info:
+        return
+
     if file_format in RDF_FILE_FORMAT_MAP:
         file_format = RDF_FILE_FORMAT_MAP[file_format]
 
-    prov_document = Provenance.get_prov_info()
+    prov_document = Provenance.get_prov_info(show_progress=show_progress)
     prov_data = prov_document.serialize(file_name, file_format=file_format)
     return prov_data

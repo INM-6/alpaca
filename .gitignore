@@ -135,6 +135,10 @@ dmypy.json
 # sphinx build directory
 doc/_build
 
+# Protégé files
+/alpaca/ontology/alpaca.properties
+/alpaca/ontology/catalog-v001.xml
+
 # Output files
 /examples/*.ttl
 /examples/*.png
