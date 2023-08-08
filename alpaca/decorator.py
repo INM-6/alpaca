@@ -174,6 +174,9 @@ class Provenance(object):
         self.inputs = inputs
 
         self.container_output = container_output
+        self._tracking_container_output = \
+            ((isinstance(container_output, bool) and container_output) or
+             (not isinstance(container_output, bool) and container_output >= 0))
 
     def _insert_static_information(self, tree, data_info, function,
                                    time_stamp):
@@ -502,7 +505,7 @@ class Provenance(object):
         # dictionary, with the index as the order of each returned object.
         # If the decorator was initialized with `container_output=True`, the
         # elements of the output will be hashed, if iterable.
-        if self.container_output and \
+        if self._tracking_container_output and \
                 (isinstance(function_output, Iterable) or
                         hasattr(function_output, "__getitem__")):
             outputs = self._capture_container_output(function_output,
