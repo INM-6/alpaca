@@ -664,7 +664,7 @@ class ProvenanceDecoratorClassMethodsTestCase(unittest.TestCase):
             exp_order=1,
             test_case=self)
 
-    def test_class_method(self):
+    def test_object_method(self):
         obj = ObjectWithMethod(2)
         activate(clear=True)
         res = obj.process(TEST_ARRAY, 4, 5)
