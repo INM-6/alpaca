@@ -504,7 +504,7 @@ class Provenance(object):
         # elements of the output will be hashed, if iterable.
         if self.container_output and \
                 (isinstance(function_output, Iterable) or
-                        hasattr(container, "__getitem__")):
+                        hasattr(function_output, "__getitem__")):
             outputs = self._capture_container_output(function_output,
                                                      data_info,
                                                      time_stamp_start,
