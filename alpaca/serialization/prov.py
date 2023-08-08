@@ -27,6 +27,7 @@ from alpaca.utils.files import _get_prov_file_format
 from alpaca.alpaca_types import DataObject, File, Container
 from alpaca.settings import _ALPACA_SETTINGS
 
+from tqdm import tqdm
 
 def _add_name_value_pair(graph, uri, predicate, name, value):
     # Add a relationship defined by `predicate` using a blank node as object.
@@ -71,6 +72,10 @@ class AlpacaProvDocument(object):
         self._metadata_plugins = {
             'neo': _neo_object_metadata
         }
+
+        # Set to store all entity URIs that are added to the graph, so that
+        # there is a fast lookup
+        self._entity_uris = set()
 
     # PROV relationships methods
 
@@ -143,11 +148,12 @@ class AlpacaProvDocument(object):
         # If the entity already exists, skip it
         uri = URIRef(data_object_identifier(info, self._authority))
 
-        if uri in self.graph.subjects(RDF.type, ALPACA.DataObjectEntity):
+        if uri in self._entity_uris:
             return uri
         self.graph.add((uri, RDF.type, ALPACA.DataObjectEntity))
         self.graph.add((uri, ALPACA.hashSource, Literal(info.hash_method)))
         self._add_entity_metadata(uri, info)
+        self._entity_uris.add(uri)
         return uri
 
     def _add_FileEntity(self, info):
@@ -281,10 +287,11 @@ class AlpacaProvDocument(object):
             # Associate the activity to the script
             self._wasAssociatedWith(activity=cur_activity, agent=script_agent)
 
-    def add_history(self, script_info, session_id, history):
+    def add_history(self, script_info, session_id, history,
+                    show_progress=False):
         """
-        Adds a history of `FunctionExecution` records captured by Alpaca to a
-        PROV document using the Alpaca PROV ontology. The script is added as
+        Adds a history of `FunctionExecution` records captured by Alpaca to an
+        RDF document using the Alpaca PROV ontology. The script is added as
         a `ScriptAgent` agent.
 
         Parameters
@@ -295,10 +302,14 @@ class AlpacaProvDocument(object):
         session_id : str
             Unique identifier for this script execution.
         history : list of FunctionExecution
-            Provenance history to be serialized as PROV.
+            Provenance history to be serialized as RDF using PROV.
+        show_progress : bool, optional
+            If True, show the progress of the provenance history serialization.
+            Default: False
         """
         script_agent = self._add_ScriptAgent(script_info, session_id)
-        for execution in history:
+        for execution in tqdm(history, desc="Serializing provenance history",
+                              disable=not show_progress):
             self._add_function_execution(execution, script_agent, script_info,
                                          session_id)
 
