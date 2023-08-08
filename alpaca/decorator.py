@@ -513,6 +513,13 @@ class Provenance(object):
         # dictionary, with the index as the order of each returned object.
         # If the decorator was initialized with `container_output=True`, the
         # elements of the output will be hashed, if iterable.
+
+        # If this was the `__init__` method, we do not consider the
+        # None object returned, as the call is returning the
+        # constructed object instance
+        function_output = function_output \
+            if constructed_object is None else constructed_object
+
         if self._tracking_container_output and \
                 (isinstance(function_output, Iterable) or
                         hasattr(function_output, "__getitem__")):
@@ -522,11 +529,7 @@ class Provenance(object):
                                                      execution_id)
         else:
             if len(return_targets) < 2:
-                # If this was the `__init__` method, we do not consider the
-                # None object returned, as the call is returning the
-                # constructed object instance
-                function_output = [function_output] \
-                    if constructed_object is None else [constructed_object]
+                function_output = [function_output]
 
             outputs = {index: data_info.info(item)
                        for index, item in enumerate(function_output)}

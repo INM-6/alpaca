@@ -100,6 +100,7 @@ def dict_output_function_level(array, param1, param2):
     return {f"key.{i}": array + i + 3 for i in range(0, 2)}
 
 
+
 class NonIterableContainer(object):
 
     def __init__(self, start):
@@ -108,13 +109,25 @@ class NonIterableContainer(object):
     def __getitem__(self, item):
         return  self.data[item]
 
+
 @Provenance(inputs=[], container_output=0)
 def non_iterable_container_output(param1):
     return NonIterableContainer(param1)
 
+
 @Provenance(inputs=[])
 def comprehension_function(param):
     return np.float64(param)
+
+
+class NonIterableContainerOutputObject(object):
+
+    @Provenance(inputs=[], container_output=0)
+    def __init__(self, start):
+        self._data = np.arange(start+1, start+4)
+
+    def __getitem__(self, item):
+        return  self._data[item]
 
 
 # Function to help verifying FunctionExecution tuples
@@ -1230,6 +1243,60 @@ class ProvenanceDecoratorClassMethodsTestCase(unittest.TestCase):
             exp_kwarg_map=[],
             exp_code_stmnt="res = obj.process(TEST_ARRAY, 4, 5)",
             exp_return_targets=['res'],
+            exp_order=1,
+            test_case=self)
+
+    def test_class_constructor_container_output(self):
+        activate(clear=True)
+        obj = NonIterableContainerOutputObject(2)
+        deactivate()
+
+        self.assertEqual(len(Provenance.history), 4)
+
+        elements = []
+        for element in obj:
+                element_info = DataObject(
+                    hash=joblib.hash(element, hash_name="sha1"),
+                    hash_method="joblib_SHA1",
+                    type="numpy.int64", id=None,
+                    details={'shape': (), 'dtype': np.int64})
+                elements.append(element_info)
+
+        expected_output = DataObject(
+            hash=joblib.hash(obj, hash_name='sha1'),
+            hash_method="joblib_SHA1",
+            type="test_decorator.NonIterableContainerOutputObject",
+            id=id(obj),
+            details={'_data': obj._data})
+
+        # Check subscript of each element with respect to the container
+        for history_index in (0, 1, 2):
+            element = elements[history_index]
+            _check_function_execution(
+                actual=Provenance.history[history_index],
+                exp_function=FunctionInfo('subscript', '', ''),
+                exp_input={0: expected_output},
+                exp_params={'index': history_index},
+                exp_output={0: element},
+                exp_arg_map=None,
+                exp_kwarg_map=None,
+                exp_code_stmnt=None,
+                exp_return_targets=[],
+                exp_order=None,
+                test_case=self)
+
+        _check_function_execution(
+            actual=Provenance.history[3],
+            exp_function=FunctionInfo(
+                'NonIterableContainerOutputObject.__init__',
+                                      'test_decorator', ''),
+            exp_input={},
+            exp_params={'start': 2},
+            exp_output={0: expected_output},
+            exp_arg_map=['self', 'start'],
+            exp_kwarg_map=[],
+            exp_code_stmnt="obj = NonIterableContainerOutputObject(2)",
+            exp_return_targets=['obj'],
             exp_order=1,
             test_case=self)
 
