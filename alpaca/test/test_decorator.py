@@ -100,6 +100,18 @@ def dict_output_function_level(array, param1, param2):
     return {f"key.{i}": array + i + 3 for i in range(0, 2)}
 
 
+class NonIterableContainer(object):
+
+    def __init__(self, num_elements):
+        self.data = np.random.random(num_elements)
+
+    def __getitem__(self, item):
+        return  self.data[item]
+
+@Provenance(inputs=[], container_output=0)
+def non_iterable_container_output(param1):
+    return NonIterableContainer(param1)
+
 # Function to help verifying FunctionExecution tuples
 def _check_function_execution(actual, exp_function, exp_input, exp_params,
                               exp_output, exp_arg_map, exp_kwarg_map,
@@ -863,6 +875,12 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
             exp_order=1,
             test_case=self)
 
+    def test_non_iterable_container_output(self):
+        activate(clear=True)
+        res = non_iterable_container_output(3)
+        deactivate()
+
+        self.assertEqual(len(Provenance.history), 5)
 
 @Provenance(inputs=None, file_input=['file_name'])
 def extract_words_from_file(file_name):
