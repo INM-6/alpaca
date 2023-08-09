@@ -15,6 +15,18 @@ class FileUtilsTestCase(unittest.TestCase):
         new_path = get_file_name(source_path, None, "ttl")
         self.assertEqual(new_path, USER_PATH + "/test.ttl")
 
+    def test_get_file_name_file_suffix_new_extension(self):
+        source_path = "~/test.py"
+        new_path = get_file_name(source_path, None, "ttl",
+                                 suffix="_5")
+        self.assertEqual(new_path, USER_PATH + "/test_5.ttl")
+
+    def test_get_file_name_file_suffix(self):
+        source_path = "~/test.py"
+        new_path = get_file_name(source_path, None, None,
+                                 suffix="_5")
+        self.assertEqual(new_path, USER_PATH + "/test_5.py")
+
     def test_get_file_name_user_path_new_extension2(self):
         source_path = "~/test.py"
         new_path = get_file_name(source_path, None, ".ttl")

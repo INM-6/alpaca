@@ -15,7 +15,7 @@ RDF_FILE_FORMAT_MAP = {
 }
 
 
-def get_file_name(source, output_dir=None, extension=None):
+def get_file_name(source, output_dir=None, extension=None, suffix=None):
     """
     Function that generates a file name with extension `extension` and the
     same base name as in `source`. The full path is based on `output_dir` if
@@ -34,6 +34,11 @@ def get_file_name(source, output_dir=None, extension=None):
         If not None, the extension of the generated file name will be changed
         to `extension`. If None, the same extension as `source` will be used.
         The extension may start with period.
+        Default: None
+    suffix : str, optional
+        If not None, this will be added as a suffix to the base name of
+        `source`, before the extension.
+        Default: None
 
     Returns
     -------
@@ -45,9 +50,14 @@ def get_file_name(source, output_dir=None, extension=None):
     if not isinstance(source, Path):
         source = Path(source)
 
+    if suffix is not None:
+        parent, name, ext = source.parent, source.stem, source.suffix
+        name = f"{name}{suffix}"
+        source = (parent / name).with_suffix(ext)
+
     if extension is not None:
         if not extension.startswith("."):
-            extension = "." + extension
+            extension = f".{extension}"
         base_name = source.with_suffix(extension)
     else:
         base_name = source
