@@ -1,0 +1,56 @@
+@prefix alpaca: <http://purl.org/alpaca#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<urn:my-authority:alpaca:object:Python:numpy.int64:ca1956079ac1b13de792611773edbe908800f55d> a alpaca:DataObjectEntity ;
+    alpaca:hasAttribute [ a alpaca:NameValuePair ;
+            alpaca:pairName "shape" ;
+            alpaca:pairValue "()" ],
+        [ a alpaca:NameValuePair ;
+            alpaca:pairName "dtype" ;
+            alpaca:pairValue "int64" ] ;
+    alpaca:hashSource "joblib_SHA1" ;
+    prov:value 15 ;
+    prov:wasAttributedTo <urn:my-authority:alpaca:script:Python:multi_graph.py:f4634e387cf8de556e43a144b4d674413f048e4eabdd92951fd9b0db0b976d5b#6a24d189-ae12-4775-b428-1b9f4b8883a1> ;
+    prov:wasDerivedFrom <urn:my-authority:alpaca:object:Python:builtins.list:16a23994d249dee0ebd9504fc6a9befd93bcb31f> ;
+    prov:wasGeneratedBy <urn:my-authority:alpaca:function_execution:Python:f4634e387cf8de556e43a144b4d674413f048e4eabdd92951fd9b0db0b976d5b:6a24d189-ae12-4775-b428-1b9f4b8883a1:numpy.sum#7cbb9c82-0b75-42e1-8da2-39edc5c61e57> .
+
+<urn:my-authority:alpaca:function:Python:numpy.sum> a alpaca:Function ;
+    alpaca:functionName "sum" ;
+    alpaca:functionVersion "1.23.5" ;
+    alpaca:implementedIn "numpy" .
+
+<urn:my-authority:alpaca:function_execution:Python:f4634e387cf8de556e43a144b4d674413f048e4eabdd92951fd9b0db0b976d5b:6a24d189-ae12-4775-b428-1b9f4b8883a1:numpy.sum#7cbb9c82-0b75-42e1-8da2-39edc5c61e57> a alpaca:FunctionExecution ;
+    alpaca:codeStatement "result = sum(element)" ;
+    alpaca:executionOrder 1 ;
+    alpaca:hasParameter [ a alpaca:NameValuePair ;
+            alpaca:pairName "where" ;
+            alpaca:pairValue "<no value>" ],
+        [ a alpaca:NameValuePair ;
+            alpaca:pairName "dtype" ;
+            alpaca:pairValue "None" ],
+        [ a alpaca:NameValuePair ;
+            alpaca:pairName "axis" ;
+            alpaca:pairValue "None" ],
+        [ a alpaca:NameValuePair ;
+            alpaca:pairName "initial" ;
+            alpaca:pairValue "<no value>" ],
+        [ a alpaca:NameValuePair ;
+            alpaca:pairName "out" ;
+            alpaca:pairValue "None" ],
+        [ a alpaca:NameValuePair ;
+            alpaca:pairName "keepdims" ;
+            alpaca:pairValue "<no value>" ] ;
+    alpaca:usedFunction <urn:my-authority:alpaca:function:Python:numpy.sum> ;
+    prov:endedAtTime "2023-08-10T10:11:17.468566"^^xsd:dateTime ;
+    prov:startedAtTime "2023-08-10T10:11:17.461281"^^xsd:dateTime ;
+    prov:used <urn:my-authority:alpaca:object:Python:builtins.list:16a23994d249dee0ebd9504fc6a9befd93bcb31f> ;
+    prov:wasAssociatedWith <urn:my-authority:alpaca:script:Python:multi_graph.py:f4634e387cf8de556e43a144b4d674413f048e4eabdd92951fd9b0db0b976d5b#6a24d189-ae12-4775-b428-1b9f4b8883a1> .
+
+<urn:my-authority:alpaca:object:Python:builtins.list:16a23994d249dee0ebd9504fc6a9befd93bcb31f> a alpaca:DataObjectEntity ;
+    alpaca:hashSource "joblib_SHA1" ;
+    prov:wasAttributedTo <urn:my-authority:alpaca:script:Python:multi_graph.py:f4634e387cf8de556e43a144b4d674413f048e4eabdd92951fd9b0db0b976d5b#6a24d189-ae12-4775-b428-1b9f4b8883a1> .
+
+<urn:my-authority:alpaca:script:Python:multi_graph.py:f4634e387cf8de556e43a144b4d674413f048e4eabdd92951fd9b0db0b976d5b#6a24d189-ae12-4775-b428-1b9f4b8883a1> a alpaca:ScriptAgent ;
+    alpaca:scriptPath "/users/koehler/projects/test_scripts/multi_graph.py" .
+
