@@ -646,29 +646,30 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
 
         elements = [[], []]
         for idx, container in enumerate(res):
-            for el_idx, element in enumerate(container):
+            for element in container:
                 element_info = DataObject(
                     hash=joblib.hash(element, hash_name="sha1"),
                     hash_method="joblib_SHA1",
                     type="numpy.int64", id=None,
-                    details={'shape': (), 'dtype': np.int64})
+                    details={'shape': (), 'dtype': np.int64},
+                    value=element)
                 elements[idx].append(element_info)
 
         expected_output = DataObject(
             hash=joblib.hash(res, hash_name="sha1"), hash_method="joblib_SHA1",
-            type="builtins.list", id=id(res), details={})
+            type="builtins.list", id=id(res), details={}, value=None)
 
         expected_container_1 = DataObject(
             hash=joblib.hash(TEST_ARRAY + 3, hash_name='sha1'),
             hash_method="joblib_SHA1",
             type="numpy.ndarray", id=id(res[0]),
-            details={'shape': (3,), 'dtype': np.int64})
+            details={'shape': (3,), 'dtype': np.int64}, value=None)
 
         expected_container_2 = DataObject(
             hash=joblib.hash(TEST_ARRAY + 4, hash_name='sha1'),
             hash_method="joblib_SHA1",
             type="numpy.ndarray", id=id(res[1]),
-            details={'shape': (3,), 'dtype': np.int64})
+            details={'shape': (3,), 'dtype': np.int64}, value=None)
 
         # Check subscript of each element with respect to the array
         containers = [expected_container_1, expected_container_2]
@@ -741,19 +742,21 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
 
         expected_output = DataObject(
             hash=joblib.hash(res, hash_name="sha1"), hash_method="joblib_SHA1",
-            type="builtins.dict", id=id(res), details={})
+            type="builtins.dict", id=id(res), details={}, value=None)
 
         expected_container_1 = DataObject(
             hash=joblib.hash(TEST_ARRAY + 3, hash_name='sha1'),
             hash_method="joblib_SHA1",
             type="numpy.ndarray", id=id(res['key.0']),
-            details={'shape': (3,), 'dtype': np.int64})
+            details={'shape': (3,), 'dtype': np.int64},
+            value=None)
 
         expected_container_2 = DataObject(
             hash=joblib.hash(TEST_ARRAY + 4, hash_name='sha1'),
             hash_method="joblib_SHA1",
             type="numpy.ndarray", id=id(res['key.1']),
-            details={'shape': (3,), 'dtype': np.int64})
+            details={'shape': (3,), 'dtype': np.int64},
+            value=None)
 
         _check_function_execution(
             actual=Provenance.history[0],
@@ -805,29 +808,32 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
 
         elements = {'key.0': [], 'key.1': []}
         for key, container in res.items():
-            for el_idx, element in enumerate(container):
+            for element in container:
                 element_info = DataObject(
                     hash=joblib.hash(element, hash_name="sha1"),
                     hash_method="joblib_SHA1",
                     type="numpy.int64", id=None,
-                    details={'shape': (), 'dtype': np.int64})
+                    details={'shape': (), 'dtype': np.int64},
+                    value=element)
                 elements[key].append(element_info)
 
         expected_output = DataObject(
             hash=joblib.hash(res, hash_name="sha1"), hash_method="joblib_SHA1",
-            type="builtins.dict", id=id(res), details={})
+            type="builtins.dict", id=id(res), details={}, value=None)
 
         expected_container_1 = DataObject(
             hash=joblib.hash(TEST_ARRAY + 3, hash_name='sha1'),
             hash_method="joblib_SHA1",
             type="numpy.ndarray", id=id(res['key.0']),
-            details={'shape': (3,), 'dtype': np.int64})
+            details={'shape': (3,), 'dtype': np.int64},
+            value=None)
 
         expected_container_2 = DataObject(
             hash=joblib.hash(TEST_ARRAY + 4, hash_name='sha1'),
             hash_method="joblib_SHA1",
             type="numpy.ndarray", id=id(res['key.1']),
-            details={'shape': (3,), 'dtype': np.int64})
+            details={'shape': (3,), 'dtype': np.int64},
+            value=None)
 
         # Check subscript of each element with respect to the array
         containers = {
@@ -903,18 +909,19 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
         self.assertEqual(len(Provenance.history), 4)
 
         elements = []
-        for el_idx, element in enumerate(res):
-                element_info = DataObject(
-                    hash=joblib.hash(element, hash_name="sha1"),
-                    hash_method="joblib_SHA1",
-                    type="numpy.int64", id=None,
-                    details={'shape': (), 'dtype': np.int64})
-                elements.append(element_info)
+        for element in res:
+            element_info = DataObject(
+                hash=joblib.hash(element, hash_name="sha1"),
+                hash_method="joblib_SHA1",
+                type="numpy.int64", id=None,
+                details={'shape': (), 'dtype': np.int64},
+                value=element)
+            elements.append(element_info)
 
         expected_output = DataObject(
             hash=joblib.hash(res, hash_name="sha1"), hash_method="joblib_SHA1",
             type="test_decorator.NonIterableContainer", id=id(res),
-            details={'data': res.data})
+            details={'data': res.data}, value=None)
 
         # Check subscript of each element with respect to the container
         for history_index in (0, 1, 2):
@@ -947,7 +954,6 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
             exp_order=1,
             test_case=self)
 
-
     def test_comprehensions(self):
         activate(clear=True)
         num_list = [comprehension_function(i) for i in range(3)]
@@ -966,7 +972,8 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
                 hash=joblib.hash(element, hash_name='sha1'),
                 hash_method="joblib_SHA1",
                 type="numpy.float64", id=id(element),
-                details={'shape': (), 'dtype': np.float64})
+                details={'shape': (), 'dtype': np.float64},
+                value=element)
 
             _check_function_execution(
                 actual=Provenance.history[history],
@@ -988,7 +995,8 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
                 hash=joblib.hash(element, hash_name='sha1'),
                 hash_method="joblib_SHA1",
                 type="numpy.float64", id=id(element),
-                details={'shape': (), 'dtype': np.float64})
+                details={'shape': (), 'dtype': np.float64},
+                value=element)
 
             _check_function_execution(
                 actual=Provenance.history[history],
@@ -1010,7 +1018,8 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
                 hash=joblib.hash(element, hash_name='sha1'),
                 hash_method="joblib_SHA1",
                 type="numpy.float64", id=id(element),
-                details={'shape': (), 'dtype': np.float64})
+                details={'shape': (), 'dtype': np.float64},
+                value=element)
 
             _check_function_execution(
                 actual=Provenance.history[history],
@@ -1157,7 +1166,8 @@ class ProvenanceDecoratorClassMethodsTestCase(unittest.TestCase):
                      'file_origin': None, 'description': None, 'segment': None,
                      'units': pq.mV.units, 'shape': (3, 1), 'dtype': np.int64,
                      't_start': 0 * pq.s, 't_stop': 3 * pq.s,
-                     'dimensionality': pq.mV.dimensionality})
+                     'dimensionality': pq.mV.dimensionality},
+            value=None)
 
         expected_output = DataObject(
             hash=joblib.hash(reshaped, hash_name='sha1'),
@@ -1169,7 +1179,8 @@ class ProvenanceDecoratorClassMethodsTestCase(unittest.TestCase):
                      'file_origin': None, 'description': None, 'segment': None,
                      'units': pq.mV.units, 'shape': (1, 3), 'dtype': np.int64,
                      't_start': 0 * pq.s, 't_stop': 1 * pq.s,
-                     'dimensionality': pq.mV.dimensionality})
+                     'dimensionality': pq.mV.dimensionality},
+            value=None)
 
         _check_function_execution(
             actual=Provenance.history[0],
@@ -1197,7 +1208,8 @@ class ProvenanceDecoratorClassMethodsTestCase(unittest.TestCase):
             hash_method="joblib_SHA1",
             type="test_decorator.ObjectWithMethod",
             id=id(obj),
-            details={'coefficient': 2})
+            details={'coefficient': 2},
+            value=None)
 
         _check_function_execution(
             actual=Provenance.history[0],
@@ -1261,7 +1273,8 @@ class ProvenanceDecoratorClassMethodsTestCase(unittest.TestCase):
                     hash=joblib.hash(element, hash_name="sha1"),
                     hash_method="joblib_SHA1",
                     type="numpy.int64", id=None,
-                    details={'shape': (), 'dtype': np.int64})
+                    details={'shape': (), 'dtype': np.int64},
+                    value=element)
                 elements.append(element_info)
 
         expected_output = DataObject(
@@ -1269,7 +1282,8 @@ class ProvenanceDecoratorClassMethodsTestCase(unittest.TestCase):
             hash_method="joblib_SHA1",
             type="test_decorator.NonIterableContainerOutputObject",
             id=id(obj),
-            details={'_data': obj._data})
+            details={'_data': obj._data},
+            value=None)
 
         # Check subscript of each element with respect to the container
         for history_index in (0, 1, 2):
@@ -1306,6 +1320,7 @@ class ProvenanceDecoratorClassMethodsTestCase(unittest.TestCase):
 @Provenance(inputs=['source'])
 def use_dict(source):
     return 3
+
 
 class ProvenanceDecoratorStoreValuesTestCase(unittest.TestCase):
 

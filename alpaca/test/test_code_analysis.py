@@ -552,19 +552,22 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
             hash=joblib_hash(np.sum(TEST_ARRAY)),
             hash_method="joblib_SHA1",
             type="numpy.int64", id=id(res),
-            details={'shape': (), 'dtype': np.int64})
+            details={'shape': (), 'dtype': np.int64},
+            value=6)
 
         object_info = DataObject(
             hash=joblib_hash(object_with_method),
             hash_method="joblib_SHA1",
             type="test_code_analysis.ObjectWithMethod",
             id=id(object_with_method),
-            details={})
+            details={},
+            value=None)
 
         expected_container_info = DataObject(
             hash=joblib_hash(container_of_array), hash_method="joblib_SHA1",
             type="test_code_analysis.ContainerOfArray",
-            id=id(container_of_array), details={'array': TEST_ARRAY})
+            id=id(container_of_array), details={'array': TEST_ARRAY},
+            value=None)
 
         _check_function_execution(
             actual=Provenance.history[0],
@@ -604,17 +607,19 @@ class ProvenanceDecoratorStaticRelationshipsTestCase(unittest.TestCase):
             hash=joblib_hash(custom_object),
             hash_method="joblib_SHA1",
             type="test_code_analysis.CustomObject", id=id(custom_object),
-            details={'data': list_1})
+            details={'data': list_1}, value=None)
 
         source_list_info = DataObject(
             hash=joblib_hash(source_data),
             hash_method="joblib_SHA1",
-            type="builtins.list", id=id(source_data), details={})
+            type="builtins.list", id=id(source_data), details={},
+            value=None)
 
         element_info = DataObject(
             hash=joblib_hash(list_1),
             hash_method="joblib_SHA1",
-            type="builtins.list", id=id(list_1), details={})
+            type="builtins.list", id=id(list_1), details={},
+            value=None)
 
         _check_function_execution(
             actual=Provenance.history[0],
