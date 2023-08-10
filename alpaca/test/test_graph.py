@@ -96,7 +96,6 @@ class ProvenanceGraphTestCase(unittest.TestCase):
         self.assertEqual(len(graph_with_none.graph.nodes), 3)
         self.assertEqual(len(graph_without_none.graph.nodes), 2)
 
-
     def test_memberships(self):
         input_file = self.ttl_path / "multiple_memberships.ttl"
         graph = ProvenanceGraph(input_file)
@@ -382,7 +381,6 @@ class ProvenanceGraphTestCase(unittest.TestCase):
             self.assertTrue("sua" not in node_attrs)
             self.assertTrue("metadata_4" not in node_attrs)
 
-
     def test_remove_attributes(self):
         input_file = self.ttl_path / "metadata.ttl"
         graph = ProvenanceGraph(input_file, attributes='all',
@@ -441,6 +439,7 @@ class ProvenanceGraphTestCase(unittest.TestCase):
             self.assertTrue("Time Interval" not in node_attrs)
             self.assertTrue("sua" not in node_attrs)
 
+
 class GraphTimeIntervalTestCase(unittest.TestCase):
 
     @classmethod
@@ -487,6 +486,7 @@ class GraphTimeIntervalTestCase(unittest.TestCase):
         for _, attrs in aggregated.nodes(data=True):
             self.assertFalse("gephi_interval" in attrs)
             self.assertFalse("Time Interval" in attrs)
+
 
 class GraphAggregationTestCase(unittest.TestCase):
 
@@ -659,6 +659,52 @@ class GraphAggregationTestCase(unittest.TestCase):
             with self.subTest(f"Node label {label}"):
                 self.assertTrue('members' not in attrs)
                 self.assertEqual(attrs['member_count'], expected_counts[label])
+
+
+class GraphMultipleSourcesTestCase(unittest.TestCase):
+    @staticmethod
+    def _node_comparison(attr_G1, attr_G2):
+        # Functions will have different execution IDs and orders
+        for ignored_attr in ('execution_id', 'execution_order'):
+            for attr in (attr_G1, attr_G2):
+                if ignored_attr in attr:
+                    attr.pop(ignored_attr)
+
+        return attr_G1 == attr_G2
+
+    @classmethod
+    def setUpClass(cls):
+        ttl_path = Path(__file__).parent / "res"
+        cls.single_graph = ttl_path / "single_graph.ttl"
+        cls.multiple_graphs = [ttl_path / f"multi_graph_{i}.ttl"
+                               for i in range(2)]
+        alpaca_setting('authority', "my-authority")
+
+    def test_multiple_sources(self):
+        single_graph = ProvenanceGraph(self.single_graph,
+                                       attributes='all',
+                                       annotations='all',
+                                       time_intervals=False)
+        multiple_graph = ProvenanceGraph(*self.multiple_graphs,
+                                         attributes='all',
+                                         annotations='all',
+                                         time_intervals=False)
+
+        single_nx_graph = single_graph.graph
+        multiple_nx_graph = multiple_graph.graph
+
+        self.assertEqual(len(single_nx_graph.nodes), 8)
+        self.assertEqual(len(multiple_nx_graph.nodes), 8)
+
+        # All objects should be present and with the same data
+        for data_node, data in single_graph.graph.nodes(data=True):
+            if data['type'] == 'object':
+                self.assertTrue(data_node in multiple_nx_graph.nodes)
+
+        # Graphs should be equal, except for the function executions IDs and
+        # order
+        self.assertTrue(nx.is_isomorphic(single_nx_graph, multiple_nx_graph,
+                                         node_match=self._node_comparison))
 
 
 if __name__ == "__main__":
