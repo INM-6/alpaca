@@ -129,8 +129,8 @@ def _get_entity_data(graph, entity, annotations=None, attributes=None,
 
 class ProvenanceGraph:
     """
-    Directed Acyclic Graph representing the provenance history stored in a
-    PROV file with the Alpaca ontology.
+    Directed Acyclic Graph representing the provenance history stored in an
+    RDF file structured with the Alpaca ontology.
 
     The visualization is based on NetworkX, and the graph can be accessed
     through the :attr:`graph` attribute.
@@ -171,8 +171,11 @@ class ProvenanceGraph:
     Parameters
     ----------
     prov_file : str or Path-like
-        Source file with provenance data in the Alpaca format based on W3C
-        PROV-O.
+        Source file(s) with RDF provenance data in the Alpaca format based on
+        W3C PROV-O. If multiple files are provided, all will be loaded into
+        the same graph object. This is useful to integrate provenance captured
+        from several sources for visualization (e.g., steps in workflows
+        or parallel processes).
     annotations : tuple of str or 'all', optional
         Names of all annotations of the objects to display in the graph as
         node attributes. Annotations are defined as values of an annotation
@@ -229,15 +232,15 @@ class ProvenanceGraph:
 
     """
 
-    def __init__(self, prov_file, annotations=None, attributes=None,
+    def __init__(self, *prov_file, annotations=None, attributes=None,
                  strip_namespace=True, remove_none=True,
                  use_name_in_parameter=True, use_class_in_method_name=True,
-                 time_intervals=True, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+                 time_intervals=True):
 
-        # Load PROV records from the file
+        # Load PROV records from the file(s)
         doc = AlpacaProvDocument()
-        doc.read_records(prov_file, file_format=None)
+        for file in prov_file:
+            doc.read_records(file, file_format=None)
 
         # Transform RDFlib graph to NetworkX and simplify the graph for
         # visualization. The parameters passed to the class initialization
