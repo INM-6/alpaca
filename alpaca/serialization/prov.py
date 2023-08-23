@@ -87,6 +87,14 @@ class AlpacaProvDocument(object):
         # there is a fast lookup
         self._entity_uris = set()
 
+        # Store functions that have container output ontology annotations,
+        # To add the identification on the objects after the graph is built
+        self._container_output_functions = {}
+        for obj_type, info in ONTOLOGY_INFORMATION.items():
+            container_returns = info.get_container_returns()
+            if container_returns:
+                self._container_output_functions[obj_type] = container_returns
+
     # PROV relationships methods
 
     def _wasAttributedTo(self, entity, agent):
@@ -128,9 +136,8 @@ class AlpacaProvDocument(object):
                         Literal(function_info.version)))
         return uri
 
-    def _add_ontology_information(self, uri, info_id, information_type,
+    def _add_ontology_information(self, uri, ontology_info, information_type,
                                   element=None):
-        ontology_info = ONTOLOGY_INFORMATION.get(info_id)
         if ontology_info:
             class_iri = ontology_info.get_iri(information_type, element)
             if class_iri:
@@ -177,7 +184,8 @@ class AlpacaProvDocument(object):
             return uri
         self.graph.add((uri, RDF.type, ALPACA.DataObjectEntity))
         self.graph.add((uri, ALPACA.hashSource, Literal(info.hash_method)))
-        self._add_ontology_information(uri, info.type, 'data_object')
+        ontology_info = ONTOLOGY_INFORMATION.get(info.type, None)
+        self._add_ontology_information(uri, ontology_info, 'data_object')
         self._add_entity_metadata(uri, info)
         self._entity_uris.add(uri)
         return uri
@@ -262,6 +270,7 @@ class AlpacaProvDocument(object):
 
             # ID to identify ontology annotations
             info_id = _get_function_name(function_info)
+            ontology_info = ONTOLOGY_INFORMATION.get(info_id)
 
             # Get the FunctionExecution node with function parameters and
             # other provenance info
@@ -273,7 +282,7 @@ class AlpacaProvDocument(object):
                 code_statement=execution.code_statement,
                 start=execution.time_stamp_start,
                 end=execution.time_stamp_end,
-                function=cur_function, ontology_info=info_id
+                function=cur_function, ontology_info=ontology_info
             )
 
             # Add all the inputs as entities, and create a `used` association
@@ -305,7 +314,7 @@ class AlpacaProvDocument(object):
                 output_entities.append(cur_entity)
                 self._wasGeneratedBy(entity=cur_entity, activity=cur_activity)
                 self._wasAttributedTo(entity=cur_entity, agent=script_agent)
-                self._add_ontology_information(cur_entity, info_id,
+                self._add_ontology_information(cur_entity, ontology_info,
                                                'returns', element=key)
 
             # Iterate over the input/output pairs to add the `wasDerived`
@@ -317,6 +326,43 @@ class AlpacaProvDocument(object):
 
             # Associate the activity to the script
             self._wasAssociatedWith(activity=cur_activity, agent=script_agent)
+
+    def _process_output_level(self, output, levels, cur_level, max_level,
+                              ontology_info):
+        if cur_level > max_level:
+            return
+
+        # If this level is annotated, get the information
+        obj_uri = None
+        if cur_level in levels:
+            level_str = f"*{'*' * cur_level}"
+            obj_uri = ontology_info.get_iri('returns', level_str)
+
+        for element in self.graph.objects(output, PROV.hadMember):
+            if obj_uri:
+                self.graph.add((element, RDF.type, obj_uri))
+            self._process_output_level(element, levels, cur_level + 1,
+                                       max_level, ontology_info)
+    def _add_annotations_for_container_outputs(self):
+        # For functions that the Provenance decorator identified elements
+        # inside returned containers, the elements linked by `prov:hasMember`
+        # functions need to be annotated. The list of functions is already
+        # stored in a search list. Iterate over the nodes of the function
+        # and annotate the correct level of membership
+        for info_id, levels in self._container_output_functions.items():
+            # Get all nodes of the function type
+            int_levels = list(map(lambda x: len(x) - 1, levels))
+            max_level = max(int_levels)
+            ontology_info = ONTOLOGY_INFORMATION[info_id]
+            function_type = ontology_info.get_iri('function')
+            executions = self.graph.subjects(RDF.type, function_type)
+            for execution in executions:
+                # For every execution, get the outputs and find the correct
+                # outputs based on the requested level
+                outputs = self.graph.subjects(PROV.wasGeneratedBy, execution)
+                for output in outputs:
+                    self._process_output_level(output, int_levels, 1,
+                                               max_level, ontology_info)
 
     def add_history(self, script_info, session_id, history,
                     show_progress=False):
@@ -343,6 +389,7 @@ class AlpacaProvDocument(object):
                               disable=not show_progress):
             self._add_function_execution(execution, script_agent, script_info,
                                          session_id)
+        self._add_annotations_for_container_outputs()
 
     def read_records(self, file_name, file_format='turtle'):
         """

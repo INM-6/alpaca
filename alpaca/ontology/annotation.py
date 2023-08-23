@@ -147,6 +147,12 @@ class _OntologyInformation(object):
     def has_information(self, information_type):
         return hasattr(self, information_type)
 
+    def get_container_returns(self):
+        returns = getattr(self, 'returns', None)
+        if returns:
+            return [key for key in returns.keys() if isinstance(key, str) and
+                    key.startswith('*') and len(key) > 1]
+        return None
     def get_iri(self, information_type, element=None):
         if information_type in VALID_OBJECTS:
             # Information on 'function', 'data_object' and 'package' are
@@ -156,9 +162,19 @@ class _OntologyInformation(object):
             # Specific information of 'function' and 'data_object' are
             # stored in dictionaries (e.g., 'attributes', 'parameters'...)
             information = getattr(self, information_type, None)
-            if information is None or element not in information:
+
+            if information is None:
+                # No information available
                 return None
-            information_value = information[element]
+
+            # If annotating all elements (e.g., multiple returns in a
+            # container). The actual element will not be present, but
+            # there will be an entry identified by '*'.
+            information_value = information.get(element, None)
+            if not information_value:
+                information_value = information.get('*', None)
+                if not information_value:
+                    return None
 
         if (information_value[0], information_value[-1]) == ("<", ">"):
             # This is an IRI
