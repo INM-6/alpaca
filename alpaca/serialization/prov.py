@@ -291,6 +291,7 @@ class AlpacaProvDocument(object):
             input_entities = []
             for key, value in execution.input.items():
                 cur_entities = []
+                has_input_iri = bool(ontology_info.get_iri('arguments', key))
 
                 if isinstance(value, Container):
                     # If this is a Container, several objects are inside.
@@ -305,6 +306,10 @@ class AlpacaProvDocument(object):
                     self._used(activity=cur_activity, entity=cur_entity)
                     self._wasAttributedTo(entity=cur_entity,
                                           agent=script_agent)
+                    if has_input_iri:
+                        self._add_ontology_information(cur_entity,
+                                                       ontology_info,
+                                                       'arguments', key)
 
             # Add all the outputs as entities, and create the `wasGenerated`
             # relationship.

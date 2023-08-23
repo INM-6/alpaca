@@ -7,6 +7,7 @@ from alpaca.ontology.annotation import (_OntologyInformation,
                                         ONTOLOGY_INFORMATION)
 from alpaca.ontology import ALPACA
 
+from collections import Counter
 
 # Ontology namespace definition used for the tests
 EXAMPLE_NS = {'ontology': "http://example.org/ontology#"}
@@ -110,6 +111,30 @@ process_multiple_container_output_multiple_annotations_root.__wrapped__.__ontolo
         '**': "ontology:ProcessedMultipleContainerOutputLevel1",
         '***': "ontology:ProcessedMultipleContainerOutputLevel2"}
 }
+
+@Provenance(inputs=['input'])
+def process_input_annotation(input, param):
+    return input + 2
+
+process_input_annotation.__wrapped__.__ontology__ = {
+    "function": "ontology:ProcessInputAnnotation",
+    "namespaces": EXAMPLE_NS,
+    "arguments": {'input': "ontology:Input", 'param': "ontology:Param"}
+}
+
+
+@Provenance(inputs=['input'], container_input=['input_list'])
+def process_container_input_annotation(input, input_list, param):
+    return [i + input for i in input_list]
+
+process_container_input_annotation.__wrapped__.__ontology__ = {
+    "function": "ontology:ProcessContainerInputAnnotation",
+    "namespaces": EXAMPLE_NS,
+    "arguments": {'input': "ontology:Input",
+                  'input_list': "ontology:ContainerElementInput",
+                  'param': "ontology:Param"}
+}
+
 
 ############
 # Unit tests
@@ -480,8 +505,7 @@ class OntologyAnnotationTestCase(unittest.TestCase):
         with io.StringIO(prov_data) as data_stream:
             prov_graph.parse(data_stream, format='turtle')
 
-        # Check that the annotations exist (1 per class is expected. None
-        # are expected for the classes of `process`)
+        # Check that the annotations exist
         self.assertEqual(
             len(list(prov_graph.triples(
                 (None, RDF.type, self.ONTOLOGY.ProcessMultipleContainerOutput)))
@@ -524,8 +548,7 @@ class OntologyAnnotationTestCase(unittest.TestCase):
         with io.StringIO(prov_data) as data_stream:
             prov_graph.parse(data_stream, format='turtle')
 
-        # Check that the annotations exist (1 per class is expected. None
-        # are expected for the classes of `process`)
+        # Check that the annotations exist
         self.assertEqual(
             len(list(prov_graph.triples(
                 (None, RDF.type, self.ONTOLOGY.ProcessMultipleContainerOutputMultipleAnnotations)))
@@ -578,8 +601,7 @@ class OntologyAnnotationTestCase(unittest.TestCase):
         with io.StringIO(prov_data) as data_stream:
             prov_graph.parse(data_stream, format='turtle')
 
-        # Check that the annotations exist (1 per class is expected. None
-        # are expected for the classes of `process`)
+        # Check that the annotations exist
         self.assertEqual(
             len(list(prov_graph.triples(
                 (None, RDF.type, self.ONTOLOGY.ProcessMultipleContainerOutputMultipleAnnotationsRoot)))
@@ -630,3 +652,95 @@ class OntologyAnnotationTestCase(unittest.TestCase):
                         (output_level2, RDF.type, self.ONTOLOGY.ProcessedMultipleContainerOutputLevel2) in prov_graph)
                     members = list(prov_graph.objects(output_level2, PROV.hadMember))
                     self.assertEqual(len(members), 0)
+
+    def test_provenance_annotation_input(self):
+        activate(clear=True)
+        result = process_input_annotation(5, 6)
+        deactivate()
+
+        prov_data = save_provenance()
+
+        # Read PROV information as RDF
+        prov_graph = Graph()
+        with io.StringIO(prov_data) as data_stream:
+            prov_graph.parse(data_stream, format='turtle')
+
+        # Check that the annotations exist
+        self.assertEqual(
+            len(list(prov_graph.triples(
+                (None, RDF.type, self.ONTOLOGY.ProcessInputAnnotation)))
+            ), 1)
+        self.assertEqual(
+            len(list(prov_graph.triples(
+                (None, RDF.type, self.ONTOLOGY.Input)))
+            ), 1)
+        self.assertEqual(
+            len(list(prov_graph.triples(
+                (None, RDF.type, self.ONTOLOGY.Param)))
+            ), 1)
+
+        # FunctionExecution is ProcessInputAnnotation
+        execution_iri = list(
+            prov_graph.subjects(RDF.type, ALPACA.FunctionExecution))[0]
+        self.assertTrue((execution_iri, RDF.type,
+                         self.ONTOLOGY.ProcessInputAnnotation) in prov_graph)
+
+
+        # Check input values
+        input_nodes = prov_graph.objects(execution_iri, PROV.used)
+        for input_node in input_nodes:
+            self.assertTrue((execution_iri, PROV.used, input_node) in prov_graph)
+            self.assertTrue((input_node,
+                             RDF.type, ALPACA.DataObjectEntity) in prov_graph)
+            self.assertTrue((input_node,
+                             RDF.type, self.ONTOLOGY.Input) in prov_graph)
+
+    def test_provenance_annotation_container_input(self):
+        activate(clear=True)
+        input_list = [20, 30, 40]
+        result = process_container_input_annotation(5, input_list, 6)
+        deactivate()
+
+        prov_data = save_provenance()
+
+        # Read PROV information as RDF
+        prov_graph = Graph()
+        with io.StringIO(prov_data) as data_stream:
+            prov_graph.parse(data_stream, format='turtle')
+
+        # Check that the annotations exist
+        self.assertEqual(
+            len(list(prov_graph.triples(
+                (None, RDF.type, self.ONTOLOGY.ProcessContainerInputAnnotation)))
+            ), 1)
+        self.assertEqual(
+            len(list(prov_graph.triples(
+                (None, RDF.type, self.ONTOLOGY.Input)))
+            ), 1)
+        self.assertEqual(
+            len(list(prov_graph.triples(
+                (None, RDF.type, self.ONTOLOGY.ContainerElementInput)))
+            ), 3)
+        self.assertEqual(
+            len(list(prov_graph.triples(
+                (None, RDF.type, self.ONTOLOGY.Param)))
+            ), 1)
+
+        # FunctionExecution is ProcessContainerInputAnnotation
+        execution_iri = list(
+            prov_graph.subjects(RDF.type, ALPACA.FunctionExecution))[0]
+        self.assertTrue((execution_iri, RDF.type,
+                         self.ONTOLOGY.ProcessContainerInputAnnotation) in prov_graph)
+
+
+        # Check input values have the expected number of classes
+        input_nodes = prov_graph.objects(execution_iri, PROV.used)
+        input_node_count = Counter()
+        for input_node in input_nodes:
+            self.assertTrue((execution_iri, PROV.used, input_node) in prov_graph)
+            for input_node_type in prov_graph.objects(input_node, RDF.type):
+                input_node_count[input_node_type] += 1
+
+        self.assertEqual(input_node_count[ALPACA.DataObjectEntity], 4)
+        self.assertEqual(input_node_count[self.ONTOLOGY.Input], 1)
+        self.assertEqual(input_node_count[self.ONTOLOGY.ContainerElementInput], 3)
