@@ -291,7 +291,8 @@ class AlpacaProvDocument(object):
             input_entities = []
             for key, value in execution.input.items():
                 cur_entities = []
-                has_input_iri = bool(ontology_info.get_iri('arguments', key))
+                has_input_iri = ontology_info and \
+                                bool(ontology_info.get_iri('arguments', key))
 
                 if isinstance(value, Container):
                     # If this is a Container, several objects are inside.

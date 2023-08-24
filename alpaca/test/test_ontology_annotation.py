@@ -136,6 +136,11 @@ process_container_input_annotation.__wrapped__.__ontology__ = {
 }
 
 
+@Provenance(inputs=['input'])
+def process_no_annotations(input):
+    return input + 2
+
+
 ############
 # Unit tests
 ############
@@ -280,6 +285,24 @@ class OntologyAnnotationTestCase(unittest.TestCase):
         for info in (input_info, output_info, function_info):
             self.assertEqual(info.namespaces['ontology'], self.ONTOLOGY)
             self.assertTupleEqual(tuple(info.namespaces.keys()), ('ontology',))
+
+    def test_provenance_no_annotation(self):
+        activate(clear=True)
+        result = process_no_annotations(5)
+        deactivate()
+
+        prov_data = save_provenance()
+
+        # Read PROV information as RDF
+        prov_graph = Graph()
+        with io.StringIO(prov_data) as data_stream:
+            prov_graph.parse(data_stream, format='turtle')
+
+        # Check that no other annotations are present
+        execution_iri = list(
+            prov_graph.subjects(RDF.type, ALPACA.FunctionExecution))[0]
+        types = list(prov_graph.objects(execution_iri, RDF.type))
+        self.assertListEqual(types, [ALPACA.FunctionExecution])
 
     def test_provenance_annotation(self):
         activate(clear=True)
