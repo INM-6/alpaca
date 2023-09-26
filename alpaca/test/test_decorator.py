@@ -121,14 +121,13 @@ def comprehension_function(param):
 
 
 class NonIterableContainerOutputObject(object):
-
-    @Provenance(inputs=[], container_output=0)
     def __init__(self, start):
         self._data = np.arange(start+1, start+4)
 
     def __getitem__(self, item):
         return  self._data[item]
-
+NonIterableContainerOutputObject.__init__ = \
+    Provenance(inputs=[], container_output=0)(NonIterableContainerOutputObject.__init__)
 
 # Function to help verifying FunctionExecution tuples
 def _check_function_execution(actual, exp_function, exp_input, exp_params,
@@ -1124,9 +1123,16 @@ class ObjectWithMethod(object):
     def process(self, array, param1, param2):
         return array + self.coefficient
 
+    @staticmethod
+    def static_method(array, coefficient):
+        return array + coefficient
+
 
 ObjectWithMethod.process = Provenance(inputs=['self', 'array'])(
     ObjectWithMethod.process)
+
+ObjectWithMethod.static_method = Provenance(inputs=['array'])(
+    ObjectWithMethod.static_method)
 
 # Apply decorator to method that uses the descriptor protocol
 neo.AnalogSignal.reshape = Provenance(inputs=[0])(neo.AnalogSignal.reshape)
@@ -1136,6 +1142,41 @@ ObjectWithMethod.__init__ = Provenance(inputs=[])(ObjectWithMethod.__init__)
 
 
 class ProvenanceDecoratorClassMethodsTestCase(unittest.TestCase):
+
+    def test_static_method(self):
+        obj = ObjectWithMethod(2)
+        activate(clear=True)
+        res = obj.static_method(TEST_ARRAY, 4)
+        deactivate()
+
+        self.assertEqual(len(Provenance.history), 1)
+
+        obj_info = DataObject(
+            hash=joblib.hash(obj, hash_name='sha1'),
+            hash_method="joblib_SHA1",
+            type="test_decorator.ObjectWithMethod",
+            id=id(obj),
+            details={'coefficient': 2})
+
+        expected_output = DataObject(
+            hash=joblib.hash(TEST_ARRAY+4, hash_name='sha1'),
+            hash_method="joblib_SHA1",
+            type="numpy.ndarray", id=id(res),
+            details={'shape': (3,), 'dtype': np.int64})
+
+        _check_function_execution(
+            actual=Provenance.history[0],
+            exp_function=FunctionInfo('ObjectWithMethod.static_method',
+                                      'test_decorator', ''),
+            exp_input={'array': TEST_ARRAY_INFO},
+            exp_params={'coefficient': 4},
+            exp_output={0: expected_output},
+            exp_arg_map=['array', 'coefficient'],
+            exp_kwarg_map=[],
+            exp_code_stmnt="res = obj.static_method(TEST_ARRAY, 4)",
+            exp_return_targets=['res'],
+            exp_order=1,
+            test_case=self)
 
     def test_method_descriptor(self):
         activate(clear=True)

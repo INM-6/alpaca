@@ -320,6 +320,18 @@ class Provenance(object):
         names = function_name.split(".")
         return len(names) == 2 and names[-1] == "__init__"
 
+    @staticmethod
+    def _is_static_method(function, function_name):
+        if type(function).__qualname__ == "method_descriptor":
+            # Ignore method descriptors
+            return False
+        name = function_name.rsplit('.', 1)[-1]
+        cls = inspect._findclass(function)
+        if cls is not None:
+            method = inspect.getattr_static(cls, name)
+            return isinstance(method, staticmethod)
+        return False
+
     def _capture_code_and_function_provenance(self, lineno, function):
 
         # 1. Capture Abstract Syntax Tree (AST) of the call to the
@@ -647,6 +659,12 @@ class Provenance(object):
                 Provenance.history.append(function_execution)
 
             return function_output
+
+        # If the function is decorated with `staticmethod`, restore the
+        # decorator (otherwise `self` will be passed as first argument when
+        # calling the function)
+        if self._is_static_method(function, function.__qualname__):
+            return staticmethod(wrapped)
 
         return wrapped
 
