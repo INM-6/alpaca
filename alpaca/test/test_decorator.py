@@ -121,14 +121,13 @@ def comprehension_function(param):
 
 
 class NonIterableContainerOutputObject(object):
-
-    @Provenance(inputs=[], container_output=0)
     def __init__(self, start):
         self._data = np.arange(start+1, start+4)
 
     def __getitem__(self, item):
         return  self._data[item]
-
+NonIterableContainerOutputObject.__init__ = \
+    Provenance(inputs=[], container_output=0)(NonIterableContainerOutputObject.__init__)
 
 # Function to help verifying FunctionExecution tuples
 def _check_function_execution(actual, exp_function, exp_input, exp_params,
