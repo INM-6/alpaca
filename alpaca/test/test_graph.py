@@ -59,7 +59,7 @@ class ProvenanceGraphTestCase(unittest.TestCase):
                                               edge_match=self._attr_comparison))
 
     def test_use_name_in_parameter(self):
-        node = "urn:fz-juelich.de:alpaca:function_execution:Python:111111:999999:test.test_function#12345"
+        node = "urn:my-authority:alpaca:function_execution:Python:111111:999999:test.test_function#12345"
         input_file = self.ttl_path / "input_output.ttl"
         graph_use_name = ProvenanceGraph(input_file)
         graph_dont_use_name = ProvenanceGraph(input_file,
@@ -75,7 +75,7 @@ class ProvenanceGraphTestCase(unittest.TestCase):
         self.assertEqual(dont_use_name_attrs['parameter:param_1'], '5')
 
     def test_remove_none(self):
-        node = "urn:fz-juelich.de:alpaca:object:Python:builtins.NoneType:777777"
+        node = "urn:my-authority:alpaca:object:Python:builtins.NoneType:777777"
         input_file = self.ttl_path / "file_output.ttl"
         graph_with_none = ProvenanceGraph(input_file, remove_none=False)
         graph_without_none = ProvenanceGraph(input_file, remove_none=True)
@@ -86,7 +86,7 @@ class ProvenanceGraphTestCase(unittest.TestCase):
         self.assertEqual(len(graph_without_none.graph.nodes), 3)
 
     def test_remove_none_no_output_function(self):
-        node = "urn:fz-juelich.de:alpaca:object:Python:builtins.NoneType:777777"
+        node = "urn:my-authority:alpaca:object:Python:builtins.NoneType:777777"
         input_file = self.ttl_path / "none_output.ttl"
         graph_with_none = ProvenanceGraph(input_file, remove_none=False)
         graph_without_none = ProvenanceGraph(input_file, remove_none=True)
@@ -103,26 +103,26 @@ class ProvenanceGraphTestCase(unittest.TestCase):
 
         self.assertEqual(len(graph.graph.nodes), 7)
         for node in (
-        "urn:fz-juelich.de:alpaca:object:Python:builtins.list:3333332",
-        "urn:fz-juelich.de:alpaca:object:Python:builtins.list:23333332",
-        "urn:fz-juelich.de:alpaca:object:Python:test.Container:333333",
-        "urn:fz-juelich.de:alpaca:object:Python:test.InputObject:12345",
-        "urn:fz-juelich.de:alpaca:object:Python:test.SuperContainer:2333333"):
+        "urn:my-authority:alpaca:object:Python:builtins.list:3333332",
+        "urn:my-authority:alpaca:object:Python:builtins.list:23333332",
+        "urn:my-authority:alpaca:object:Python:test.Container:333333",
+        "urn:my-authority:alpaca:object:Python:test.InputObject:12345",
+        "urn:my-authority:alpaca:object:Python:test.SuperContainer:2333333"):
             self.assertTrue(node in graph.graph.nodes)
 
         for expected_edge, expected_label in zip(
                 ((
-                 "urn:fz-juelich.de:alpaca:object:Python:test.SuperContainer:2333333",
-                 "urn:fz-juelich.de:alpaca:object:Python:builtins.list:23333332"),
+                 "urn:my-authority:alpaca:object:Python:test.SuperContainer:2333333",
+                 "urn:my-authority:alpaca:object:Python:builtins.list:23333332"),
                  (
-                 "urn:fz-juelich.de:alpaca:object:Python:builtins.list:23333332",
-                 "urn:fz-juelich.de:alpaca:object:Python:test.Container:333333"),
+                 "urn:my-authority:alpaca:object:Python:builtins.list:23333332",
+                 "urn:my-authority:alpaca:object:Python:test.Container:333333"),
                  (
-                 "urn:fz-juelich.de:alpaca:object:Python:test.Container:333333",
-                 "urn:fz-juelich.de:alpaca:object:Python:builtins.list:3333332"),
+                 "urn:my-authority:alpaca:object:Python:test.Container:333333",
+                 "urn:my-authority:alpaca:object:Python:builtins.list:3333332"),
                  (
-                 "urn:fz-juelich.de:alpaca:object:Python:builtins.list:3333332",
-                 "urn:fz-juelich.de:alpaca:object:Python:test.InputObject:12345")),
+                 "urn:my-authority:alpaca:object:Python:builtins.list:3333332",
+                 "urn:my-authority:alpaca:object:Python:test.InputObject:12345")),
                 (".containers", "[0]", ".inputs", "[1]")):
             self.assertTrue(expected_edge in graph.graph.edges)
             self.assertTrue(graph.graph.edges[expected_edge]['membership'])
@@ -137,33 +137,33 @@ class ProvenanceGraphTestCase(unittest.TestCase):
         self.assertEqual(len(graph.graph.nodes), 4)
 
         for node in (
-        "urn:fz-juelich.de:alpaca:object:Python:test.InputObject:12345",
-        "urn:fz-juelich.de:alpaca:object:Python:test.SuperContainer:2333333"):
+        "urn:my-authority:alpaca:object:Python:test.InputObject:12345",
+        "urn:my-authority:alpaca:object:Python:test.SuperContainer:2333333"):
             self.assertTrue(node in graph.graph.nodes)
 
         for node in (
-        "urn:fz-juelich.de:alpaca:object:Python:builtins.list:3333332",
-        "urn:fz-juelich.de:alpaca:object:Python:builtins.list:23333332",
-        "urn:fz-juelich.de:alpaca:object:Python:test.Container:333333"):
+        "urn:my-authority:alpaca:object:Python:builtins.list:3333332",
+        "urn:my-authority:alpaca:object:Python:builtins.list:23333332",
+        "urn:my-authority:alpaca:object:Python:test.Container:333333"):
             self.assertFalse(node in graph.graph.nodes)
 
         for edge in ((
-                     "urn:fz-juelich.de:alpaca:object:Python:test.SuperContainer:2333333",
-                     "urn:fz-juelich.de:alpaca:object:Python:builtins.list:23333332"),
+                     "urn:my-authority:alpaca:object:Python:test.SuperContainer:2333333",
+                     "urn:my-authority:alpaca:object:Python:builtins.list:23333332"),
                      (
-                     "urn:fz-juelich.de:alpaca:object:Python:builtins.list:23333332",
-                     "urn:fz-juelich.de:alpaca:object:Python:test.Container:333333"),
+                     "urn:my-authority:alpaca:object:Python:builtins.list:23333332",
+                     "urn:my-authority:alpaca:object:Python:test.Container:333333"),
                      (
-                     "urn:fz-juelich.de:alpaca:object:Python:test.Container:333333",
-                     "urn:fz-juelich.de:alpaca:object:Python:builtins.list:3333332"),
+                     "urn:my-authority:alpaca:object:Python:test.Container:333333",
+                     "urn:my-authority:alpaca:object:Python:builtins.list:3333332"),
                      (
-                     "urn:fz-juelich.de:alpaca:object:Python:builtins.list:3333332",
-                     "urn:fz-juelich.de:alpaca:object:Python:test.InputObject:12345")):
+                     "urn:my-authority:alpaca:object:Python:builtins.list:3333332",
+                     "urn:my-authority:alpaca:object:Python:test.InputObject:12345")):
             self.assertFalse(edge in graph.graph.edges)
 
         expected_edge = (
-        "urn:fz-juelich.de:alpaca:object:Python:test.SuperContainer:2333333",
-        "urn:fz-juelich.de:alpaca:object:Python:test.InputObject:12345")
+        "urn:my-authority:alpaca:object:Python:test.SuperContainer:2333333",
+        "urn:my-authority:alpaca:object:Python:test.InputObject:12345")
 
         expected_label = ".containers[0].inputs[1]"
 
@@ -180,37 +180,37 @@ class ProvenanceGraphTestCase(unittest.TestCase):
         self.assertEqual(len(graph.graph.nodes), 5)
 
         for node in (
-        "urn:fz-juelich.de:alpaca:object:Python:test.InputObject:12345",
-        "urn:fz-juelich.de:alpaca:object:Python:test.SuperContainer:2333333",
-        "urn:fz-juelich.de:alpaca:object:Python:test.Container:333333"):
+        "urn:my-authority:alpaca:object:Python:test.InputObject:12345",
+        "urn:my-authority:alpaca:object:Python:test.SuperContainer:2333333",
+        "urn:my-authority:alpaca:object:Python:test.Container:333333"):
             self.assertTrue(node in graph.graph.nodes)
 
         for node in (
-        "urn:fz-juelich.de:alpaca:object:Python:builtins.list:3333332",
-        "urn:fz-juelich.de:alpaca:object:Python:builtins.list:23333332"):
+        "urn:my-authority:alpaca:object:Python:builtins.list:3333332",
+        "urn:my-authority:alpaca:object:Python:builtins.list:23333332"):
             self.assertFalse(node in graph.graph.nodes)
 
         for edge in ((
-                     "urn:fz-juelich.de:alpaca:object:Python:test.SuperContainer:2333333",
-                     "urn:fz-juelich.de:alpaca:object:Python:builtins.list:23333332"),
+                     "urn:my-authority:alpaca:object:Python:test.SuperContainer:2333333",
+                     "urn:my-authority:alpaca:object:Python:builtins.list:23333332"),
                      (
-                     "urn:fz-juelich.de:alpaca:object:Python:builtins.list:23333332",
-                     "urn:fz-juelich.de:alpaca:object:Python:test.Container:333333"),
+                     "urn:my-authority:alpaca:object:Python:builtins.list:23333332",
+                     "urn:my-authority:alpaca:object:Python:test.Container:333333"),
                      (
-                     "urn:fz-juelich.de:alpaca:object:Python:test.Container:333333",
-                     "urn:fz-juelich.de:alpaca:object:Python:builtins.list:3333332"),
+                     "urn:my-authority:alpaca:object:Python:test.Container:333333",
+                     "urn:my-authority:alpaca:object:Python:builtins.list:3333332"),
                      (
-                     "urn:fz-juelich.de:alpaca:object:Python:builtins.list:3333332",
-                     "urn:fz-juelich.de:alpaca:object:Python:test.InputObject:12345")):
+                     "urn:my-authority:alpaca:object:Python:builtins.list:3333332",
+                     "urn:my-authority:alpaca:object:Python:test.InputObject:12345")):
             self.assertFalse(edge in graph.graph.edges)
 
         for expected_edge, expected_label in zip(
                 ((
-                 "urn:fz-juelich.de:alpaca:object:Python:test.SuperContainer:2333333",
-                 "urn:fz-juelich.de:alpaca:object:Python:test.Container:333333"),
+                 "urn:my-authority:alpaca:object:Python:test.SuperContainer:2333333",
+                 "urn:my-authority:alpaca:object:Python:test.Container:333333"),
                  (
-                 "urn:fz-juelich.de:alpaca:object:Python:test.Container:333333",
-                 "urn:fz-juelich.de:alpaca:object:Python:test.InputObject:12345")),
+                 "urn:my-authority:alpaca:object:Python:test.Container:333333",
+                 "urn:my-authority:alpaca:object:Python:test.InputObject:12345")),
                 (".containers[0]", ".inputs[1]")):
             self.assertTrue(expected_edge in graph.graph.edges)
             self.assertTrue(graph.graph.edges[expected_edge]['membership'])
@@ -223,7 +223,7 @@ class ProvenanceGraphTestCase(unittest.TestCase):
         graph = ProvenanceGraph(input_file, attributes=['name'],
                                 annotations=['sua'], strip_namespace=True)
         node_attrs = graph.graph.nodes[
-            "urn:fz-juelich.de:alpaca:object:Python:neo.core.SpikeTrain:54321"]
+            "urn:my-authority:alpaca:object:Python:neo.core.SpikeTrain:54321"]
 
         self.assertEqual(node_attrs["name"], "Spiketrain#1")
         self.assertEqual(node_attrs["sua"], "false")
@@ -235,7 +235,7 @@ class ProvenanceGraphTestCase(unittest.TestCase):
                                 annotations=None,
                                 use_class_in_method_name=True)
         node_attrs = graph.graph.nodes[
-            "urn:fz-juelich.de:alpaca:function_execution:Python:111111:999999:test.ObjectWithMethod.process#12345"]
+            "urn:my-authority:alpaca:function_execution:Python:111111:999999:test.ObjectWithMethod.process#12345"]
 
         self.assertEqual(node_attrs["label"], "ObjectWithMethod.process")
 
@@ -246,7 +246,7 @@ class ProvenanceGraphTestCase(unittest.TestCase):
                                 annotations=None,
                                 use_class_in_method_name=False)
         node_attrs = graph.graph.nodes[
-            "urn:fz-juelich.de:alpaca:function_execution:Python:111111:999999:test.ObjectWithMethod.process#12345"]
+            "urn:my-authority:alpaca:function_execution:Python:111111:999999:test.ObjectWithMethod.process#12345"]
 
         self.assertEqual(node_attrs["label"], "process")
 
@@ -256,7 +256,7 @@ class ProvenanceGraphTestCase(unittest.TestCase):
         graph = ProvenanceGraph(input_file, attributes=['name'],
                                 annotations=['sua'], strip_namespace=False)
         node_attrs = graph.graph.nodes[
-            "urn:fz-juelich.de:alpaca:object:Python:neo.core.SpikeTrain:54321"]
+            "urn:my-authority:alpaca:object:Python:neo.core.SpikeTrain:54321"]
 
         self.assertEqual(node_attrs["attribute:name"], "Spiketrain#1")
         self.assertEqual(node_attrs["annotation:sua"], "false")
@@ -266,7 +266,7 @@ class ProvenanceGraphTestCase(unittest.TestCase):
         graph = ProvenanceGraph(input_file, attributes=['metadata_2'])
 
         node_attrs = graph.graph.nodes[
-            "urn:fz-juelich.de:alpaca:object:Python:test.InputObject:12345"]
+            "urn:my-authority:alpaca:object:Python:test.InputObject:12345"]
 
         self.assertEqual(node_attrs["metadata_2"], "5")
 
@@ -274,7 +274,7 @@ class ProvenanceGraphTestCase(unittest.TestCase):
             self.assertTrue(annotation not in node_attrs)
 
         node_attrs = graph.graph.nodes[
-            "urn:fz-juelich.de:alpaca:object:Python:neo.core.SpikeTrain:54321"]
+            "urn:my-authority:alpaca:object:Python:neo.core.SpikeTrain:54321"]
 
         self.assertTrue("name" not in node_attrs)
 
@@ -283,7 +283,7 @@ class ProvenanceGraphTestCase(unittest.TestCase):
         graph = ProvenanceGraph(input_file, annotations=['sua'])
 
         node_attrs = graph.graph.nodes[
-            "urn:fz-juelich.de:alpaca:object:Python:neo.core.SpikeTrain:54321"]
+            "urn:my-authority:alpaca:object:Python:neo.core.SpikeTrain:54321"]
 
         self.assertEqual(node_attrs['sua'], "false")
 
@@ -294,14 +294,14 @@ class ProvenanceGraphTestCase(unittest.TestCase):
         input_file = self.ttl_path / "metadata.ttl"
         graph = ProvenanceGraph(input_file, annotations='all')
 
-        annotations_node = "urn:fz-juelich.de:alpaca:object:Python:neo.core.SpikeTrain:54321"
+        annotations_node = "urn:my-authority:alpaca:object:Python:neo.core.SpikeTrain:54321"
 
         expected_annotations = {"sua": "false",
                                 "channel": "56",
                                 "complexity": "[0 1 2 3]",
                                 "event": "[ True False False]"}
 
-        attributes_node = "urn:fz-juelich.de:alpaca:object:Python:test.InputObject:12345"
+        attributes_node = "urn:my-authority:alpaca:object:Python:test.InputObject:12345"
 
         expected_attributes = {"metadata_1": "value1",
                                "metadata_2": "5",
@@ -321,14 +321,14 @@ class ProvenanceGraphTestCase(unittest.TestCase):
         input_file = self.ttl_path / "metadata.ttl"
         graph = ProvenanceGraph(input_file, attributes='all')
 
-        annotations_node = "urn:fz-juelich.de:alpaca:object:Python:neo.core.SpikeTrain:54321"
+        annotations_node = "urn:my-authority:alpaca:object:Python:neo.core.SpikeTrain:54321"
 
         expected_annotations = {"sua": "false",
                                 "channel": "56",
                                 "complexity": "[0 1 2 3]",
                                 "event": "[ True False False]"}
 
-        attributes_node = "urn:fz-juelich.de:alpaca:object:Python:test.InputObject:12345"
+        attributes_node = "urn:my-authority:alpaca:object:Python:test.InputObject:12345"
 
         expected_attributes = {"metadata_1": "value1",
                                "metadata_2": "5",

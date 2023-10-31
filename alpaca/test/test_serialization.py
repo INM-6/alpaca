@@ -81,7 +81,7 @@ class AlpacaProvSerializationTestCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.ttl_path = Path(__file__).parent / "res"
-        alpaca_setting('authority', "fz-juelich.de")
+        alpaca_setting('authority', "my-authority")
 
     def test_input_output_serialization(self):
         function_execution = FunctionExecution(
@@ -325,7 +325,7 @@ class SerializationIOTestCase(unittest.TestCase):
         cls.alpaca_prov = AlpacaProvDocument()
         cls.alpaca_prov.add_history(SCRIPT_INFO, SCRIPT_SESSION_ID,
                                     history=[function_execution])
-        alpaca_setting('authority', "fz-juelich.de")
+        alpaca_setting('authority', "my-authority")
 
     def test_serialization_deserialization(self):
 
@@ -430,7 +430,7 @@ class MultipleMembershipSerializationTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        alpaca_setting('authority', "fz-juelich.de")
+        alpaca_setting('authority', "my-authority")
 
     def test_multiple_memberships(self):
         # test relationship `super_container.containers[0].inputs[1]`

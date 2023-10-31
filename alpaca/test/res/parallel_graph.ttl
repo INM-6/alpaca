@@ -1,11 +1,11 @@
-@prefix alpaca: <http://purl.org/alpaca#> .
+@prefix alpaca: <http://alpaca#> .
 @prefix prov: <http://www.w3.org/ns/prov#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-<urn:fz-juelich.de:alpaca:object:Python:__main__.OutputObject:3934c99ea6197963f4bc7413932f6ce6dd800b08> a alpaca:DataObjectEntity ;
-    prov:wasAttributedTo <urn:fz-juelich.de:alpaca:script:Python:test_graph.py:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393#13495a29-65e6-4853-90b1-05bb4dba9040> ;
-    prov:wasDerivedFrom <urn:fz-juelich.de:alpaca:object:Python:__main__.InputObject:eed23509f67bfc5dd108fe361ce57a1b9737a286> ;
-    prov:wasGeneratedBy <urn:fz-juelich.de:alpaca:function_execution:Python:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393:13495a29-65e6-4853-90b1-05bb4dba9040:__main__.process#7e3565c0-4313-4229-a0dc-8fa81e4301a1> ;
+<urn:my-authority:alpaca:object:Python:__main__.OutputObject:3934c99ea6197963f4bc7413932f6ce6dd800b08> a alpaca:DataObjectEntity ;
+    prov:wasAttributedTo <urn:my-authority:alpaca:script:Python:test_graph.py:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393#13495a29-65e6-4853-90b1-05bb4dba9040> ;
+    prov:wasDerivedFrom <urn:my-authority:alpaca:object:Python:__main__.InputObject:eed23509f67bfc5dd108fe361ce57a1b9737a286> ;
+    prov:wasGeneratedBy <urn:my-authority:alpaca:function_execution:Python:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393:13495a29-65e6-4853-90b1-05bb4dba9040:__main__.process#7e3565c0-4313-4229-a0dc-8fa81e4301a1> ;
     alpaca:hasAttribute [ a alpaca:NameValuePair ;
             alpaca:pairName "metadata" ;
             alpaca:pairValue 0 ],
@@ -14,10 +14,10 @@
             alpaca:pairValue "(4,)" ] ;
     alpaca:hashSource "joblib_SHA1" .
 
-<urn:fz-juelich.de:alpaca:object:Python:__main__.OutputObject:4ef19b49bcf029faae5349020a54096d53398c95> a alpaca:DataObjectEntity ;
-    prov:wasAttributedTo <urn:fz-juelich.de:alpaca:script:Python:test_graph.py:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393#13495a29-65e6-4853-90b1-05bb4dba9040> ;
-    prov:wasDerivedFrom <urn:fz-juelich.de:alpaca:object:Python:__main__.InputObject:b443853aa145342288afaae4f68b6b421683f411> ;
-    prov:wasGeneratedBy <urn:fz-juelich.de:alpaca:function_execution:Python:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393:13495a29-65e6-4853-90b1-05bb4dba9040:__main__.process#3dbe5e02-a5e6-48b6-8cb8-e3f0447d7a40> ;
+<urn:my-authority:alpaca:object:Python:__main__.OutputObject:4ef19b49bcf029faae5349020a54096d53398c95> a alpaca:DataObjectEntity ;
+    prov:wasAttributedTo <urn:my-authority:alpaca:script:Python:test_graph.py:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393#13495a29-65e6-4853-90b1-05bb4dba9040> ;
+    prov:wasDerivedFrom <urn:my-authority:alpaca:object:Python:__main__.InputObject:b443853aa145342288afaae4f68b6b421683f411> ;
+    prov:wasGeneratedBy <urn:my-authority:alpaca:function_execution:Python:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393:13495a29-65e6-4853-90b1-05bb4dba9040:__main__.process#3dbe5e02-a5e6-48b6-8cb8-e3f0447d7a40> ;
     alpaca:hasAttribute [ a alpaca:NameValuePair ;
             alpaca:pairName "shape" ;
             alpaca:pairValue "(2,)" ],
@@ -26,10 +26,10 @@
             alpaca:pairValue 0 ] ;
     alpaca:hashSource "joblib_SHA1" .
 
-<urn:fz-juelich.de:alpaca:object:Python:__main__.OutputObject:93f4a32cb869a3e115e3382fd0fd49ab4ea0c8df> a alpaca:DataObjectEntity ;
-    prov:wasAttributedTo <urn:fz-juelich.de:alpaca:script:Python:test_graph.py:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393#13495a29-65e6-4853-90b1-05bb4dba9040> ;
-    prov:wasDerivedFrom <urn:fz-juelich.de:alpaca:object:Python:__main__.InputObject:84fa33edca00abb3c664c3b994e455ae10fbefa1> ;
-    prov:wasGeneratedBy <urn:fz-juelich.de:alpaca:function_execution:Python:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393:13495a29-65e6-4853-90b1-05bb4dba9040:__main__.process#f635dbb8-ad01-4c3d-99ca-5496940143cc> ;
+<urn:my-authority:alpaca:object:Python:__main__.OutputObject:93f4a32cb869a3e115e3382fd0fd49ab4ea0c8df> a alpaca:DataObjectEntity ;
+    prov:wasAttributedTo <urn:my-authority:alpaca:script:Python:test_graph.py:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393#13495a29-65e6-4853-90b1-05bb4dba9040> ;
+    prov:wasDerivedFrom <urn:my-authority:alpaca:object:Python:__main__.InputObject:84fa33edca00abb3c664c3b994e455ae10fbefa1> ;
+    prov:wasGeneratedBy <urn:my-authority:alpaca:function_execution:Python:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393:13495a29-65e6-4853-90b1-05bb4dba9040:__main__.process#f635dbb8-ad01-4c3d-99ca-5496940143cc> ;
     alpaca:hasAttribute [ a alpaca:NameValuePair ;
             alpaca:pairName "metadata" ;
             alpaca:pairValue 1 ],
@@ -38,10 +38,10 @@
             alpaca:pairValue "(3,)" ] ;
     alpaca:hashSource "joblib_SHA1" .
 
-<urn:fz-juelich.de:alpaca:object:Python:__main__.OutputObject:97ce94acf4ec4e2cb7d1319b798dbdd187df9558> a alpaca:DataObjectEntity ;
-    prov:wasAttributedTo <urn:fz-juelich.de:alpaca:script:Python:test_graph.py:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393#13495a29-65e6-4853-90b1-05bb4dba9040> ;
-    prov:wasDerivedFrom <urn:fz-juelich.de:alpaca:object:Python:__main__.InputObject:9dbee0f2b42ba928138d4eb3cc3059f2d7086716> ;
-    prov:wasGeneratedBy <urn:fz-juelich.de:alpaca:function_execution:Python:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393:13495a29-65e6-4853-90b1-05bb4dba9040:__main__.process#6ef55dd9-35f5-4519-aed5-80906c7fa341> ;
+<urn:my-authority:alpaca:object:Python:__main__.OutputObject:97ce94acf4ec4e2cb7d1319b798dbdd187df9558> a alpaca:DataObjectEntity ;
+    prov:wasAttributedTo <urn:my-authority:alpaca:script:Python:test_graph.py:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393#13495a29-65e6-4853-90b1-05bb4dba9040> ;
+    prov:wasDerivedFrom <urn:my-authority:alpaca:object:Python:__main__.InputObject:9dbee0f2b42ba928138d4eb3cc3059f2d7086716> ;
+    prov:wasGeneratedBy <urn:my-authority:alpaca:function_execution:Python:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393:13495a29-65e6-4853-90b1-05bb4dba9040:__main__.process#6ef55dd9-35f5-4519-aed5-80906c7fa341> ;
     alpaca:hasAttribute [ a alpaca:NameValuePair ;
             alpaca:pairName "metadata" ;
             alpaca:pairValue 1 ],
@@ -50,64 +50,64 @@
             alpaca:pairValue "(5,)" ] ;
     alpaca:hashSource "joblib_SHA1" .
 
-<urn:fz-juelich.de:alpaca:object:Python:builtins.list:f801594e5cebdc73ba8815e8ad66cab5cd86d2bf> a alpaca:DataObjectEntity ;
-    prov:hadMember <urn:fz-juelich.de:alpaca:object:Python:__main__.InputObject:84fa33edca00abb3c664c3b994e455ae10fbefa1>,
-        <urn:fz-juelich.de:alpaca:object:Python:__main__.InputObject:9dbee0f2b42ba928138d4eb3cc3059f2d7086716>,
-        <urn:fz-juelich.de:alpaca:object:Python:__main__.InputObject:b443853aa145342288afaae4f68b6b421683f411>,
-        <urn:fz-juelich.de:alpaca:object:Python:__main__.InputObject:eed23509f67bfc5dd108fe361ce57a1b9737a286> ;
-    prov:wasAttributedTo <urn:fz-juelich.de:alpaca:script:Python:test_graph.py:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393#13495a29-65e6-4853-90b1-05bb4dba9040> ;
+<urn:my-authority:alpaca:object:Python:builtins.list:f801594e5cebdc73ba8815e8ad66cab5cd86d2bf> a alpaca:DataObjectEntity ;
+    prov:hadMember <urn:my-authority:alpaca:object:Python:__main__.InputObject:84fa33edca00abb3c664c3b994e455ae10fbefa1>,
+        <urn:my-authority:alpaca:object:Python:__main__.InputObject:9dbee0f2b42ba928138d4eb3cc3059f2d7086716>,
+        <urn:my-authority:alpaca:object:Python:__main__.InputObject:b443853aa145342288afaae4f68b6b421683f411>,
+        <urn:my-authority:alpaca:object:Python:__main__.InputObject:eed23509f67bfc5dd108fe361ce57a1b9737a286> ;
+    prov:wasAttributedTo <urn:my-authority:alpaca:script:Python:test_graph.py:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393#13495a29-65e6-4853-90b1-05bb4dba9040> ;
     alpaca:hashSource "joblib_SHA1" .
 
-<urn:fz-juelich.de:alpaca:function_execution:Python:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393:13495a29-65e6-4853-90b1-05bb4dba9040:__main__.process#3dbe5e02-a5e6-48b6-8cb8-e3f0447d7a40> a alpaca:FunctionExecution ;
+<urn:my-authority:alpaca:function_execution:Python:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393:13495a29-65e6-4853-90b1-05bb4dba9040:__main__.process#3dbe5e02-a5e6-48b6-8cb8-e3f0447d7a40> a alpaca:FunctionExecution ;
     prov:endedAtTime "2022-12-01T13:28:46.723219"^^xsd:dateTime ;
     prov:startedAtTime "2022-12-01T13:28:46.722373"^^xsd:dateTime ;
-    prov:used <urn:fz-juelich.de:alpaca:object:Python:__main__.InputObject:b443853aa145342288afaae4f68b6b421683f411> ;
-    prov:wasAssociatedWith <urn:fz-juelich.de:alpaca:script:Python:test_graph.py:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393#13495a29-65e6-4853-90b1-05bb4dba9040> ;
+    prov:used <urn:my-authority:alpaca:object:Python:__main__.InputObject:b443853aa145342288afaae4f68b6b421683f411> ;
+    prov:wasAssociatedWith <urn:my-authority:alpaca:script:Python:test_graph.py:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393#13495a29-65e6-4853-90b1-05bb4dba9040> ;
     alpaca:codeStatement "res = process(items[index], index)" ;
     alpaca:executionOrder 1 ;
     alpaca:hasParameter [ a alpaca:NameValuePair ;
             alpaca:pairName "value" ;
             alpaca:pairValue 0 ] ;
-    alpaca:usedFunction <urn:fz-juelich.de:alpaca:function:Python:__main__.process> .
+    alpaca:usedFunction <urn:my-authority:alpaca:function:Python:__main__.process> .
 
-<urn:fz-juelich.de:alpaca:function_execution:Python:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393:13495a29-65e6-4853-90b1-05bb4dba9040:__main__.process#6ef55dd9-35f5-4519-aed5-80906c7fa341> a alpaca:FunctionExecution ;
+<urn:my-authority:alpaca:function_execution:Python:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393:13495a29-65e6-4853-90b1-05bb4dba9040:__main__.process#6ef55dd9-35f5-4519-aed5-80906c7fa341> a alpaca:FunctionExecution ;
     prov:endedAtTime "2022-12-01T13:28:46.724807"^^xsd:dateTime ;
     prov:startedAtTime "2022-12-01T13:28:46.724328"^^xsd:dateTime ;
-    prov:used <urn:fz-juelich.de:alpaca:object:Python:__main__.InputObject:9dbee0f2b42ba928138d4eb3cc3059f2d7086716> ;
-    prov:wasAssociatedWith <urn:fz-juelich.de:alpaca:script:Python:test_graph.py:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393#13495a29-65e6-4853-90b1-05bb4dba9040> ;
+    prov:used <urn:my-authority:alpaca:object:Python:__main__.InputObject:9dbee0f2b42ba928138d4eb3cc3059f2d7086716> ;
+    prov:wasAssociatedWith <urn:my-authority:alpaca:script:Python:test_graph.py:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393#13495a29-65e6-4853-90b1-05bb4dba9040> ;
     alpaca:codeStatement "res = process(items[index], index)" ;
     alpaca:executionOrder 4 ;
     alpaca:hasParameter [ a alpaca:NameValuePair ;
             alpaca:pairName "value" ;
             alpaca:pairValue 3 ] ;
-    alpaca:usedFunction <urn:fz-juelich.de:alpaca:function:Python:__main__.process> .
+    alpaca:usedFunction <urn:my-authority:alpaca:function:Python:__main__.process> .
 
-<urn:fz-juelich.de:alpaca:function_execution:Python:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393:13495a29-65e6-4853-90b1-05bb4dba9040:__main__.process#7e3565c0-4313-4229-a0dc-8fa81e4301a1> a alpaca:FunctionExecution ;
+<urn:my-authority:alpaca:function_execution:Python:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393:13495a29-65e6-4853-90b1-05bb4dba9040:__main__.process#7e3565c0-4313-4229-a0dc-8fa81e4301a1> a alpaca:FunctionExecution ;
     prov:endedAtTime "2022-12-01T13:28:46.724284"^^xsd:dateTime ;
     prov:startedAtTime "2022-12-01T13:28:46.723807"^^xsd:dateTime ;
-    prov:used <urn:fz-juelich.de:alpaca:object:Python:__main__.InputObject:eed23509f67bfc5dd108fe361ce57a1b9737a286> ;
-    prov:wasAssociatedWith <urn:fz-juelich.de:alpaca:script:Python:test_graph.py:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393#13495a29-65e6-4853-90b1-05bb4dba9040> ;
+    prov:used <urn:my-authority:alpaca:object:Python:__main__.InputObject:eed23509f67bfc5dd108fe361ce57a1b9737a286> ;
+    prov:wasAssociatedWith <urn:my-authority:alpaca:script:Python:test_graph.py:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393#13495a29-65e6-4853-90b1-05bb4dba9040> ;
     alpaca:codeStatement "res = process(items[index], index)" ;
     alpaca:executionOrder 3 ;
     alpaca:hasParameter [ a alpaca:NameValuePair ;
             alpaca:pairName "value" ;
             alpaca:pairValue 2 ] ;
-    alpaca:usedFunction <urn:fz-juelich.de:alpaca:function:Python:__main__.process> .
+    alpaca:usedFunction <urn:my-authority:alpaca:function:Python:__main__.process> .
 
-<urn:fz-juelich.de:alpaca:function_execution:Python:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393:13495a29-65e6-4853-90b1-05bb4dba9040:__main__.process#f635dbb8-ad01-4c3d-99ca-5496940143cc> a alpaca:FunctionExecution ;
+<urn:my-authority:alpaca:function_execution:Python:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393:13495a29-65e6-4853-90b1-05bb4dba9040:__main__.process#f635dbb8-ad01-4c3d-99ca-5496940143cc> a alpaca:FunctionExecution ;
     prov:endedAtTime "2022-12-01T13:28:46.723763"^^xsd:dateTime ;
     prov:startedAtTime "2022-12-01T13:28:46.723265"^^xsd:dateTime ;
-    prov:used <urn:fz-juelich.de:alpaca:object:Python:__main__.InputObject:84fa33edca00abb3c664c3b994e455ae10fbefa1> ;
-    prov:wasAssociatedWith <urn:fz-juelich.de:alpaca:script:Python:test_graph.py:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393#13495a29-65e6-4853-90b1-05bb4dba9040> ;
+    prov:used <urn:my-authority:alpaca:object:Python:__main__.InputObject:84fa33edca00abb3c664c3b994e455ae10fbefa1> ;
+    prov:wasAssociatedWith <urn:my-authority:alpaca:script:Python:test_graph.py:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393#13495a29-65e6-4853-90b1-05bb4dba9040> ;
     alpaca:codeStatement "res = process(items[index], index)" ;
     alpaca:executionOrder 2 ;
     alpaca:hasParameter [ a alpaca:NameValuePair ;
             alpaca:pairName "value" ;
             alpaca:pairValue 1 ] ;
-    alpaca:usedFunction <urn:fz-juelich.de:alpaca:function:Python:__main__.process> .
+    alpaca:usedFunction <urn:my-authority:alpaca:function:Python:__main__.process> .
 
-<urn:fz-juelich.de:alpaca:object:Python:__main__.InputObject:84fa33edca00abb3c664c3b994e455ae10fbefa1> a alpaca:DataObjectEntity ;
-    prov:wasAttributedTo <urn:fz-juelich.de:alpaca:script:Python:test_graph.py:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393#13495a29-65e6-4853-90b1-05bb4dba9040> ;
+<urn:my-authority:alpaca:object:Python:__main__.InputObject:84fa33edca00abb3c664c3b994e455ae10fbefa1> a alpaca:DataObjectEntity ;
+    prov:wasAttributedTo <urn:my-authority:alpaca:script:Python:test_graph.py:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393#13495a29-65e6-4853-90b1-05bb4dba9040> ;
     alpaca:containerIndex 1 ;
     alpaca:hasAttribute [ a alpaca:NameValuePair ;
             alpaca:pairName "shape" ;
@@ -117,8 +117,8 @@
             alpaca:pairValue 5 ] ;
     alpaca:hashSource "joblib_SHA1" .
 
-<urn:fz-juelich.de:alpaca:object:Python:__main__.InputObject:9dbee0f2b42ba928138d4eb3cc3059f2d7086716> a alpaca:DataObjectEntity ;
-    prov:wasAttributedTo <urn:fz-juelich.de:alpaca:script:Python:test_graph.py:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393#13495a29-65e6-4853-90b1-05bb4dba9040> ;
+<urn:my-authority:alpaca:object:Python:__main__.InputObject:9dbee0f2b42ba928138d4eb3cc3059f2d7086716> a alpaca:DataObjectEntity ;
+    prov:wasAttributedTo <urn:my-authority:alpaca:script:Python:test_graph.py:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393#13495a29-65e6-4853-90b1-05bb4dba9040> ;
     alpaca:containerIndex 3 ;
     alpaca:hasAttribute [ a alpaca:NameValuePair ;
             alpaca:pairName "metadata" ;
@@ -128,8 +128,8 @@
             alpaca:pairValue "(5,)" ] ;
     alpaca:hashSource "joblib_SHA1" .
 
-<urn:fz-juelich.de:alpaca:object:Python:__main__.InputObject:b443853aa145342288afaae4f68b6b421683f411> a alpaca:DataObjectEntity ;
-    prov:wasAttributedTo <urn:fz-juelich.de:alpaca:script:Python:test_graph.py:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393#13495a29-65e6-4853-90b1-05bb4dba9040> ;
+<urn:my-authority:alpaca:object:Python:__main__.InputObject:b443853aa145342288afaae4f68b6b421683f411> a alpaca:DataObjectEntity ;
+    prov:wasAttributedTo <urn:my-authority:alpaca:script:Python:test_graph.py:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393#13495a29-65e6-4853-90b1-05bb4dba9040> ;
     alpaca:containerIndex 0 ;
     alpaca:hasAttribute [ a alpaca:NameValuePair ;
             alpaca:pairName "metadata" ;
@@ -139,8 +139,8 @@
             alpaca:pairValue "(2,)" ] ;
     alpaca:hashSource "joblib_SHA1" .
 
-<urn:fz-juelich.de:alpaca:object:Python:__main__.InputObject:eed23509f67bfc5dd108fe361ce57a1b9737a286> a alpaca:DataObjectEntity ;
-    prov:wasAttributedTo <urn:fz-juelich.de:alpaca:script:Python:test_graph.py:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393#13495a29-65e6-4853-90b1-05bb4dba9040> ;
+<urn:my-authority:alpaca:object:Python:__main__.InputObject:eed23509f67bfc5dd108fe361ce57a1b9737a286> a alpaca:DataObjectEntity ;
+    prov:wasAttributedTo <urn:my-authority:alpaca:script:Python:test_graph.py:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393#13495a29-65e6-4853-90b1-05bb4dba9040> ;
     alpaca:containerIndex 2 ;
     alpaca:hasAttribute [ a alpaca:NameValuePair ;
             alpaca:pairName "shape" ;
@@ -150,10 +150,10 @@
             alpaca:pairValue 5 ] ;
     alpaca:hashSource "joblib_SHA1" .
 
-<urn:fz-juelich.de:alpaca:function:Python:__main__.process> a alpaca:Function ;
+<urn:my-authority:alpaca:function:Python:__main__.process> a alpaca:Function ;
     alpaca:functionName "process" ;
     alpaca:functionVersion "" ;
     alpaca:implementedIn "__main__" .
 
-<urn:fz-juelich.de:alpaca:script:Python:test_graph.py:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393#13495a29-65e6-4853-90b1-05bb4dba9040> a alpaca:ScriptAgent ;
+<urn:my-authority:alpaca:script:Python:test_graph.py:4ff615bf10e589799a96729fdf19df67dc8b5fb03090a934107074b5c09b5393#13495a29-65e6-4853-90b1-05bb4dba9040> a alpaca:ScriptAgent ;
     alpaca:scriptPath "/test_graph.py" .

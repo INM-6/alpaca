@@ -21,7 +21,7 @@ def get_base_urn(authority):
     return f"urn:{authority}:alpaca"
 
 
-# <urn:fz-juelich.de:alpaca:object:Python:neo.core.AnalogSignal:423423432432423432432>
+# <urn:my-authority:alpaca:object:Python:neo.core.AnalogSignal:423423432432423432432>
 def data_object_identifier(object_info, authority):
     object_hash = object_info.hash
     type_string = object_info.type
@@ -29,7 +29,7 @@ def data_object_identifier(object_info, authority):
     return urn
 
 
-# <urn:fz-juelich.de:alpaca:file:sha256:234234324324324324234324>
+# <urn:my-authority:alpaca:file:sha256:234234324324324324234324>
 def file_identifier(file_info, authority):
     hash_type = file_info.hash_type
     file_hash = file_info.hash
@@ -45,14 +45,14 @@ def _get_function_name(function_info):
     return function_name
 
 
-# <urn:fz-juelich.de:alpaca:function:Python:elephant.spectral.welch_psd>
+# <urn:my-authority:alpaca:function:Python:elephant.spectral.welch_psd>
 def function_identifier(function_info, authority):
     function_name = _get_function_name(function_info)
     urn = f"{get_base_urn(authority)}:{NSS_FUNCTION}:Python:{function_name}"
     return urn
 
 
-# <urn:fz-juelich.de:alpaca:script:Python:run_psd.py:f32432j34k24#4567-4567-dflsd4-dfdsfs>
+# <urn:my-authority:alpaca:script:Python:run_psd.py:f32432j34k24#4567-4567-dflsd4-dfdsfs>
 def script_identifier(script_info, session_id, authority):
     script_name = pathlib.Path(script_info.path).name
     urn = f"{get_base_urn(authority)}:{NSS_SCRIPT}:Python:{script_name}:" \
