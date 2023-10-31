@@ -14,7 +14,7 @@ with open('requirements/requirements.txt') as fp:
 
 
 setup(
-    name="alpaca-prov",
+    name="hidden",
     version=version,
     packages=['alpaca', 'alpaca.utils', 'alpaca.serialization',
               'alpaca.ontology', 'alpaca.code_analysis'],
