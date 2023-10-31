@@ -53,20 +53,20 @@ Installation
 
            .. code-block:: sh
 
-              pip install alpaca-prov
+              pip install [name redacted for double-blind review]
 
         To upgrade to a newer release use the ``--upgrade`` flag:
 
            .. code-block:: sh
 
-              pip install --upgrade alpaca-prov
+              pip install --upgrade [name redacted for double-blind review]
 
         If you do not have permission to install software systemwide, you can
         install into your user directory using the ``--user`` flag:
 
            .. code-block:: sh
 
-              pip install --user alpaca-prov
+              pip install --user [name redacted for double-blind review]
 
 
     .. tab:: Development version
@@ -79,13 +79,13 @@ Installation
 
            .. code-block:: sh
 
-              pip uninstall alpaca-prov
+              pip uninstall [name redacted for double-blind review]
 
         2. Clone the repository install the local version:
 
            .. code-block:: sh
 
-              git clone git://github.com/INM-6/alpaca.git
+              git clone [URL redacted for double-blind review]
               cd alpaca
               pip install -e .
 
@@ -112,7 +112,7 @@ Dependencies
 ------------
 
 Alpaca relies on the following packages (automatically installed when you
-run ``pip install alpaca-prov``):
+run ``pip install [name redacted for double-blind review]``):
 
     * `rdflib <https://pypi.org/project/rdflib/>`_ - working with RDF
     * `networkx <https://pypi.org/project/networkx/>`_ - representation and manipulation of graphs in Python

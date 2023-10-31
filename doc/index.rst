@@ -16,7 +16,7 @@ Examples are provided for the analysis of electrophysiology data, using the
 open source packages `Neo <https://neuralensemble.org/neo>`_ and
 `Elephant <https://python-elephant.org>`_.
 
-Visit the `project page on GitHub <https://github.com/INM-6/alpaca>`_, to
+Visit the `project page on GitHub [URL redacted for double-blind review]`_, to
 report bugs and issues, or to make contributions to the source code.
 
 

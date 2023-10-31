@@ -1,4 +1,4 @@
-@prefix : <http://purl.org/alpaca#> .
+@prefix : <http://alpaca#> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix xml: <http://www.w3.org/XML/1998/namespace> .
@@ -6,11 +6,11 @@
 @prefix prov: <http://www.w3.org/ns/prov#> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix dcterms: <http://purl.org/dc/terms/> .
-@base <http://purl.org/alpaca#> .
+@base <http://alpaca#> .
 
-<http://purl.org/alpaca#> rdf:type owl:Ontology ;
+<http://alpaca#> rdf:type owl:Ontology ;
                            owl:imports <http://www.w3.org/ns/prov-o-20130430> ;
-                           dcterms:creator "Cristiano Köhler (c.koehler@fz-juelich.de)" ;
+                           dcterms:creator "redacted for double-blind review" ;
                            rdfs:comment "An extension to PROV-O to support the serialization of provenance information captured with Alpaca as RDF triples."@en ;
                            owl:versionInfo "0.1.0" .
 
@@ -26,7 +26,7 @@ dcterms:creator rdf:type owl:AnnotationProperty .
 #    Object Properties
 #################################################################
 
-###  http://purl.org/alpaca#hasAnnotation
+###  http://alpaca#hasAnnotation
 :hasAnnotation rdf:type owl:ObjectProperty ;
                rdfs:subPropertyOf owl:topObjectProperty ;
                rdfs:domain :DataObjectEntity ;
@@ -35,7 +35,7 @@ dcterms:creator rdf:type owl:AnnotationProperty .
                rdfs:label "has annotation"@en .
 
 
-###  http://purl.org/alpaca#hasAttribute
+###  http://alpaca#hasAttribute
 :hasAttribute rdf:type owl:ObjectProperty ;
               rdfs:subPropertyOf owl:topObjectProperty ;
               rdfs:domain :DataObjectEntity ;
@@ -44,7 +44,7 @@ dcterms:creator rdf:type owl:AnnotationProperty .
               rdfs:label "has attribute"@en .
 
 
-###  http://purl.org/alpaca#hasParameter
+###  http://alpaca#hasParameter
 :hasParameter rdf:type owl:ObjectProperty ;
               rdfs:subPropertyOf owl:topObjectProperty ;
               rdfs:domain :FunctionExecution ;
@@ -53,7 +53,7 @@ dcterms:creator rdf:type owl:AnnotationProperty .
               rdfs:label "has parameter"@en .
 
 
-###  http://purl.org/alpaca#usedFunction
+###  http://alpaca#usedFunction
 :usedFunction rdf:type owl:ObjectProperty ;
               rdfs:domain :FunctionExecution ;
               rdfs:range :Function ;
@@ -65,7 +65,7 @@ dcterms:creator rdf:type owl:AnnotationProperty .
 #    Data properties
 #################################################################
 
-###  http://purl.org/alpaca#codeStatement
+###  http://alpaca#codeStatement
 :codeStatement rdf:type owl:DatatypeProperty ;
                rdfs:domain :FunctionExecution ;
                rdfs:range xsd:string ;
@@ -73,7 +73,7 @@ dcterms:creator rdf:type owl:AnnotationProperty .
                rdfs:label "code statement"@en .
 
 
-###  http://purl.org/alpaca#containerIndex
+###  http://alpaca#containerIndex
 :containerIndex rdf:type owl:DatatypeProperty ;
                 rdfs:domain :DataObjectEntity ;
                 rdfs:range rdfs:Literal ;
@@ -81,7 +81,7 @@ dcterms:creator rdf:type owl:AnnotationProperty .
                 rdfs:label "container index"@en .
 
 
-###  http://purl.org/alpaca#containerSlice
+###  http://alpaca#containerSlice
 :containerSlice rdf:type owl:DatatypeProperty ;
                 rdfs:domain :DataObjectEntity ;
                 rdfs:range rdfs:Literal ;
@@ -89,7 +89,7 @@ dcterms:creator rdf:type owl:AnnotationProperty .
                 rdfs:label "container slice"@en .
 
 
-###  http://purl.org/alpaca#executionOrder
+###  http://alpaca#executionOrder
 :executionOrder rdf:type owl:DatatypeProperty ;
                 rdfs:domain :FunctionExecution ;
                 rdfs:range xsd:int ;
@@ -97,7 +97,7 @@ dcterms:creator rdf:type owl:AnnotationProperty .
                 rdfs:label "execution order"@en .
 
 
-###  http://purl.org/alpaca#filePath
+###  http://alpaca#filePath
 :filePath rdf:type owl:DatatypeProperty ;
           rdfs:domain :FileEntity ;
           rdfs:range xsd:string ;
@@ -105,7 +105,7 @@ dcterms:creator rdf:type owl:AnnotationProperty .
           rdfs:label "file path"@en .
 
 
-###  http://purl.org/alpaca#fromAttribute
+###  http://alpaca#fromAttribute
 :fromAttribute rdf:type owl:DatatypeProperty ;
                rdfs:domain :DataObjectEntity ;
                rdfs:range xsd:string ;
@@ -113,7 +113,7 @@ dcterms:creator rdf:type owl:AnnotationProperty .
                rdfs:label "from attribute"@en .
 
 
-###  http://purl.org/alpaca#functionName
+###  http://alpaca#functionName
 :functionName rdf:type owl:DatatypeProperty ;
               rdfs:subPropertyOf owl:topDataProperty ;
               rdfs:domain :Function ;
@@ -122,7 +122,7 @@ dcterms:creator rdf:type owl:AnnotationProperty .
               rdfs:label "function name"@en .
 
 
-###  http://purl.org/alpaca#functionVersion
+###  http://alpaca#functionVersion
 :functionVersion rdf:type owl:DatatypeProperty ;
                  rdfs:domain :Function ;
                  rdfs:range xsd:string ;
@@ -130,7 +130,7 @@ dcterms:creator rdf:type owl:AnnotationProperty .
                  rdfs:label "function version"@en .
 
 
-###  http://purl.org/alpaca#hashSource
+###  http://alpaca#hashSource
 :hashSource rdf:type owl:DatatypeProperty ;
             rdfs:domain :DataObjectEntity ;
             rdfs:range xsd:string ;
@@ -138,7 +138,7 @@ dcterms:creator rdf:type owl:AnnotationProperty .
             rdfs:label "hash source"@en .
 
 
-###  http://purl.org/alpaca#implementedIn
+###  http://alpaca#implementedIn
 :implementedIn rdf:type owl:DatatypeProperty ;
                rdfs:domain :Function ;
                rdfs:range xsd:string ;
@@ -146,7 +146,7 @@ dcterms:creator rdf:type owl:AnnotationProperty .
                rdfs:label "implemented in"@en .
 
 
-###  http://purl.org/alpaca#pairName
+###  http://alpaca#pairName
 :pairName rdf:type owl:DatatypeProperty ;
           rdfs:domain :NameValuePair ;
           rdfs:range xsd:string ;
@@ -154,7 +154,7 @@ dcterms:creator rdf:type owl:AnnotationProperty .
           rdfs:label "name"@en .
 
 
-###  http://purl.org/alpaca#pairValue
+###  http://alpaca#pairValue
 :pairValue rdf:type owl:DatatypeProperty ;
            rdfs:domain :NameValuePair ;
            rdfs:range rdfs:Literal ;
@@ -162,7 +162,7 @@ dcterms:creator rdf:type owl:AnnotationProperty .
            rdfs:label "value"@en .
 
 
-###  http://purl.org/alpaca#scriptPath
+###  http://alpaca#scriptPath
 :scriptPath rdf:type owl:DatatypeProperty ;
             rdfs:domain :ScriptAgent ;
             rdfs:range xsd:string ;
@@ -174,7 +174,7 @@ dcterms:creator rdf:type owl:AnnotationProperty .
 #    Classes
 #################################################################
 
-###  http://purl.org/alpaca#DataObjectEntity
+###  http://alpaca#DataObjectEntity
 :DataObjectEntity rdf:type owl:Class ;
                   rdfs:subClassOf prov:Entity ;
                   owl:disjointWith :FileEntity ;
@@ -182,33 +182,33 @@ dcterms:creator rdf:type owl:AnnotationProperty .
                   rdfs:label "data object entity"@en .
 
 
-###  http://purl.org/alpaca#FileEntity
+###  http://alpaca#FileEntity
 :FileEntity rdf:type owl:Class ;
             rdfs:subClassOf prov:Entity ;
             rdfs:comment "Represents a file in the system."@en ;
             rdfs:label "file entity"@en .
 
 
-###  http://purl.org/alpaca#Function
+###  http://alpaca#Function
 :Function rdf:type owl:Class ;
           rdfs:comment "Represents a function object. It contains code that is executed to perform some action in the script, taking parameters and producing outputs."@en ;
           rdfs:label "function"@en .
 
 
-###  http://purl.org/alpaca#FunctionExecution
+###  http://alpaca#FunctionExecution
 :FunctionExecution rdf:type owl:Class ;
                    rdfs:subClassOf prov:Activity ;
                    rdfs:comment "The execution of a function with a set of inputs and parameters, that may produce one or more outputs."@en ;
                    rdfs:label "function execution"@en .
 
 
-###  http://purl.org/alpaca#NameValuePair
+###  http://alpaca#NameValuePair
 :NameValuePair rdf:type owl:Class ;
                rdfs:comment "Represents information defined by a name/value pair. Name is a string and value can be any literal value."@en ;
                rdfs:label "name/value pair"@en .
 
 
-###  http://purl.org/alpaca#ScriptAgent
+###  http://alpaca#ScriptAgent
 :ScriptAgent rdf:type owl:Class ;
              rdfs:subClassOf prov:SoftwareAgent ;
              rdfs:comment "A file containing a set of instructions in Python that can be run to process data."@en ;

@@ -2,8 +2,7 @@
 
 ## Automated Lightweight Provenance Capture
 
-[![tests](https://github.com/INM-6/alpaca/actions/workflows/CI.yml/badge.svg)](https://github.com/INM-6/alpaca/actions/workflows/CI.yml)
-[![Documentation Status](https://readthedocs.org/projects/alpaca-prov/badge/?version=latest)](https://alpaca-prov.readthedocs.io/en/latest/?badge=latest)
+[badges removed for double-blind review]
 
 Alpaca is a Python package for the capture of provenance information during the
 execution of Python scripts that process data.
@@ -43,7 +42,7 @@ Use the package manager [pip](https://pip.pypa.io/en/stable/) to install Alpaca.
 
 Package on [pypi](https://pypi.org/)
 ```bash
-pip install alpaca-prov
+pip install [name redacted for double-blind review]
 ```
 
 More detailed instructions on how to setup conda environments and additional
@@ -52,7 +51,7 @@ install options can be checked in the [Installation](doc/install.rst) page.
 
 ## Documentation
 
-See [https://alpaca-prov.readthedocs.io/en/latest/](https://alpaca-prov.readthedocs.io/en/latest/).
+See [URL redacted for double-blind review].
 
 
 ## How to run
@@ -71,7 +70,7 @@ All the contributors to the development of Alpaca can be found in the
 ## How to contribute
 
 If you want to suggest new features, changes, or make a contribution, please
-first open an issue on the [project page on GitHub](https://github.com/INM-6/alpaca/issues)
+first open an issue on the project page on GitHub [URL redacted for double-blind review] 
 to discuss your idea.
 
 Pull requests are welcome. Any contribution should also
@@ -81,7 +80,7 @@ be covered by appropriate unit tests in the [tests](alpaca/test) folder.
 ## Get support
 
 If you experience any issue or wish to report a bug, please open an issue on
-the [project page on GitHub](https://github.com/INM-6/alpaca/issues).
+the project page on GitHub [URL redacted for double-blind review].
 
 
 ## Acknowledgments
@@ -96,4 +95,4 @@ BSD 3-Clause License, see [LICENSE.txt](LICENSE.txt) for details.
 
 ## Copyright
 
-:copyright: 2022-2023, Forschungszentrum Jülich GmbH, INM-6, IAS-6. All rights reserved.
+:copyright: 2022-2023, [name redacted for double-blind review]. All rights reserved.

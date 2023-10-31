@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.abspath('.'))
 
 project = 'Alpaca'
 authors = 'Alpaca authors and contributors'
-copyright = u"2022-{this_year}, Forschungszentrum Jülich GmbH, INM-6, IAS-6."\
+copyright = u"2022-{this_year}, [name redacted for double-blind review]."\
     "All rights reserved.".format(this_year=date.today().year,)
 
 # The version info for the project you're documenting, acts as replacement for

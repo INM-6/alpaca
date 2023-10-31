@@ -28,7 +28,6 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     license="BSD",
-    url='https://github.com/INM-6/alpaca',
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',
