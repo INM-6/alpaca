@@ -1,0 +1,103 @@
+@prefix alpaca: <http://purl.org/alpaca#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<urn:my-authority:alpaca:file:sha256:98765> a alpaca:FileEntity ;
+    alpaca:filePath "/outputs/1.png"^^xsd:string ;
+    prov:wasDerivedFrom <urn:my-authority:alpaca:object:Python:test.InputObject:12345> ;
+    prov:wasAttributedTo <urn:my-authority:alpaca:script:Python:script.py:111111#999999> ;
+    prov:wasGeneratedBy <urn:my-authority:alpaca:function_execution:Python:111111:999999:test.plot_function#12345> .
+
+<urn:my-authority:alpaca:file:sha256:987651> a alpaca:FileEntity ;
+    alpaca:filePath "/outputs/2.png"^^xsd:string ;
+    prov:wasDerivedFrom <urn:my-authority:alpaca:object:Python:test.InputObject:123452> ;
+    prov:wasAttributedTo <urn:my-authority:alpaca:script:Python:script.py:111111#999999> ;
+    prov:wasGeneratedBy <urn:my-authority:alpaca:function_execution:Python:111111:999999:test.plot_function#123452> .
+
+<urn:my-authority:alpaca:object:Python:builtins.NoneType:777777> a alpaca:DataObjectEntity ;
+    prov:wasAttributedTo <urn:my-authority:alpaca:script:Python:script.py:111111#999999>  ;
+    prov:wasDerivedFrom <urn:my-authority:alpaca:object:Python:test.InputObject:12345> ;
+    prov:wasGeneratedBy <urn:my-authority:alpaca:function_execution:Python:111111:999999:test.plot_function#12345> ;
+    alpaca:hashSource "UUID" .
+
+<urn:my-authority:alpaca:object:Python:builtins.NoneType:7777772> a alpaca:DataObjectEntity ;
+    prov:wasAttributedTo <urn:my-authority:alpaca:script:Python:script.py:111111#999999>  ;
+    prov:wasDerivedFrom <urn:my-authority:alpaca:object:Python:test.InputObject:123452> ;
+    prov:wasGeneratedBy <urn:my-authority:alpaca:function_execution:Python:111111:999999:test.plot_function#123452> ;
+    alpaca:hashSource "UUID" .
+
+<urn:my-authority:alpaca:object:Python:test.InputObject:12345> a alpaca:DataObjectEntity ;
+    prov:wasAttributedTo <urn:my-authority:alpaca:script:Python:script.py:111111#999999> ;
+    prov:wasDerivedFrom <urn:my-authority:alpaca:object:Python:test.InputObject:22345> ;
+    prov:wasGeneratedBy <urn:my-authority:alpaca:function_execution:Python:111111:999999:test.cut_function#12345> ;
+    alpaca:hashSource "joblib_SHA1" .
+
+<urn:my-authority:alpaca:object:Python:test.InputObject:123452> a alpaca:DataObjectEntity ;
+    prov:wasAttributedTo <urn:my-authority:alpaca:script:Python:script.py:111111#999999> ;
+    prov:wasDerivedFrom <urn:my-authority:alpaca:object:Python:test.InputObject:22345> ;
+    prov:wasGeneratedBy <urn:my-authority:alpaca:function_execution:Python:111111:999999:test.cut_function#12345> ;
+    alpaca:hashSource "joblib_SHA1" .
+
+<urn:my-authority:alpaca:object:Python:test.InputObject:22345> a alpaca:DataObjectEntity ;
+    prov:wasAttributedTo <urn:my-authority:alpaca:script:Python:script.py:111111#999999> ;
+    alpaca:hashSource "joblib_SHA1" .
+
+<urn:my-authority:alpaca:file:sha256:18765> a alpaca:FileEntity ;
+    alpaca:filePath "/full.png"^^xsd:string ;
+    prov:wasDerivedFrom <urn:my-authority:alpaca:object:Python:test.InputObject:22345> ;
+    prov:wasAttributedTo <urn:my-authority:alpaca:script:Python:script.py:111111#999999> ;
+    prov:wasGeneratedBy <urn:my-authority:alpaca:function_execution:Python:111111:999999:test.plot_function#22345> .
+
+<urn:my-authority:alpaca:object:Python:builtins.NoneType:666666> a alpaca:DataObjectEntity ;
+    prov:wasAttributedTo <urn:my-authority:alpaca:script:Python:script.py:111111#999999>  ;
+    prov:wasDerivedFrom <urn:my-authority:alpaca:object:Python:test.InputObject:22345> ;
+    prov:wasGeneratedBy <urn:my-authority:alpaca:function_execution:Python:111111:999999:test.plot_function#22345> ;
+    alpaca:hashSource "UUID" .
+
+<urn:my-authority:alpaca:function_execution:Python:111111:999999:test.plot_function#12345> a alpaca:FunctionExecution ;
+    prov:startedAtTime "2022-05-02T12:34:56.123456"^^xsd:dateTime ;
+    prov:endedAtTime "2022-05-02T12:35:56.123456"^^xsd:dateTime ;
+    prov:used <urn:my-authority:alpaca:object:Python:test.InputObject:12345> ;
+    prov:wasAssociatedWith <urn:my-authority:alpaca:script:Python:script.py:111111#999999> ;
+    alpaca:codeStatement "plot_function(input, out_file)" ;
+    alpaca:executionOrder 3 ;
+    alpaca:usedFunction <urn:my-authority:alpaca:function:Python:test.plot_function> .
+
+<urn:my-authority:alpaca:function_execution:Python:111111:999999:test.plot_function#123452> a alpaca:FunctionExecution ;
+    prov:startedAtTime "2022-05-02T12:34:56.123456"^^xsd:dateTime ;
+    prov:endedAtTime "2022-05-02T12:35:56.123456"^^xsd:dateTime ;
+    prov:used <urn:my-authority:alpaca:object:Python:test.InputObject:123452> ;
+    prov:wasAssociatedWith <urn:my-authority:alpaca:script:Python:script.py:111111#999999> ;
+    alpaca:codeStatement "plot_function(input, out_file)" ;
+    alpaca:executionOrder 4 ;
+    alpaca:usedFunction <urn:my-authority:alpaca:function:Python:test.plot_function> .
+
+<urn:my-authority:alpaca:function_execution:Python:111111:999999:test.plot_function#22345> a alpaca:FunctionExecution ;
+    prov:startedAtTime "2022-05-02T12:34:56.123456"^^xsd:dateTime ;
+    prov:endedAtTime "2022-05-02T12:35:56.123456"^^xsd:dateTime ;
+    prov:used <urn:my-authority:alpaca:object:Python:test.InputObject:22345> ;
+    prov:wasAssociatedWith <urn:my-authority:alpaca:script:Python:script.py:111111#999999> ;
+    alpaca:codeStatement "plot_function(input, out_file)" ;
+    alpaca:executionOrder 1 ;
+    alpaca:usedFunction <urn:my-authority:alpaca:function:Python:test.plot_function> .
+
+<urn:my-authority:alpaca:function_execution:Python:111111:999999:test.cut_function#12345> a alpaca:FunctionExecution ;prov:startedAtTime "2022-05-02T12:34:56.123456"^^xsd:dateTime ;
+    prov:endedAtTime "2022-05-02T12:35:56.123456"^^xsd:dateTime ;
+    prov:used <urn:my-authority:alpaca:object:Python:test.InputObject:22345> ;
+    prov:wasAssociatedWith <urn:my-authority:alpaca:script:Python:script.py:111111#999999> ;
+    alpaca:codeStatement "cut_function(full_data)" ;
+    alpaca:executionOrder 2 ;
+    alpaca:usedFunction <urn:my-authority:alpaca:function:Python:test.cut_function> .
+                                                                                           
+<urn:my-authority:alpaca:function:Python:test.plot_function> a alpaca:Function ;
+    alpaca:functionName "plot_function" ;
+    alpaca:implementedIn "test" ;
+    alpaca:functionVersion "0.0.1" .
+
+<urn:my-authority:alpaca:function:Python:test.cut_function> a alpaca:Function ;
+    alpaca:functionName "cut_function" ;
+    alpaca:implementedIn "test" ;
+    alpaca:functionVersion "0.0.1" .
+
+<urn:my-authority:alpaca:script:Python:script.py:111111#999999> a alpaca:ScriptAgent ;
+    alpaca:scriptPath "/script.py" .
