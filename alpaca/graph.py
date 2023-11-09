@@ -611,13 +611,26 @@ class ProvenanceGraph:
         group_node_attributes : dict
             Dictionary selecting which attributes are used in the aggregation.
             The keys are the possible labels in the graph, and the values
-            are tuples of the node attributes used for determining supernodes.
+            are tuples of the node attributes or callables used for
+            determining supernodes.
+
             For example, to aggregate `Quantity` nodes based on different
             `shape` attribute values, `group_node_attributes` would be
             `{'Quantity': ('shape',)}`. If passing an empty dictionary, no
             attributes will be considered, and the aggregation will be based
             on the topology (i.e., nodes at similar levels will be grouped
             according to the connectivity).
+
+            In addition to attribute names, callables that take the
+            arguments `(graph, node, data)`, where `graph` is the graph being
+            aggregated, `node` is the node being evaluated for grouping, and
+            `data` is the dictionary of attributes, can be used. The returned
+            value is used to define the group. This allows flexibility when
+            grouping, as attribute values can be transformed (e.g., extracting
+            a token such as file extension from an attribute that stores the
+            path as a string), or the relationship of the node to neighbors
+            and values of edges can be checked. However, this will increase
+            the time to evaluate the grouping criteria of a node.
         use_function_parameters : bool, optional
             If True, the parameters of function nodes in the graph will be
             considered in the aggregation, i.e., if the same function is called
@@ -661,8 +674,8 @@ class ProvenanceGraph:
         [1]_.
 
         The function was modified to group the nodes based on different
-        attributes  (using a dictionary based on the labels) instead of a
-        single attribute that is common to all nodes.
+        attributes or callables (using a dictionary based on the labels)
+        instead of attributes that are common to all nodes.
 
         During the summary graph generation, the attribute values are also
         summarized, so that the user has an idea of all the possible values in
@@ -679,7 +692,7 @@ class ProvenanceGraph:
            June 2008.
         """
 
-        def _fetch_group_tuple(data, label, data_attributes,
+        def _fetch_group_tuple(graph, node, data, label, data_attributes,
                                use_function_params):
             group_info = [label]
 
@@ -694,9 +707,24 @@ class ProvenanceGraph:
             else:
                 if data_attributes is not None:
                     # We have requested grouping for this object based on
-                    # selected attributes. Otherwise, we will use the label
+                    # selected attributes/callables. Otherwise, we will use
+                    # the label only
+
                     for attr in data_attributes:
-                        group_info.append(data[attr])
+
+                        if callable(attr):
+                            # We have requested grouping using a function that
+                            # takes the graph, the node, and the node
+                            # attributes as parameters. This allows a more
+                            # customized filtering, that can extract specific
+                            # information from the attribute value or use the
+                            # node relationships
+                            group_info.append(attr(graph, node, data))
+                        else:
+                            # Fetch the attribute value for this node, if
+                            # available
+                            group_info.append(data.get(attr, None))
+
             return tuple(group_info)
 
         # We don't consider edges
@@ -704,7 +732,8 @@ class ProvenanceGraph:
 
         # Create the groups based on the selected conditions
         group_lookup = {
-            node: _fetch_group_tuple(attrs, attrs['label'],
+            node: _fetch_group_tuple(
+                self.graph, node, attrs, attrs['label'],
                 group_node_attributes.get(attrs['label'], None),
                 use_function_parameters)
             for node, attrs in self.graph.nodes.items()
