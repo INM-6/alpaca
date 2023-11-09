@@ -494,7 +494,8 @@ class GraphAggregationTestCase(unittest.TestCase):
     def setUpClass(cls):
         cls.ttl_path = Path(__file__).parent / "res"
         input_file = cls.ttl_path / "parallel_graph.ttl"
-        cls.graph = ProvenanceGraph(input_file, attributes=['shape', 'metadata'])
+        cls.graph = ProvenanceGraph(input_file, attributes=['shape',
+                                                            'metadata', 'id'])
         alpaca_setting('authority', "my-authority")
 
     def test_serialization(self):
@@ -541,6 +542,42 @@ class GraphAggregationTestCase(unittest.TestCase):
                 self.assertTrue(label in expected_values_per_node)
                 for key, value in expected_values_per_node[label].items():
                     self.assertEqual(attrs[key], value)
+
+    def test_aggregation_by_attribute_with_missing(self):
+        aggregated = self.graph.aggregate({'InputObject': ('id',)},
+                                          use_function_parameters=False,
+                                          output_file=None)
+        nodes = aggregated.nodes
+
+        self.assertEqual(len(nodes), 5)
+
+        expected_values_per_node = {
+            'OutputObject': {'metadata': "0;1",
+                             'shape': "(2,);(3,);(4,);(5,)"},
+            'InputObject': {'metadata': "5",
+                            'shape': ["(2,)", "(3,);(4,);(5,)"],
+                            'id': ["1", None]},
+            'process': {'process:value': "0;1;2;3"},
+            'list': {}
+        }
+
+        all_labels = [nodes[node]['label'] for node in nodes]
+        counts = Counter(all_labels)
+        self.assertEqual(counts['OutputObject'], 1)
+        self.assertEqual(counts['InputObject'], 2)
+        self.assertEqual(counts['process'], 1)
+        self.assertEqual(counts['list'], 1)
+
+        for node, attrs in nodes.items():
+            label = attrs['label']
+            with self.subTest(f"Node label {label}"):
+                self.assertTrue(label in expected_values_per_node)
+                for key, value in expected_values_per_node[label].items():
+                    attr_val = attrs[key] if key in attrs else None
+                    if not isinstance(value, list):
+                        self.assertEqual(attr_val, value)
+                    else:
+                        self.assertTrue(attr_val in value)
 
     def test_aggregation_by_attribute(self):
         aggregated = self.graph.aggregate({'InputObject': ('shape',)},
