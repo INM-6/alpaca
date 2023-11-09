@@ -696,7 +696,7 @@ class ProvenanceGraph:
                     # We have requested grouping for this object based on
                     # selected attributes. Otherwise, we will use the label
                     for attr in data_attributes:
-                        group_info.append(data[attr])
+                        group_info.append(data.get(attr, None))
             return tuple(group_info)
 
         # We don't consider edges
