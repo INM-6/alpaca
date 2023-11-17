@@ -177,7 +177,8 @@ class Provenance(object):
         self.container_output = container_output
         self._tracking_container_output = \
             ((isinstance(container_output, bool) and container_output) or
-             (not isinstance(container_output, bool) and container_output >= 0))
+             (isinstance(container_output, tuple) and len(container_output) == 2) or
+             (not isinstance(container_output, (bool, tuple)) and container_output >= 0))
 
     def _insert_static_information(self, tree, data_info, function,
                                    time_stamp):

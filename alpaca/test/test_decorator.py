@@ -94,6 +94,12 @@ def container_output_function_level(array, param1, param2):
     return [array + i for i in range(3, 5)]
 
 
+@Provenance(inputs=['array'], container_output=(1, 1))
+def container_output_function_level_range(array, param1, param2):
+    """ Takes a single input and outputs multiple elements in a container"""
+    return [array + i for i in range(3, 5)]
+
+
 @Provenance(inputs=['array'], container_output=1)
 def dict_output_function_level(array, param1, param2):
     """ Takes as single input and outputs multiple elements in a dictionary """
