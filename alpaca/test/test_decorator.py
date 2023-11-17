@@ -735,6 +735,71 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
             exp_order=1,
             test_case=self)
 
+    def test_container_output_function_level_range(self):
+        activate(clear=True)
+        res = container_output_function_level_range(TEST_ARRAY, 4, 6)
+        deactivate()
+
+        self.assertEqual(len(Provenance.history), 7)
+
+        elements = [[], []]
+        for idx, container in enumerate(res):
+            for el_idx, element in enumerate(container):
+                element_info = DataObject(
+                    hash=joblib.hash(element, hash_name="sha1"),
+                    hash_method="joblib_SHA1",
+                    type="numpy.int64", id=None,
+                    details={'shape': (), 'dtype': np.int64})
+                elements[idx].append(element_info)
+
+        expected_container_1 = DataObject(
+            hash=joblib.hash(TEST_ARRAY + 3, hash_name='sha1'),
+            hash_method="joblib_SHA1",
+            type="numpy.ndarray", id=id(res[0]),
+            details={'shape': (3,), 'dtype': np.int64})
+
+        expected_container_2 = DataObject(
+            hash=joblib.hash(TEST_ARRAY + 4, hash_name='sha1'),
+            hash_method="joblib_SHA1",
+            type="numpy.ndarray", id=id(res[1]),
+            details={'shape': (3,), 'dtype': np.int64})
+
+        # Check subscript of each element with respect to the array
+        containers = [expected_container_1, expected_container_2]
+        for history_index, element_index in zip(
+                (0, 1, 2, 3, 4, 5),
+                ((0, 0), (0, 1), (0, 2), (1, 0), (1, 1), (1, 2))):
+            container = element_index[0]
+            element = element_index[1]
+            _check_function_execution(
+                actual=Provenance.history[history_index],
+                exp_function=FunctionInfo('subscript', '', ''),
+                exp_input={0: containers[container]},
+                exp_params={'index': element},
+                exp_output={0: elements[container][element]},
+                exp_arg_map=None,
+                exp_kwarg_map=None,
+                exp_code_stmnt=None,
+                exp_return_targets=[],
+                exp_order=None,
+                test_case=self)
+
+        # Main function execution
+        # There is no single list return directly from the function
+        _check_function_execution(
+            actual=Provenance.history[6],
+            exp_function=FunctionInfo('container_output_function_level_range',
+                                      'test_decorator', ''),
+            exp_input={'array': TEST_ARRAY_INFO},
+            exp_params={'param1': 4, 'param2': 6},
+            exp_output={0: expected_container_1, 1: expected_container_2},
+            exp_arg_map=['array', 'param1', 'param2'],
+            exp_kwarg_map=[],
+            exp_code_stmnt="res = container_output_function_level_range(TEST_ARRAY, 4, 6)",
+            exp_return_targets=['res'],
+            exp_order=1,
+            test_case=self)
+
     def test_dict_output_function(self):
         activate(clear=True)
         res = dict_output_function(TEST_ARRAY, 3, 7)
@@ -949,7 +1014,6 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
             exp_return_targets=['res'],
             exp_order=1,
             test_case=self)
-
 
     def test_comprehensions(self):
         activate(clear=True)
