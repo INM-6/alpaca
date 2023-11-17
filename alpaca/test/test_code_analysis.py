@@ -61,16 +61,14 @@ class ContainerOfArray:
 
 # To test attribute calls
 class ObjectWithMethod:
-    @Provenance(inputs=['self', 'array'])
     def add_numbers(self, array):
         return np.sum(array)
-
+ObjectWithMethod.add_numbers = Provenance(inputs=['self', 'array'])(ObjectWithMethod.add_numbers)
 
 class CustomObject:
-    @Provenance(inputs=['data'])
     def __init__(self, data):
         self.data = data
-
+CustomObject.__init__ = Provenance(inputs=['data'])(CustomObject.__init__)
 
 # Define some test functions to use different relationships
 

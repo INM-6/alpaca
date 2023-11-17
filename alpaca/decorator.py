@@ -4,6 +4,7 @@ during the execution of analysis scripts in Python.
 """
 
 from functools import wraps
+import itertools
 from collections.abc import Iterable
 from collections import defaultdict
 
@@ -72,18 +73,55 @@ class Provenance(object):
         data structures used by the function). Alpaca will track and identify
         the elements inside the container, instead of the container itself.
         Default: None
-    container_output : bool or int, optional
+    container_output : bool or int or tuple, optional
         The function outputs data inside a container (e.g., a list).
+
         If True, Alpaca will track and identify the elements inside the
         container, instead of the container itself. It will iterate over the
         function output object and identify the individual elements. However,
         for dictionary outputs, the dictionary object is identified together
         with its elements, to retain information on the keys. For other
         containers, the container object is not identified.
+
         If an integer, this defines a multiple-level (nested) container. The
         number defines the depth for which to identify and serialize the
         objects. In this case, the function output object will always be
-        identified together with the element tree.
+        identified together with the element tree. For instance, consider
+        the two-level list `L = [[obj1, obj2], [obj3, obj4]]`. With
+        `container_output=0`, there will be a single function output node for
+        list `L`. Starting from `L`, there will be two additional nodes for
+        each of the inner lists (`L[0]` and `L[1]`, i.e., all elements from
+        level zero). With `container_output=1`, there will be a single
+        function output node for list `L`. Starting from `L`, there
+        will be two additional nodes for each of the inner lists (`L[0]` and
+        `L[1]`). Finally, starting from each inner list, there will be output
+        nodes for `obj1` and `obj2` (linked to `L[0]`) and for `obj3` and
+        `obj4` (linked to `L[1]`). Therefore, all elements from level one are
+        identified, and linked to the respective elements from level zero.
+
+        If a tuple, this defines a range of the levels in a nested container
+        to consider when identifying the objects output by the function. For
+        example, taking the same list above, a `container_output=(0, 1)` will
+        start from level zero and stop at the elements from level
+        one (similar to `container_output=1`). With `container_output=(1, 1)`,
+        the first level will be ignored as function output. The function will
+        have two output nodes (directly for `L[0]` and `L[1]`). Starting from
+        each inner list, there will be output nodes for `obj1` and `obj2`
+        (linked to `L[0]`) and for `obj3` and `obj4` (linked to `L[1]`).
+        Therefore, the first level (zero) of the container is ignored, and only
+        elements from level one are described. The range feature is useful for
+        functions where the relevant outputs are containers whose elements
+        should also be described, but those containers are grouped inside a
+        single return list instead of the function returning a tuple with the
+        containers.
+
+        It is important to note that all levels identified as integers or
+        range tuples should point to levels in the nested-container that
+        contain iterables. For example, in the list `L` above, the level 2
+        are the objects `objX`. If `container_output=2`, Alpaca will try to
+        iterate over each `objX` and describe their elements. If they are
+        not iterable, an error will be raised.
+
         Default: False
 
     Attributes
@@ -178,10 +216,17 @@ class Provenance(object):
         # Store the names of arguments that are inputs
         self.inputs = inputs
 
-        self.container_output = container_output
-        self._tracking_container_output = \
-            ((isinstance(container_output, bool) and container_output) or
-             (not isinstance(container_output, bool) and container_output >= 0))
+        self.container_output = False
+        self._tracking_container_output = False
+        if isinstance(container_output, bool):
+            self._tracking_container_output = container_output
+            self.container_output = container_output
+        elif isinstance(container_output, tuple):
+            self._tracking_container_output = len(container_output) == 2
+            self.container_output = container_output
+        elif isinstance(container_output, int):
+            self._tracking_container_output = container_output >= 0
+            self.container_output = (0, container_output)
 
     def _insert_static_information(self, tree, data_info, function,
                                    time_stamp):
@@ -323,6 +368,18 @@ class Provenance(object):
     def _is_class_constructor(function_name):
         names = function_name.split(".")
         return len(names) == 2 and names[-1] == "__init__"
+
+    @staticmethod
+    def _is_static_method(function, function_name):
+        if type(function).__qualname__ == "method_descriptor":
+            # Ignore method descriptors
+            return False
+        name = function_name.rsplit('.', 1)[-1]
+        cls = inspect._findclass(function)
+        if cls is not None:
+            method = inspect.getattr_static(cls, name)
+            return isinstance(method, staticmethod)
+        return False
 
     def _capture_code_and_function_provenance(self, lineno, function):
 
@@ -484,7 +541,7 @@ class Provenance(object):
             # This will work whether the main container is a dictionary or
             # other iterable.
             if (level is not None and
-                    level < self.container_output and
+                    level < max(self.container_output) and
                     (isinstance(element, Iterable) or
                      hasattr(container, "__getitem__"))):
                 self._add_container_relationships(element, data_info,
@@ -498,11 +555,28 @@ class Provenance(object):
                                   time_stamp_start, execution_id):
         level = None if isinstance(self.container_output, bool) else 0
 
-        if isinstance(function_output, dict) or level is not None:
+        if isinstance(function_output, dict):
             container_info = self._add_container_relationships(
                 function_output, data_info, level, time_stamp_start,
                 execution_id)
             return {0: container_info}
+        elif level is not None:
+            if not self.container_output or min(self.container_output) == 0:
+                # Starting from zero
+                container_info = self._add_container_relationships(
+                    function_output, data_info, level, time_stamp_start,
+                    execution_id)
+                return {0: container_info}
+            else:
+                # Process range starting from other level
+                elements = function_output
+                start_level = min(self.container_output) - 1
+                for level in range(start_level):
+                    # Unpack all elements until the requested start level
+                    elements = itertools.chain(*elements)
+                return {idx: self._add_container_relationships(
+                    element, data_info, start_level + 1, time_stamp_start,
+                    execution_id) for idx, element in enumerate(elements)}
 
         # Process simple container.
         # The container object will not be identified.
@@ -657,6 +731,12 @@ class Provenance(object):
                 Provenance.history.append(function_execution)
 
             return function_output
+
+        # If the function is decorated with `staticmethod`, restore the
+        # decorator (otherwise `self` will be passed as first argument when
+        # calling the function)
+        if self._is_static_method(function, function.__qualname__):
+            return staticmethod(wrapped)
 
         return wrapped
 
