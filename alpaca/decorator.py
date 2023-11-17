@@ -182,11 +182,10 @@ class Provenance(object):
             self.container_output = container_output
         elif isinstance(container_output, tuple):
             self._tracking_container_output = len(container_output) == 2
-            self.container_output = list(range(container_output[0],
-                                               container_output[1]+1))
+            self.container_output = container_output
         elif isinstance(container_output, int):
             self._tracking_container_output = container_output >= 0
-            self.container_output = list(range(container_output))
+            self.container_output = (0, container_output)
 
     def _insert_static_information(self, tree, data_info, function,
                                    time_stamp):
@@ -495,7 +494,7 @@ class Provenance(object):
             # This will work whether the main container is a dictionary or
             # other iterable.
             if (level is not None and
-                    level in self.container_output and
+                    level < max(self.container_output) and
                     (isinstance(element, Iterable) or
                      hasattr(container, "__getitem__"))):
                 self._add_container_relationships(element, data_info,
@@ -522,13 +521,14 @@ class Provenance(object):
                     execution_id)
                 return {0: container_info}
             else:
-                # Process range extract all elements from the starting level
+                # Process range starting from other level
                 elements = function_output
-                start_level = min(self.container_output)-1
+                start_level = min(self.container_output) - 1
                 for level in range(start_level):
+                    # Unpack all elements until the requested start level
                     elements = itertools.chain(*elements)
                 return {idx: self._add_container_relationships(
-                    element, data_info, start_level, time_stamp_start,
+                    element, data_info, start_level + 1, time_stamp_start,
                     execution_id) for idx, element in enumerate(elements)}
 
         # Process simple container.
