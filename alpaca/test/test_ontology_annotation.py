@@ -33,6 +33,7 @@ class OutputObject:
         self.name = name
         self.channel = channel
 
+
 class InputObjectIRI:
     __ontology__ = {"data_object": "<http://purl.org/ontology#InputObject>"}
 
@@ -99,6 +100,7 @@ process_multiple_container_output_multiple_annotations.__wrapped__.__ontology__ 
         '***': "ontology:ProcessedMultipleContainerOutputLevel2"}
 }
 
+
 @Provenance(inputs=[], container_output=1)
 def process_multiple_container_output_multiple_annotations_root():
     return [list(range(i, i + 3)) for i in range(0, 4, 3)]
@@ -111,6 +113,21 @@ process_multiple_container_output_multiple_annotations_root.__wrapped__.__ontolo
         '**': "ontology:ProcessedMultipleContainerOutputLevel1",
         '***': "ontology:ProcessedMultipleContainerOutputLevel2"}
 }
+
+
+@Provenance(inputs=[], container_output=(1, 1))
+def process_multiple_container_output_multiple_annotations_range():
+    return [list(range(i, i + 3)) for i in range(0, 4, 3)]
+
+process_multiple_container_output_multiple_annotations_range.__wrapped__.__ontology__ = {
+    "function": "ontology:ProcessMultipleContainerOutputMultipleAnnotationsRange",
+    "namespaces": EXAMPLE_NS,
+    "returns": {
+        '*': "ontology:ProcessedMultipleContainerOutputLevel0",
+        '**': "ontology:ProcessedMultipleContainerOutputLevel1",
+        '***': "ontology:ProcessedMultipleContainerOutputLevel2"}
+}
+
 
 @Provenance(inputs=['input'])
 def process_input_annotation(input, param):
@@ -503,7 +520,6 @@ class OntologyAnnotationTestCase(unittest.TestCase):
         self.assertTrue((execution_iri, RDF.type,
                          self.ONTOLOGY.ProcessContainerOutput) in prov_graph)
 
-
         # Check returned values
         output_nodes = prov_graph.subjects(RDF.type,
                                 self.ONTOLOGY.ProcessedContainerOutput)
@@ -543,7 +559,6 @@ class OntologyAnnotationTestCase(unittest.TestCase):
             prov_graph.subjects(RDF.type, ALPACA.FunctionExecution))[0]
         self.assertTrue((execution_iri, RDF.type,
                          self.ONTOLOGY.ProcessMultipleContainerOutput) in prov_graph)
-
 
         # Check returned values
         output_nodes = prov_graph.subjects(RDF.type,
@@ -590,7 +605,6 @@ class OntologyAnnotationTestCase(unittest.TestCase):
             prov_graph.subjects(RDF.type, ALPACA.FunctionExecution))[0]
         self.assertTrue((execution_iri, RDF.type,
                          self.ONTOLOGY.ProcessMultipleContainerOutputMultipleAnnotations) in prov_graph)
-
 
         # Check returned values
         output_nodes = prov_graph.subjects(RDF.type,
@@ -648,7 +662,6 @@ class OntologyAnnotationTestCase(unittest.TestCase):
         self.assertTrue((execution_iri, RDF.type,
                          self.ONTOLOGY.ProcessMultipleContainerOutputMultipleAnnotationsRoot) in prov_graph)
 
-
         # Check returned values
         output_nodes = prov_graph.subjects(RDF.type,
                                 self.ONTOLOGY.ProcessedMultipleContainerOutputLevel0)
@@ -675,6 +688,64 @@ class OntologyAnnotationTestCase(unittest.TestCase):
                         (output_level2, RDF.type, self.ONTOLOGY.ProcessedMultipleContainerOutputLevel2) in prov_graph)
                     members = list(prov_graph.objects(output_level2, PROV.hadMember))
                     self.assertEqual(len(members), 0)
+
+    def test_provenance_annotation_container_multiple_output_multiple_annotations_range(self):
+        activate(clear=True)
+        container = process_multiple_container_output_multiple_annotations_range()
+        deactivate()
+
+        prov_data = save_provenance()
+
+        # Read PROV information as RDF
+        prov_graph = Graph()
+        with io.StringIO(prov_data) as data_stream:
+            prov_graph.parse(data_stream, format='turtle')
+
+        # Check that the annotations exist
+        self.assertEqual(
+            len(list(prov_graph.triples(
+                (None, RDF.type, self.ONTOLOGY.ProcessMultipleContainerOutputMultipleAnnotationsRange)))
+            ), 1)
+        self.assertEqual(
+            len(list(prov_graph.triples(
+                (None, RDF.type, self.ONTOLOGY.ProcessedMultipleContainerOutputLevel2)))
+            ), 6)
+        self.assertEqual(
+            len(list(prov_graph.triples(
+                (None, RDF.type, self.ONTOLOGY.ProcessedMultipleContainerOutputLevel1)))
+            ), 2)
+        self.assertEqual(
+            len(list(prov_graph.triples(
+                (None, RDF.type, self.ONTOLOGY.ProcessedMultipleContainerOutputLevel0)))
+            ), 0)
+
+        # FunctionExecution is ProcessMultipleContainerOutputMultipleAnnotationsRange
+        execution_iri = list(
+            prov_graph.subjects(RDF.type, ALPACA.FunctionExecution))[0]
+        self.assertTrue((execution_iri, RDF.type,
+                         self.ONTOLOGY.ProcessMultipleContainerOutputMultipleAnnotationsRange) in prov_graph)
+
+        # Check returned values
+        # First level was skipped, so only classes for Levels 1 and 2 should
+        # be present
+        output_nodes = prov_graph.subjects(RDF.type,
+                                self.ONTOLOGY.ProcessedMultipleContainerOutputLevel1)
+        for output_level1 in output_nodes:
+            self.assertTrue((output_level1, PROV.wasGeneratedBy, execution_iri) in prov_graph)
+            self.assertTrue((output_level1,
+                             RDF.type, ALPACA.DataObjectEntity) in prov_graph)
+            self.assertTrue((output_level1,
+                             RDF.type, self.ONTOLOGY.ProcessedMultipleContainerOutputLevel1)
+                            in prov_graph)
+            members = list(prov_graph.objects(output_level1, PROV.hadMember))
+            self.assertEqual(len(members), 3)
+            for output_level2 in prov_graph.objects(output_level1, PROV.hadMember):
+                self.assertTrue(
+                    (output_level2, RDF.type, ALPACA.DataObjectEntity) in prov_graph)
+                self.assertTrue(
+                    (output_level2, RDF.type, self.ONTOLOGY.ProcessedMultipleContainerOutputLevel2) in prov_graph)
+                members = list(prov_graph.objects(output_level2, PROV.hadMember))
+                self.assertEqual(len(members), 0)
 
     def test_provenance_annotation_input(self):
         activate(clear=True)

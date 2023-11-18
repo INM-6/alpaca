@@ -9,8 +9,7 @@ RDF files.
 
 """
 
-from itertools import product
-from collections import defaultdict
+from itertools import product, chain
 
 from rdflib import Graph, URIRef, BNode, Literal
 from rdflib.namespace import RDF, PROV, XSD
@@ -31,6 +30,7 @@ from alpaca.settings import _ALPACA_SETTINGS
 from alpaca.ontology.annotation import _OntologyInformation, ONTOLOGY_INFORMATION
 
 from tqdm import tqdm
+
 
 def _add_name_value_pair(graph, uri, predicate, name, value):
     # Add a relationship defined by `predicate` using a blank node as object.
@@ -88,7 +88,7 @@ class AlpacaProvDocument(object):
         self._entity_uris = set()
 
         # Store functions that have container output ontology annotations,
-        # To add the identification on the objects after the graph is built
+        # To add the identification to the objects after the graph is built
         self._container_output_functions = {}
         for obj_type, info in ONTOLOGY_INFORMATION.items():
             container_returns = info.get_container_returns()
@@ -333,42 +333,68 @@ class AlpacaProvDocument(object):
             # Associate the activity to the script
             self._wasAssociatedWith(activity=cur_activity, agent=script_agent)
 
-    def _process_output_level(self, output, levels, cur_level, max_level,
-                              ontology_info):
-        if cur_level > max_level:
-            return
-
-        # If this level is annotated, get the information
-        obj_uri = None
-        if cur_level in levels:
-            level_str = f"*{'*' * cur_level}"
-            obj_uri = ontology_info.get_iri('returns', level_str)
-
-        for element in self.graph.objects(output, PROV.hadMember):
-            if obj_uri:
-                self.graph.add((element, RDF.type, obj_uri))
-            self._process_output_level(element, levels, cur_level + 1,
-                                       max_level, ontology_info)
     def _add_annotations_for_container_outputs(self):
         # For functions that the Provenance decorator identified elements
         # inside returned containers, the elements linked by `prov:hasMember`
         # functions need to be annotated. The list of functions is already
         # stored in a search list. Iterate over the nodes of the function
         # and annotate the correct level of membership
+
         for info_id, levels in self._container_output_functions.items():
-            # Get all nodes of the function type
-            int_levels = list(map(lambda x: len(x) - 1, levels))
+
+            # Initialize a container to store the URIs of elements of each
+            # output level starting from the function. Since the capture can
+            # ignore root levels, and to avoid recursion, we will map
+            # container entities up to the maximum possible level taken from
+            # the 'returns' annotations. Later, we take the annotations
+            # starting from the deepest level.
+
+            int_levels = list(map(lambda x: len(x), levels))
             max_level = max(int_levels)
+            elements_by_level = {level: [] for level in range(max_level)}
+
+            # Fetch information on the function, to identify nodes in the graph
             ontology_info = ONTOLOGY_INFORMATION[info_id]
             function_type = ontology_info.get_iri('function')
             executions = self.graph.subjects(RDF.type, function_type)
+
+            # For every execution, get the output nodes
+            # This is the first level
             for execution in executions:
-                # For every execution, get the outputs and find the correct
-                # outputs based on the requested level
-                outputs = self.graph.subjects(PROV.wasGeneratedBy, execution)
-                for output in outputs:
-                    self._process_output_level(output, int_levels, 1,
-                                               max_level, ontology_info)
+                elements_by_level[0].extend(
+                    self.graph.subjects(PROV.wasGeneratedBy, execution))
+
+            # Traverse the remaining levels
+            for level in range(1, max_level):
+                for element in chain(elements_by_level[level-1]):
+                    members = self.graph.objects(element, PROV.hadMember)
+                    elements_by_level[level].extend(members)
+
+            # Go from the deepest annotation level, annotating the deepest
+            # node level with elements
+            level_depth = max_level - 1
+            level_str = '*' * max_level
+            obj_uri = ontology_info.get_iri('returns', level_str)
+
+            while level_depth >= 0:
+                if obj_uri:
+                    has_elements = False
+                    for element in chain(elements_by_level[level_depth]):
+                        has_elements = True
+                        self.graph.add((element, RDF.type, obj_uri))
+                else:
+                    # No annotation requested for this level
+                    # Consider the level traversed
+                    has_elements = True
+
+                if has_elements:
+                    # Fetch annotation information for the parent level
+                    level_str = '*' * (len(level_str) - 1)
+                    obj_uri = ontology_info.get_iri('returns', level_str)
+
+                # If no element found, keep the annotation level, but
+                # try to annotate the elements of an upper node level
+                level_depth -= 1
 
     def add_history(self, script_info, session_id, history,
                     show_progress=False):

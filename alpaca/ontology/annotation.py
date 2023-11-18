@@ -88,7 +88,7 @@ class _OntologyInformation(object):
     namespaces across different objects and functions, such that no ambiguities
     or multiple definitions are introduced, and the full IRIs can be retrieved.
 
-    This class is used internally by Alpaca when serializating the provenance
+    This class is used internally by Alpaca when serializing the provenance
     as RDF.
 
     Parameters
@@ -151,8 +151,9 @@ class _OntologyInformation(object):
         returns = getattr(self, 'returns', None)
         if returns:
             return [key for key in returns.keys() if isinstance(key, str) and
-                    key.startswith('*') and len(key) > 1]
+                    key == '*' * len(key)]
         return None
+
     def get_iri(self, information_type, element=None):
         if information_type in VALID_OBJECTS:
             # Information on 'function', 'data_object' and 'package' are
@@ -172,9 +173,7 @@ class _OntologyInformation(object):
             # there will be an entry identified by '*'.
             information_value = information.get(element, None)
             if not information_value:
-                information_value = information.get('*', None)
-                if not information_value:
-                    return None
+                return None
 
         if (information_value[0], information_value[-1]) == ("<", ">"):
             # This is an IRI
