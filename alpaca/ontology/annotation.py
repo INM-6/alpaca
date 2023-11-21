@@ -1,17 +1,18 @@
 """
-This module implements functionality to read semantic annotations using
-ontologies that were inserted into Python objects. The annotations are used
-by the :class:`alpaca.AlpacaProvDocument` class when serializing the provenance
-information as RDF. The annotations will be inserted as additional `rdf:type`
-triples alongside the classes already defined by the Alpaca PROV model.
+Alpaca has functionality to embed semantic information provided by ontologies
+by reading annotations that were inserted into Python objects. The annotations
+are used by the :class:`alpaca.AlpacaProvDocument` class when serializing the
+provenance information as RDF. The annotations will be inserted as additional
+`rdf:type` triples alongside the classes already defined by the Alpaca PROV
+model.
 
-It expects that the Python object has a dictionary stored as the
+It expects that the Python object has a dictionary stored as the special
 `__ontology__` attribute. All the specific annotations for the Python object
 are contained in this dictionary. The annotations are URIs of the
-relevant ontology classes/individuals that represent the Python object (e.g.,
-a function) or one of its elements (e.g., the parameters of the function).
-If providing a full URI (i.e., without an ontology namespace as prefix
-- CURIEs), the URI must start with `<` and end with `>` (e.g.,
+relevant ontology classes that represent the Python object (e.g., a function)
+or one of its elements (e.g., the parameters of the function). If providing a
+full URI (i.e., without an ontology namespace as prefix - CURIEs), the URI
+must start with `<` and end with `>` (e.g.,
 `<http://example.org/ontology#Class>`). CURIEs are allowed in the form
 `ontology:Class`.
 

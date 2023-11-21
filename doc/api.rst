@@ -9,5 +9,6 @@ API Reference
    reference/decorator
    reference/graph
    reference/serialization
+   reference/ontologies
    reference/utility
    reference/settings
