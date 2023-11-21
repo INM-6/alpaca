@@ -78,7 +78,10 @@ class AlpacaProvDocument(object):
         # Metadata plugins are used for packages (e.g., Neo) that require
         # special handling of metadata when adding to the PROV records.
         # Plugins are external functions that take the graph, the object URI,
-        # and the metadata dict as parameters.
+        # and the metadata dict as parameters. The function should return a
+        # dictionary mapping all blank nodes generated to represent attributes
+        # and annotations, to allow the use of any semantic information
+        # defined by ontology annotations (i.e., __ontology__ attribute).
         self._metadata_plugins = {
             'neo': _neo_object_metadata
         }
@@ -214,17 +217,28 @@ class AlpacaProvDocument(object):
         if package_name in self._metadata_plugins:
             # Handle objects like Neo objects (i.e., to avoid dumping all the
             # information in collections such as `segments` or `events`)
-            self._metadata_plugins[package_name](self.graph, uri, metadata)
+            metadata_nodes = self._metadata_plugins[package_name](
+                self.graph, uri, metadata)
+
+            # Process metadata nodes of the object, if ontology information
+            # defined
+            if ontology_info:
+                for metadata_type, elements in metadata_nodes.items():
+                    for element, node in elements.items():
+                        self._add_ontology_information(node, ontology_info,
+                                                       metadata_type, element)
         else:
             # Add metadata using default handling, i.e., all attributes
             for name, value in metadata.items():
                 # Make sure that types such as list and Quantity are handled
                 value = _ensure_type(value)
 
-                _add_name_value_pair(self.graph, uri=uri,
-                                     predicate=ALPACA.hasAttribute,
-                                     name=name,
-                                     value=value)
+                blank_node = _add_name_value_pair(self.graph, uri=uri,
+                    predicate=ALPACA.hasAttribute, name=name, value=value)
+
+                if ontology_info:
+                    self._add_ontology_information(blank_node, ontology_info,
+                                                   'attributes', name)
 
     def _add_membership(self, container, child, params):
         # Add membership relationships according to the standard PROV model

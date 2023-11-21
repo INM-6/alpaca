@@ -484,10 +484,14 @@ class OntologyAnnotationTestCase(unittest.TestCase):
             'channel': 34,
         }
         for attribute in prov_graph.objects(output_node, ALPACA.hasAttribute):
-            name = prov_graph.value(attribute, ALPACA.pairName)
-            value = prov_graph.value(attribute, ALPACA.pairValue)
-            self.assertEqual(value.toPython(),
-                             expected_attributes[name.toPython()])
+            name = prov_graph.value(attribute, ALPACA.pairName).toPython()
+            value = prov_graph.value(attribute, ALPACA.pairValue).toPython()
+            self.assertEqual(value, expected_attributes[name])
+
+            # Check if attribute annotation is present for `name`
+            if name == 'name':
+                self.assertTrue((attribute, RDF.type, self.ONTOLOGY.Attribute)
+                                in prov_graph)
 
         # Check input value
         input_node = list(
@@ -580,7 +584,6 @@ class OntologyAnnotationTestCase(unittest.TestCase):
                             in prov_graph)
             members = list(prov_graph.objects(output_node, PROV.hadMember))
             self.assertEqual(len(members), 0)
-
 
     def test_provenance_annotation_container_multiple_output_multiple_annotations(self):
         activate(clear=True)
