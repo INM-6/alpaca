@@ -707,19 +707,19 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
 
         expected_output = DataObject(
             hash=joblib.hash(res, hash_name="sha1"), hash_method="joblib_SHA1",
-            type="builtins.list", id=id(res), details={})
+            type="builtins.list", id=id(res), details={}, value=None)
 
         expected_container_1 = DataObject(
             hash=joblib.hash(TEST_ARRAY + 7, hash_name='sha1'),
             hash_method="joblib_SHA1",
             type="numpy.ndarray", id=id(res[0]),
-            details={'shape': (3,), 'dtype': np.int64})
+            details={'shape': (3,), 'dtype': np.int64}, value=None)
 
         expected_container_2 = DataObject(
             hash=joblib.hash(TEST_ARRAY + 8, hash_name='sha1'),
             hash_method="joblib_SHA1",
             type="numpy.ndarray", id=id(res[1]),
-            details={'shape': (3,), 'dtype': np.int64})
+            details={'shape': (3,), 'dtype': np.int64}, value=None)
 
         # Check the subscript of each array with respect to the list returned
         _check_function_execution(
@@ -869,19 +869,19 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
 
         expected_output = DataObject(
             hash=joblib.hash(res, hash_name="sha1"), hash_method="joblib_SHA1",
-            type="builtins.list", id=id(res), details={})
+            type="builtins.list", id=id(res), details={}, value=None)
 
         expected_container_1 = DataObject(
             hash=joblib.hash(TEST_ARRAY + 1, hash_name='sha1'),
             hash_method="joblib_SHA1",
             type="numpy.ndarray", id=id(res[0]),
-            details={'shape': (3,), 'dtype': np.int64})
+            details={'shape': (3,), 'dtype': np.int64}, value=None)
 
         expected_container_2 = DataObject(
             hash=joblib.hash(TEST_ARRAY + 2, hash_name='sha1'),
             hash_method="joblib_SHA1",
             type="numpy.ndarray", id=id(res[1]),
-            details={'shape': (3,), 'dtype': np.int64})
+            details={'shape': (3,), 'dtype': np.int64}, value=None)
 
         # Check the subscript of each array with respect to the list returned
         _check_function_execution(
@@ -940,24 +940,24 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
                     hash=joblib.hash(element, hash_name="sha1"),
                     hash_method="joblib_SHA1",
                     type="numpy.int64", id=None,
-                    details={'shape': (), 'dtype': np.int64})
+                    details={'shape': (), 'dtype': np.int64}, value=None)
                 elements[idx].append(element_info)
 
         expected_output = DataObject(
             hash=joblib.hash(res, hash_name="sha1"), hash_method="joblib_SHA1",
-            type="builtins.list", id=id(res), details={})
+            type="builtins.list", id=id(res), details={}, value=None)
 
         expected_container_1 = DataObject(
             hash=joblib.hash(TEST_ARRAY + 5, hash_name='sha1'),
             hash_method="joblib_SHA1",
             type="numpy.ndarray", id=id(res[0]),
-            details={'shape': (3,), 'dtype': np.int64})
+            details={'shape': (3,), 'dtype': np.int64}, value=None)
 
         expected_container_2 = DataObject(
             hash=joblib.hash(TEST_ARRAY + 6, hash_name='sha1'),
             hash_method="joblib_SHA1",
             type="numpy.ndarray", id=id(res[1]),
-            details={'shape': (3,), 'dtype': np.int64})
+            details={'shape': (3,), 'dtype': np.int64}, value=None)
 
         # Check subscript of each element with respect to the array
         containers = [expected_container_1, expected_container_2]
@@ -1035,20 +1035,23 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
                     hash=joblib.hash(element, hash_name="sha1"),
                     hash_method="joblib_SHA1",
                     type="numpy.int64", id=None,
-                    details={'shape': (), 'dtype': np.int64})
+                    details={'shape': (), 'dtype': np.int64},
+                    value=None)
                 elements[idx].append(element_info)
 
         expected_container_1 = DataObject(
             hash=joblib.hash(TEST_ARRAY + 4, hash_name='sha1'),
             hash_method="joblib_SHA1",
             type="numpy.ndarray", id=id(res[0]),
-            details={'shape': (3,), 'dtype': np.int64})
+            details={'shape': (3,), 'dtype': np.int64},
+            value=None)
 
         expected_container_2 = DataObject(
             hash=joblib.hash(TEST_ARRAY + 5, hash_name='sha1'),
             hash_method="joblib_SHA1",
             type="numpy.ndarray", id=id(res[1]),
-            details={'shape': (3,), 'dtype': np.int64})
+            details={'shape': (3,), 'dtype': np.int64},
+            value=None)
 
         # Check subscript of each element with respect to the array
         containers = [expected_container_1, expected_container_2]
@@ -1521,13 +1524,15 @@ class ProvenanceDecoratorClassMethodsTestCase(unittest.TestCase):
             hash_method="joblib_SHA1",
             type="test_decorator.ObjectWithMethod",
             id=id(obj),
-            details={'coefficient': 2})
+            details={'coefficient': 2},
+            value=None)
 
         expected_output = DataObject(
             hash=joblib.hash(TEST_ARRAY+4, hash_name='sha1'),
             hash_method="joblib_SHA1",
             type="numpy.ndarray", id=id(res),
-            details={'shape': (3,), 'dtype': np.int64})
+            details={'shape': (3,), 'dtype': np.int64},
+            value=None)
 
         _check_function_execution(
             actual=Provenance.history[0],
