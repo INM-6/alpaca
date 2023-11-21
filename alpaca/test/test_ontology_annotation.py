@@ -34,7 +34,7 @@ class OutputObject:
         self.channel = channel
 
 
-class InputObjectIRI:
+class InputObjectURI:
     __ontology__ = {"data_object": "<http://purl.org/ontology#InputObject>"}
 
 
@@ -68,7 +68,7 @@ process_multiple.__wrapped__.__ontology__ = {
 
 @Provenance(inputs=[], container_output=True)
 def process_container_output():
-    return  list(range(3))
+    return list(range(3))
 
 process_container_output.__wrapped__.__ontology__ = {
     "function": "ontology:ProcessContainerOutput",
@@ -190,13 +190,13 @@ class OntologyAnnotationTestCase(unittest.TestCase):
         self.assertEqual(info.namespaces['purl_ontology'],
                          Namespace("http://purl.org/ontology"))
 
-    def test_annotation_object_input_iri(self):
-        obj = InputObjectIRI()
+    def test_annotation_object_input_uri(self):
+        obj = InputObjectURI()
         self.assertIsNotNone(
             _OntologyInformation.get_ontology_information(obj))
         info = _OntologyInformation(obj)
         self.assertEqual(
-            info.get_iri("data_object"),
+            info.get_uri("data_object"),
             URIRef("http://purl.org/ontology#InputObject"))
 
         # Namespaces included in representation as this is a class attribute
@@ -212,7 +212,7 @@ class OntologyAnnotationTestCase(unittest.TestCase):
             _OntologyInformation.get_ontology_information(obj))
         info = _OntologyInformation(obj)
         self.assertEqual(
-            info.get_iri("data_object"),
+            info.get_uri("data_object"),
             URIRef("http://example.org/ontology#InputObject"))
         self.assertEqual(
             str(info),
@@ -226,10 +226,10 @@ class OntologyAnnotationTestCase(unittest.TestCase):
             _OntologyInformation.get_ontology_information(obj))
         info = _OntologyInformation(obj)
         self.assertEqual(
-            info.get_iri("data_object"),
+            info.get_uri("data_object"),
             URIRef("http://example.org/ontology#OutputObject"))
         self.assertEqual(
-            info.get_iri("attributes", "name"),
+            info.get_uri("attributes", "name"),
             URIRef("http://example.org/ontology#Attribute"))
         self.assertEqual(
             str(info),
@@ -243,13 +243,13 @@ class OntologyAnnotationTestCase(unittest.TestCase):
             _OntologyInformation.get_ontology_information(process))
         info = _OntologyInformation(process)
         self.assertEqual(
-            info.get_iri("function"),
+            info.get_uri("function"),
             URIRef("http://example.org/ontology#ProcessFunction"))
         self.assertEqual(
-            info.get_iri("arguments", "param_1"),
+            info.get_uri("arguments", "param_1"),
             URIRef("http://example.org/ontology#Parameter"))
         self.assertEqual(
-            info.get_iri("returns", 0),
+            info.get_uri("returns", 0),
             URIRef("http://example.org/ontology#ProcessedData"))
         self.assertEqual(
             str(info),
@@ -264,13 +264,13 @@ class OntologyAnnotationTestCase(unittest.TestCase):
             _OntologyInformation.get_ontology_information(process_multiple))
         info = _OntologyInformation(process_multiple)
         self.assertEqual(
-            info.get_iri("function"),
+            info.get_uri("function"),
             URIRef("http://example.org/ontology#ProcessFunctionMultiple"))
         self.assertEqual(
-            info.get_iri("arguments", "param_1"),
+            info.get_uri("arguments", "param_1"),
             URIRef("http://example.org/ontology#Parameter"))
         self.assertEqual(
-            info.get_iri("returns", 1),
+            info.get_uri("returns", 1),
             URIRef("http://example.org/ontology#ProcessedDataMultiple"))
         self.assertEqual(
             str(info),
@@ -283,13 +283,17 @@ class OntologyAnnotationTestCase(unittest.TestCase):
     def test_invalid_object_annotations(self):
         obj = InputObject()
         info = _OntologyInformation(obj)
-        self.assertIsNone(info.get_iri("attributes", "name"))
+        self.assertIsNone(info.get_uri("attributes", "name"))
+        self.assertIsNone(info.get_uri("attributes", "channel"))
+        self.assertIsNone(info.get_uri("non_existent"))
+        self.assertIsNone(info.get_uri("non_existent", "test"))
 
         output_obj = OutputObject("test", 45)
         output_info = _OntologyInformation(output_obj)
-        self.assertIsNone(info.get_iri("attributes", "channel"))
-        self.assertIsNone(info.get_iri("non_existent"))
-        self.assertIsNone(info.get_iri("non_existent", "test"))
+        self.assertIsNotNone(output_info.get_uri("attributes", "name"))
+        self.assertIsNone(output_info.get_uri("attributes", "channel"))
+        self.assertIsNone(output_info.get_uri("non_existent"))
+        self.assertIsNone(output_info.get_uri("non_existent", "test"))
 
     def test_namespaces(self):
         input_obj = InputObject()
@@ -316,9 +320,9 @@ class OntologyAnnotationTestCase(unittest.TestCase):
             prov_graph.parse(data_stream, format='turtle')
 
         # Check that no other annotations are present
-        execution_iri = list(
+        execution_uri = list(
             prov_graph.subjects(RDF.type, ALPACA.FunctionExecution))[0]
-        types = list(prov_graph.objects(execution_iri, RDF.type))
+        types = list(prov_graph.objects(execution_uri, RDF.type))
         self.assertListEqual(types, [ALPACA.FunctionExecution])
 
     def test_provenance_annotation(self):
@@ -357,9 +361,9 @@ class OntologyAnnotationTestCase(unittest.TestCase):
             ), 1)
 
         # FunctionExecution is ProcessFunction
-        execution_iri = list(
+        execution_uri = list(
             prov_graph.subjects(RDF.type, ALPACA.FunctionExecution))[0]
-        self.assertTrue((execution_iri,
+        self.assertTrue((execution_uri,
                          RDF.type,
                          self.ONTOLOGY.ProcessFunction) in prov_graph)
 
@@ -375,7 +379,7 @@ class OntologyAnnotationTestCase(unittest.TestCase):
         output_node = list(
             prov_graph.subjects(RDF.type, self.ONTOLOGY.ProcessedData))[0]
         self.assertTrue((output_node,
-                         PROV.wasGeneratedBy, execution_iri) in prov_graph)
+                         PROV.wasGeneratedBy, execution_uri) in prov_graph)
         self.assertTrue((output_node,
                          RDF.type, ALPACA.DataObjectEntity) in prov_graph)
         self.assertTrue((output_node,
@@ -387,15 +391,19 @@ class OntologyAnnotationTestCase(unittest.TestCase):
             'channel': 45,
         }
         for attribute in prov_graph.objects(output_node, ALPACA.hasAttribute):
-            name = prov_graph.value(attribute, ALPACA.pairName)
-            value = prov_graph.value(attribute, ALPACA.pairValue)
-            self.assertEqual(value.toPython(),
-                             expected_attributes[name.toPython()])
+            name = prov_graph.value(attribute, ALPACA.pairName).toPython()
+            value = prov_graph.value(attribute, ALPACA.pairValue).toPython()
+            self.assertEqual(value, expected_attributes[name])
+
+            # Check if attribute annotation is present for `name`
+            if name == 'name':
+                self.assertTrue((attribute, RDF.type, self.ONTOLOGY.Attribute)
+                                in prov_graph)
 
         # Check input value
         input_node = list(
             prov_graph.subjects(RDF.type, self.ONTOLOGY.InputObject))[0]
-        self.assertTrue((execution_iri, PROV.used, input_node) in prov_graph)
+        self.assertTrue((execution_uri, PROV.used, input_node) in prov_graph)
         self.assertTrue((input_node,
                          RDF.type, ALPACA.DataObjectEntity) in prov_graph)
         self.assertTrue((output_node,
@@ -446,9 +454,9 @@ class OntologyAnnotationTestCase(unittest.TestCase):
             ), 0)
 
         # FunctionExecution is ProcessFunctionMultiple
-        execution_iri = list(
+        execution_uri = list(
             prov_graph.subjects(RDF.type, ALPACA.FunctionExecution))[0]
-        self.assertTrue((execution_iri, RDF.type,
+        self.assertTrue((execution_uri, RDF.type,
                          self.ONTOLOGY.ProcessFunctionMultiple) in prov_graph)
 
         # Check parameter name
@@ -464,7 +472,7 @@ class OntologyAnnotationTestCase(unittest.TestCase):
             prov_graph.subjects(RDF.type,
                                 self.ONTOLOGY.ProcessedDataMultiple))[0]
         self.assertTrue((output_node,
-                         PROV.wasGeneratedBy, execution_iri) in prov_graph)
+                         PROV.wasGeneratedBy, execution_uri) in prov_graph)
         self.assertTrue((output_node,
                          RDF.type, ALPACA.DataObjectEntity) in prov_graph)
         self.assertTrue((output_node,
@@ -484,7 +492,7 @@ class OntologyAnnotationTestCase(unittest.TestCase):
         # Check input value
         input_node = list(
             prov_graph.subjects(RDF.type, self.ONTOLOGY.InputObject))[0]
-        self.assertTrue((execution_iri,
+        self.assertTrue((execution_uri,
                          PROV.used, input_node) in prov_graph)
         self.assertTrue((input_node,
                          RDF.type, ALPACA.DataObjectEntity) in prov_graph)
@@ -515,9 +523,9 @@ class OntologyAnnotationTestCase(unittest.TestCase):
             ), 3)
 
         # FunctionExecution is ProcessContainerOutput
-        execution_iri = list(
+        execution_uri = list(
             prov_graph.subjects(RDF.type, ALPACA.FunctionExecution))[0]
-        self.assertTrue((execution_iri, RDF.type,
+        self.assertTrue((execution_uri, RDF.type,
                          self.ONTOLOGY.ProcessContainerOutput) in prov_graph)
 
         # Check returned values
@@ -525,7 +533,7 @@ class OntologyAnnotationTestCase(unittest.TestCase):
                                 self.ONTOLOGY.ProcessedContainerOutput)
         for output_node in output_nodes:
             self.assertTrue((output_node,
-                             PROV.wasGeneratedBy, execution_iri) in prov_graph)
+                             PROV.wasGeneratedBy, execution_uri) in prov_graph)
             self.assertTrue((output_node,
                              RDF.type, ALPACA.DataObjectEntity) in prov_graph)
             self.assertTrue((output_node,
@@ -555,9 +563,9 @@ class OntologyAnnotationTestCase(unittest.TestCase):
             ), 9)
 
         # FunctionExecution is ProcessMultipleContainerOutput
-        execution_iri = list(
+        execution_uri = list(
             prov_graph.subjects(RDF.type, ALPACA.FunctionExecution))[0]
-        self.assertTrue((execution_iri, RDF.type,
+        self.assertTrue((execution_uri, RDF.type,
                          self.ONTOLOGY.ProcessMultipleContainerOutput) in prov_graph)
 
         # Check returned values
@@ -601,9 +609,9 @@ class OntologyAnnotationTestCase(unittest.TestCase):
             ), 2)
 
         # FunctionExecution is ProcessMultipleContainerOutputMultipleAnnotations
-        execution_iri = list(
+        execution_uri = list(
             prov_graph.subjects(RDF.type, ALPACA.FunctionExecution))[0]
-        self.assertTrue((execution_iri, RDF.type,
+        self.assertTrue((execution_uri, RDF.type,
                          self.ONTOLOGY.ProcessMultipleContainerOutputMultipleAnnotations) in prov_graph)
 
         # Check returned values
@@ -657,16 +665,16 @@ class OntologyAnnotationTestCase(unittest.TestCase):
             ), 1)
 
         # FunctionExecution is ProcessMultipleContainerOutputMultipleAnnotationsRoot
-        execution_iri = list(
+        execution_uri = list(
             prov_graph.subjects(RDF.type, ALPACA.FunctionExecution))[0]
-        self.assertTrue((execution_iri, RDF.type,
+        self.assertTrue((execution_uri, RDF.type,
                          self.ONTOLOGY.ProcessMultipleContainerOutputMultipleAnnotationsRoot) in prov_graph)
 
         # Check returned values
         output_nodes = prov_graph.subjects(RDF.type,
                                 self.ONTOLOGY.ProcessedMultipleContainerOutputLevel0)
         for output_level0 in output_nodes:
-            self.assertTrue((output_level0, PROV.wasGeneratedBy, execution_iri) in prov_graph)
+            self.assertTrue((output_level0, PROV.wasGeneratedBy, execution_uri) in prov_graph)
             self.assertTrue((output_level0,
                              RDF.type, ALPACA.DataObjectEntity) in prov_graph)
             self.assertTrue((output_level0,
@@ -720,9 +728,9 @@ class OntologyAnnotationTestCase(unittest.TestCase):
             ), 0)
 
         # FunctionExecution is ProcessMultipleContainerOutputMultipleAnnotationsRange
-        execution_iri = list(
+        execution_uri = list(
             prov_graph.subjects(RDF.type, ALPACA.FunctionExecution))[0]
-        self.assertTrue((execution_iri, RDF.type,
+        self.assertTrue((execution_uri, RDF.type,
                          self.ONTOLOGY.ProcessMultipleContainerOutputMultipleAnnotationsRange) in prov_graph)
 
         # Check returned values
@@ -731,7 +739,7 @@ class OntologyAnnotationTestCase(unittest.TestCase):
         output_nodes = prov_graph.subjects(RDF.type,
                                 self.ONTOLOGY.ProcessedMultipleContainerOutputLevel1)
         for output_level1 in output_nodes:
-            self.assertTrue((output_level1, PROV.wasGeneratedBy, execution_iri) in prov_graph)
+            self.assertTrue((output_level1, PROV.wasGeneratedBy, execution_uri) in prov_graph)
             self.assertTrue((output_level1,
                              RDF.type, ALPACA.DataObjectEntity) in prov_graph)
             self.assertTrue((output_level1,
@@ -774,16 +782,16 @@ class OntologyAnnotationTestCase(unittest.TestCase):
             ), 1)
 
         # FunctionExecution is ProcessInputAnnotation
-        execution_iri = list(
+        execution_uri = list(
             prov_graph.subjects(RDF.type, ALPACA.FunctionExecution))[0]
-        self.assertTrue((execution_iri, RDF.type,
+        self.assertTrue((execution_uri, RDF.type,
                          self.ONTOLOGY.ProcessInputAnnotation) in prov_graph)
 
 
         # Check input values
-        input_nodes = prov_graph.objects(execution_iri, PROV.used)
+        input_nodes = prov_graph.objects(execution_uri, PROV.used)
         for input_node in input_nodes:
-            self.assertTrue((execution_iri, PROV.used, input_node) in prov_graph)
+            self.assertTrue((execution_uri, PROV.used, input_node) in prov_graph)
             self.assertTrue((input_node,
                              RDF.type, ALPACA.DataObjectEntity) in prov_graph)
             self.assertTrue((input_node,
@@ -821,17 +829,17 @@ class OntologyAnnotationTestCase(unittest.TestCase):
             ), 1)
 
         # FunctionExecution is ProcessContainerInputAnnotation
-        execution_iri = list(
+        execution_uri = list(
             prov_graph.subjects(RDF.type, ALPACA.FunctionExecution))[0]
-        self.assertTrue((execution_iri, RDF.type,
+        self.assertTrue((execution_uri, RDF.type,
                          self.ONTOLOGY.ProcessContainerInputAnnotation) in prov_graph)
 
 
         # Check input values have the expected number of classes
-        input_nodes = prov_graph.objects(execution_iri, PROV.used)
+        input_nodes = prov_graph.objects(execution_uri, PROV.used)
         input_node_count = Counter()
         for input_node in input_nodes:
-            self.assertTrue((execution_iri, PROV.used, input_node) in prov_graph)
+            self.assertTrue((execution_uri, PROV.used, input_node) in prov_graph)
             for input_node_type in prov_graph.objects(input_node, RDF.type):
                 input_node_count[input_node_type] += 1
 

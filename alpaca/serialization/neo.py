@@ -37,22 +37,14 @@ def _neo_to_prov(value, displayed_attributes=DISPLAYED_ATTRIBUTES):
     type_information = type(value)
     neo_class = f"{type_information.__module__}.{type_information.__name__}"
 
-    repr = f"{neo_class}("
-
-    counter = 0
-
+    attr_repr = []
     for attribute in displayed_attributes:
         if hasattr(value, attribute):
-            if counter > 0:
-                repr += ", "
-
             attr_value = getattr(value, attribute)
-            repr += f"{attribute}={_ensure_type(attr_value)}"
+            attr_repr.append(f"{attribute}={_ensure_type(attr_value)}")
 
-            counter += 1
-
-    repr += ")"
-    return repr
+    neo_repr = f"{neo_class}({', '.join(attr_repr)})"
+    return neo_repr
 
 
 def _neo_object_metadata(graph, uri, metadata):
@@ -73,14 +65,10 @@ def _neo_object_metadata(graph, uri, metadata):
                 # readable name of each Neo object in the list. They will be
                 # enclosed in brackets [] as the value stored in the
                 # serialized file.
-                attr_value = "["
-                counter = 0
+                attr_values = []
                 for item in value:
-                    if counter > 0:
-                        attr_value += ", "
-                    attr_value += _neo_to_prov(item)
-                    counter += 1
-                attr_value += "]"
+                    attr_values.append(_neo_to_prov(item))
+                attr_value = f"[{', '.join(attr_values)}]"
             else:
                 # This is a container Neo object. Just get the readable
                 # name of the object
