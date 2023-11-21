@@ -1,15 +1,25 @@
 """
 This module implements functionality to read semantic annotations using
-ontologies that were inserted into Python entities.
+ontologies that were inserted into Python objects. The annotations are used
+by the :class:`alpaca.AlpacaProvDocument` class when serializing the provenance
+information as RDF. The annotations will be inserted as additional `rdf:type`
+triples alongside the classes already defined by the Alpaca PROV model.
 
-It expects that the Python entity has a dictionary stored as the
-`__ontology__` attribute. All the specific annotations for the Python entity
-are contained in this dictionary.
+It expects that the Python object has a dictionary stored as the
+`__ontology__` attribute. All the specific annotations for the Python object
+are contained in this dictionary. The annotations are URIs of the
+relevant ontology classes/individuals that represent the Python object (e.g.,
+a function) or one of its elements (e.g., the parameters of the function).
+If providing a full URI (i.e., without an ontology namespace as prefix
+- CURIEs), the URI must start with `<` and end with `>` (e.g.,
+`<http://example.org/ontology#Class>`). CURIEs are allowed in the form
+`ontology:Class`.
 
-Currently, two main types of annotation groups are supported: functions
-(intended for a Python function) and data objects (intended for a Python
-class). Specific keys in the `__ontology__` dictionary will define the
-main IRI describing either the function or the data object:
+Currently, annotations for two main Python objects are supported: functions
+(intended for a Python function object) and data objects (intended for
+instances of objects instantiated from a Python class). Specific keys in the
+`__ontology__` dictionary will define the main URI describing either the
+function or the data object:
 
 * 'function' : str
    A URI to the ontology class representing the Python function.
@@ -22,18 +32,30 @@ object is being annotated.
 For functions, the additional items that can be stored in the `__ontology__`
 dictionary are:
 
-* 'package': str
-   An IRI to the individual representing the package where the function is
-   implemented.
 * 'arguments' : dict
    A dictionary where the keys are argument names (cf. the function
    declaration in the `def` statement) and the values are the URI
    to the ontology class representing the argument.
 * 'returns' : dict
-   A dictionary where the keys are strings with the output names (if defined
-   in the function arguments) or integers corresponding to the order of the
-   output (as defined by the function returns). The values are the IRI to the
-   ontology class representing each output identified by the key.
+   A dictionary where the keys are function outputs, and the values define the
+   URIs to the ontology classes that represent each output identified by a key.
+   The keys in the `returns` dictionary can have three possible values:
+   1. a string with one output name (if this is the name of an argument, cf.
+   the function declaration in the `def` statement), which assumes that a
+   function uses one of the arguments as output, or
+   2. an integer corresponding to the order of the output (as defined by the
+   function `return` statements), or
+   3. a string of `*`s. In this case, the function returns a container (e.g.,
+   a list, or list of lists), and the number of `*`s defines the depth
+   within the container whose elements are defined by the ontology class in
+   the value. For instance, if the function returns a list of lists
+   `[[obj1, obj2], [obj3, obj4], ...]`, the objects are at the third level. If
+   each element `objX` is represented by an ontology class defined by `<URI>`,
+   one can annotate the elements with a key `'***'` and value `'<URI>'`. An
+   annotation with key `'*'` would be used to annotate the main list returned,
+   and the key `'**'` would be used to annotate each inner list inside the
+   main list (e.g., `[obj1, obj2]` or `[obj3, obj4]`). This is useful for using
+   ontologies that define concepts that represent groups of elements.
 
 For data objects, the additional items that can be stored in the `__ontology__`
 dictionary are:
@@ -48,20 +70,71 @@ dictionary are:
    object (e.g., `obj.annotations`).
 
 Finally, the ontology annotations can be defined using namespaces so that the
-IRIs are shortened. Namespaces are defined for both functions and data objects
-using the `namespaces` value in the `__ontology__` dictionary:
+URIs are shortened (CURIEs). Namespaces are defined for both functions and
+data objects using the `namespaces` key in the `__ontology__` dictionary:
 
 * 'namespaces' : dict
    A dictionary where the keys are the names used as prefixes in the
-   annotations in `__ontology__` and the values are the prefixed IRIs to be
-   expanded to get the final IRI.
+   annotations in `__ontology__` and the values are the prefix URIs to be
+   expanded to get the final URI. For example, for an ontology with URIs with
+   prefix `http://example.org/ontology#`, such as
+   `<http://example.org/ontology#ClassA>` and
+   `<http://example.org/ontology#ClassB>` a namespace
+   `'ontology'="http://example.org/ontology#"` can be defined such as the
+   classes can be referred to as `ontology:ClassA` and `ontology:ClassB`.
+
+
+Examples
+--------
+
+Consider the Python function `process` that takes an input `data`, is
+controlled by a parameter `param`, and returns a tuple of two elements:
+
+>>> def process(data, param):
+>>>     ...  # process `data` into `output1` and `output2` using `param`
+>>>     return output1, output2
+
+To use an ontology defined by the base URI `<http://my-ontology#>` to annotate
+the `process` Python function, whose concept is defined by
+`<http://my-ontology#ProcessClass>`, and where `data` is represented by
+`<http://my-ontology#DataClass>`, `param` by
+`<http://my-ontology#ParameterClass>` and the second return element (`output2`)
+needs to be annotated with class `<http://my-ontology#ProcessOutputClass>`,
+the following dictionary could be inserted into the `process` function object:
+
+>>> process.__ontology__ = {
+>>>     'function': "my_ontology:ProcessClass",
+>>>     'arguments': {'data': "my_ontology:DataClass",
+>>>                   'param': "my_ontology:ParameterClass"},
+>>>     'returns': {1: "my_ontology:ProcessOutputClass"},
+>>>     'namespaces': {"my_ontology": "http://my-ontology#"}
+>>> }
+
+For a Python function `process_container`, represented by
+`<http://my-ontology#ProcessContainerClass>` that takes the same inputs but
+returns a list of objects that need to be annotated with the ontology class
+`<http://my-ontology#ProcessOutputElementClass>`, the following dictionary
+could be used:
+
+>>> def process_container(data, param):
+>>>     ...  # process `data` into several outputs grouped as a list `output`
+>>> return output    # [obj1, obj2, ...]
+
+>>> process_container.__ontology__ = {
+>>>     'function': "my_ontology:ProcessContainerClass",
+>>>     'arguments': {'data': "my_ontology:DataClass",
+>>>                   'param': "my_ontology:ParameterClass"},
+>>>     'returns': {'**': "my_ontology:ProcessOutputElementClass"},
+>>>     'namespaces': {"my_ontology": "http://my-ontology#"}
+>>> }
+
 """
 
 import rdflib
 from copy import deepcopy
 
 
-# Two types of entities can be annotated: functions or data objects.
+# Two types of Python objects can be annotated: functions or data objects.
 # For each, specific additional information can also be annotated (e.g.,
 # the parameters of a function). This dictionary defines which can be defined
 # for each entity, and the strings that are used as keys in the `__ontology__`
