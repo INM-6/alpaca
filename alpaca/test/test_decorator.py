@@ -940,7 +940,7 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
                     hash=joblib.hash(element, hash_name="sha1"),
                     hash_method="joblib_SHA1",
                     type="numpy.int64", id=None,
-                    details={'shape': (), 'dtype': np.int64}, value=None)
+                    details={'shape': (), 'dtype': np.int64}, value=element)
                 elements[idx].append(element_info)
 
         expected_output = DataObject(
@@ -1036,7 +1036,7 @@ class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
                     hash_method="joblib_SHA1",
                     type="numpy.int64", id=None,
                     details={'shape': (), 'dtype': np.int64},
-                    value=None)
+                    value=element)
                 elements[idx].append(element_info)
 
         expected_container_1 = DataObject(
