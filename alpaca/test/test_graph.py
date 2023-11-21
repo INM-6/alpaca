@@ -1,3 +1,4 @@
+import sys
 import unittest
 
 from pathlib import Path
@@ -494,7 +495,8 @@ class GraphAggregationTestCase(unittest.TestCase):
     def setUpClass(cls):
         cls.ttl_path = Path(__file__).parent / "res"
         input_file = cls.ttl_path / "parallel_graph.ttl"
-        cls.graph = ProvenanceGraph(input_file, attributes=['shape', 'metadata'])
+        cls.graph = ProvenanceGraph(input_file, attributes=['shape',
+                                                            'metadata', 'id'])
         alpaca_setting('authority', "my-authority")
 
     def test_serialization(self):
@@ -541,6 +543,123 @@ class GraphAggregationTestCase(unittest.TestCase):
                 self.assertTrue(label in expected_values_per_node)
                 for key, value in expected_values_per_node[label].items():
                     self.assertEqual(attrs[key], value)
+
+    def test_aggregation_by_callable(self):
+        graph_file = self.ttl_path / "multiple_file_output.ttl"
+
+        # Non-aggregated graph
+        graph = ProvenanceGraph(graph_file)
+
+        # Aggregate without attributes
+        aggregated = graph.aggregate({}, output_file=None)
+
+        # Aggregate separating by file path in File nodes
+        aggregated_path = graph.aggregate({'File': ('File_path',)},
+                                          output_file=None)
+
+        # Aggregate using a callable to separate files which path starts with
+        # "/outputs/"
+        is_cut_plot = lambda g, n, d: d['File_path'].startswith("/outputs/")
+        aggregated_callable = graph.aggregate({'File': (is_cut_plot,)},
+                                              output_file=None)
+
+        # Define a dictionary with the expected values for each case, that
+        # are used in subtests below
+        tests = {
+            'non_aggregated': {'graph': graph.graph, 'length': 10,
+                               'counts': {'InputObject': 3,
+                                          'plot_function': 3,
+                                          'cut_function': 1,
+                                          'File': 3},
+                               'paths': ["/full.png",
+                                         "/outputs/1.png",
+                                         "/outputs/2.png"]
+                               },
+
+            'aggregated': {'graph': aggregated, 'length': 5,
+                           'counts': {'InputObject': 2,
+                                      'plot_function': 1,
+                                      'cut_function': 1,
+                                      'File': 1},
+                           'paths': "/full.png;/outputs/1.png;/outputs/2.png"
+                           },
+
+            'aggregated_path': {'graph': aggregated_path, 'length': 10,
+                                'counts': {'InputObject': 3,
+                                           'plot_function': 3,
+                                           'cut_function': 1,
+                                           'File': 3},
+                                'paths': ["/full.png",
+                                          "/outputs/1.png",
+                                          "/outputs/2.png"]
+                                },
+            'aggregated_callable': {'graph': aggregated_callable, 'length': 7,
+                                    'counts': {'InputObject': 2,
+                                               'plot_function': 2,
+                                               'cut_function': 1,
+                                               'File': 2},
+                                    'paths': ["/full.png",
+                                              "/outputs/1.png;/outputs/2.png"]
+                                    },
+        }
+
+        for key, expected in tests.items():
+            with self.subTest(f"Graph {key}"):
+                test_graph = expected['graph']
+                nodes = test_graph.nodes
+                self.assertEqual(len(nodes), expected['length'])
+
+                # Check if node counts is as expected
+                all_labels = [nodes[node]['label'] for node in nodes]
+                counts = Counter(all_labels)
+                for label, count in expected['counts'].items():
+                    self.assertEqual(counts[label], count)
+
+                # Check if file paths in the node are as expected
+                paths = expected['paths']
+                for node, attrs in nodes.items():
+                    # Check value of file paths in File nodes
+                    if attrs['label'] == "File":
+                        if isinstance(paths, list):
+                            self.assertTrue(attrs['File_path'] in paths)
+                        else:
+                            self.assertEqual(attrs['File_path'], paths)
+
+    def test_aggregation_by_attribute_with_missing(self):
+        aggregated = self.graph.aggregate({'InputObject': ('id',)},
+                                          use_function_parameters=False,
+                                          output_file=None)
+        nodes = aggregated.nodes
+
+        self.assertEqual(len(nodes), 5)
+
+        expected_values_per_node = {
+            'OutputObject': {'metadata': "0;1",
+                             'shape': "(2,);(3,);(4,);(5,)"},
+            'InputObject': {'metadata': "5",
+                            'shape': ["(2,)", "(3,);(4,);(5,)"],
+                            'id': ["1", None]},
+            'process': {'process:value': "0;1;2;3"},
+            'list': {}
+        }
+
+        all_labels = [nodes[node]['label'] for node in nodes]
+        counts = Counter(all_labels)
+        self.assertEqual(counts['OutputObject'], 1)
+        self.assertEqual(counts['InputObject'], 2)
+        self.assertEqual(counts['process'], 1)
+        self.assertEqual(counts['list'], 1)
+
+        for node, attrs in nodes.items():
+            label = attrs['label']
+            with self.subTest(f"Node label {label}"):
+                self.assertTrue(label in expected_values_per_node)
+                for key, value in expected_values_per_node[label].items():
+                    attr_val = attrs[key] if key in attrs else None
+                    if not isinstance(value, list):
+                        self.assertEqual(attr_val, value)
+                    else:
+                        self.assertTrue(attr_val in value)
 
     def test_aggregation_by_attribute(self):
         aggregated = self.graph.aggregate({'InputObject': ('shape',)},
