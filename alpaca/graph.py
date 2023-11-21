@@ -98,7 +98,7 @@ def _get_name_value_pair(graph, bnode):
 
 
 def _get_entity_data(graph, entity, annotations=None, attributes=None,
-                     strip_namespace=True):
+                     strip_namespace=True, value_attribute=None):
     filter_map = defaultdict(list)
 
     filter_map.update(
@@ -117,6 +117,12 @@ def _get_entity_data(graph, entity, annotations=None, attributes=None,
 
                     _add_attribute(data, attr_name, attr_type, attr_value,
                                    strip_namespace)
+
+    # Get the stored value if requested and present
+    if value_attribute:
+        value = graph.value(entity, PROV.value)
+        if value:
+            data[value_attribute] = value.toPython()
 
     if data['type'] == NSS_FILE:
         file_path = str(list(graph.objects(entity, ALPACA.filePath))[0])
@@ -223,6 +229,15 @@ class ProvenanceGraph:
         time interval strings in the format supported by the Gephi timeline
         feature. If False, the attribute is not included.
         Default: True
+    value_attribute : str, optional
+        If provided, an attribute named `value_attribute` will be added to
+        the node attributes to show the values stored in the provenance
+        information. Alpaca stores the values of objects of the builtin types
+        `str`, `bool`, `int`, `float` and `complex`, as well as the NumPy
+        numeric types (e.g. `numpy.float64`) by default. The values of
+        additional types can be defined using the
+        :func:`alpaca.settings.alpaca_setting` function.
+        Default: None
 
     Attributes
     ----------
@@ -235,7 +250,7 @@ class ProvenanceGraph:
     def __init__(self, *prov_file, annotations=None, attributes=None,
                  strip_namespace=True, remove_none=True,
                  use_name_in_parameter=True, use_class_in_method_name=True,
-                 time_intervals=True):
+                 time_intervals=True, value_attribute=None):
 
         # Load PROV records from the file(s)
         doc = AlpacaProvDocument()
@@ -250,7 +265,7 @@ class ProvenanceGraph:
             strip_namespace=strip_namespace, remove_none=remove_none,
             use_name_in_parameter=use_name_in_parameter,
             use_class_in_method_name=use_class_in_method_name,
-            time_intervals=time_intervals
+            time_intervals=time_intervals, value_attribute=value_attribute
         )
 
         if time_intervals:
@@ -319,7 +334,7 @@ class ProvenanceGraph:
                          strip_namespace=True, remove_none=True,
                          use_name_in_parameter=True,
                          use_class_in_method_name=True,
-                         time_intervals=True):
+                         time_intervals=True, value_attribute=None):
         # Transform an RDFlib graph obtained from the PROV data, so that the
         # visualization is simplified. A new `nx.DiGraph` object is created
         # and returned. Annotations and attributes of the entities stored in
@@ -341,7 +356,8 @@ class ProvenanceGraph:
             data = _get_entity_data(graph, entity,
                                     annotations=annotations,
                                     attributes=attributes,
-                                    strip_namespace=strip_namespace)
+                                    strip_namespace=strip_namespace,
+                                    value_attribute=value_attribute)
             transformed.add_node(node_id, **data)
 
         # Add all the edges.
