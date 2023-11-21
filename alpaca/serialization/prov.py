@@ -298,8 +298,8 @@ class AlpacaProvDocument(object):
             input_entities = []
             for key, value in execution.input.items():
                 cur_entities = []
-                has_input_iri = ontology_info and \
-                                bool(ontology_info.get_iri('arguments', key))
+                has_input_uri = ontology_info and \
+                                bool(ontology_info.get_uri('arguments', key))
 
                 if isinstance(value, Container):
                     # If this is a Container, several objects are inside.
@@ -314,7 +314,7 @@ class AlpacaProvDocument(object):
                     self._used(activity=cur_activity, entity=cur_entity)
                     self._wasAttributedTo(entity=cur_entity,
                                           agent=script_agent)
-                    if has_input_iri:
+                    if has_input_uri:
                         self._add_ontology_information(cur_entity,
                                                        ontology_info,
                                                        'arguments', key)
@@ -363,7 +363,7 @@ class AlpacaProvDocument(object):
 
             # Fetch information on the function, to identify nodes in the graph
             ontology_info = ONTOLOGY_INFORMATION[info_id]
-            function_type = ontology_info.get_iri('function')
+            function_type = ontology_info.get_uri('function')
             executions = self.graph.subjects(RDF.type, function_type)
 
             # For every execution, get the output nodes
@@ -382,7 +382,7 @@ class AlpacaProvDocument(object):
             # node level with elements
             level_depth = max_level - 1
             level_str = '*' * max_level
-            obj_uri = ontology_info.get_iri('returns', level_str)
+            obj_uri = ontology_info.get_uri('returns', level_str)
 
             while level_depth >= 0:
                 if obj_uri:
@@ -398,7 +398,7 @@ class AlpacaProvDocument(object):
                 if has_elements:
                     # Fetch annotation information for the parent level
                     level_str = '*' * (len(level_str) - 1)
-                    obj_uri = ontology_info.get_iri('returns', level_str)
+                    obj_uri = ontology_info.get_uri('returns', level_str)
 
                 # If no element found, keep the annotation level, but
                 # try to annotate the elements of an upper node level

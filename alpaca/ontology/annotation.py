@@ -12,9 +12,9 @@ class). Specific keys in the `__ontology__` dictionary will define the
 main IRI describing either the function or the data object:
 
 * 'function' : str
-   An IRI to the ontology class representing the Python function.
+   A URI to the ontology class representing the Python function.
 * 'data_object' : str
-   An IRI to the ontology class representing the Python data object.
+   A URI to the ontology class representing the Python data object.
 
 Additional annotations can be stored depending on whether a function or data
 object is being annotated.
@@ -27,7 +27,7 @@ dictionary are:
    implemented.
 * 'arguments' : dict
    A dictionary where the keys are argument names (cf. the function
-   declaration in the `def` statement) and the values are the IRI
+   declaration in the `def` statement) and the values are the URI
    to the ontology class representing the argument.
 * 'returns' : dict
    A dictionary where the keys are strings with the output names (if defined
@@ -40,10 +40,10 @@ dictionary are:
 
 * 'attributes' : dict
    A dictionary where the keys are object attribute names and the values are
-   the IRI to the ontology class representing the attribute.
+   the URI to the ontology class representing the attribute.
 * 'annotations' : dict
    A dictionary where the keys are annotation names and the values are the
-   IRI to the ontology class representing the annotation. Annotations are
+   URI to the ontology class representing the annotation. Annotations are
    key-pair values specified in dictionaries stored as one attribute of the
    object (e.g., `obj.annotations`).
 
@@ -86,7 +86,7 @@ class _OntologyInformation(object):
     This class provides easy access to the definitions when serializing the
     provenance information with extended ontology annotations. It also manages
     namespaces across different objects and functions, such that no ambiguities
-    or multiple definitions are introduced, and the full IRIs can be retrieved.
+    or multiple definitions are introduced, and the full URIs can be retrieved.
 
     This class is used internally by Alpaca when serializing the provenance
     as RDF.
@@ -101,14 +101,14 @@ class _OntologyInformation(object):
     namespaces = {}
 
     @classmethod
-    def add_namespace(cls, name, iri):
+    def add_namespace(cls, name, uri):
         if name in cls.namespaces:
-            if cls.namespaces[name] != iri:
+            if cls.namespaces[name] != uri:
                 raise ValueError("Attempting to redefine an existing "
                                  "namespace. This is not allowed as other "
-                                 "terms expect a different IRI.")
+                                 "terms expect a different URI.")
         else:
-            cls.namespaces[name] = rdflib.Namespace(iri)
+            cls.namespaces[name] = rdflib.Namespace(uri)
 
     @classmethod
     def bind_namespaces(cls, namespace_manager):
@@ -133,12 +133,12 @@ class _OntologyInformation(object):
 
             for information_type, information in ontology_info.items():
                 if information_type in VALID_OBJECTS:
-                    # Function or data object IRI
+                    # Function or data object URI
                     setattr(self, information_type, information)
                 elif information_type == "namespaces":
                     # Add all namespaces, checking for inconsistencies
-                    for prefix, iri in information.items():
-                        self.add_namespace(prefix, iri)
+                    for prefix, uri in information.items():
+                        self.add_namespace(prefix, uri)
                 else:
                     # Add additional information on the function or data
                     # object
@@ -154,7 +154,7 @@ class _OntologyInformation(object):
                     key == '*' * len(key)]
         return None
 
-    def get_iri(self, information_type, element=None):
+    def get_uri(self, information_type, element=None):
         if information_type in VALID_OBJECTS:
             # Information on 'function' and 'data_object' are strings, stored
             # directly as attributes
@@ -176,10 +176,10 @@ class _OntologyInformation(object):
                 return None
 
         if (information_value[0], information_value[-1]) == ("<", ">"):
-            # This is an IRI
+            # This is a URI
             return rdflib.URIRef(information_value[1:-1])
 
-        # If not full IRIs, information must be CURIEs. Get the URIRef.
+        # If not full URIs, information must be CURIEs. Get the URIRef.
         prefix, value = information_value.split(":")
         return self.namespaces[prefix][value]
 
