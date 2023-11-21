@@ -138,10 +138,9 @@ class AlpacaProvDocument(object):
 
     def _add_ontology_information(self, uri, ontology_info, information_type,
                                   element=None):
-        if ontology_info:
-            class_iri = ontology_info.get_iri(information_type, element)
-            if class_iri:
-                self.graph.add((uri, RDF.type, class_iri))
+        class_iri = ontology_info.get_uri(information_type, element)
+        if class_iri:
+            self.graph.add((uri, RDF.type, class_iri))
 
     def _add_FunctionExecution(self, script_info, session_id, execution_id,
                                function_info, params, execution_order,
@@ -153,7 +152,8 @@ class AlpacaProvDocument(object):
             self._authority))
         self.graph.add((uri, RDF.type, ALPACA.FunctionExecution))
 
-        self._add_ontology_information(uri, ontology_info, 'function')
+        if ontology_info:
+            self._add_ontology_information(uri, ontology_info, 'function')
 
         self.graph.add((uri, PROV.startedAtTime,
                         Literal(start, datatype=XSD.dateTime)))
@@ -169,8 +169,10 @@ class AlpacaProvDocument(object):
             parameter_node = _add_name_value_pair(self.graph, uri,
                                                   ALPACA.hasParameter,
                                                   name, value)
-            self._add_ontology_information(parameter_node,
-                                           ontology_info, 'arguments', name)
+            if ontology_info:
+                self._add_ontology_information(parameter_node,
+                                               ontology_info, 'arguments',
+                                               name)
         return uri
 
     # Entity methods
@@ -182,11 +184,16 @@ class AlpacaProvDocument(object):
 
         if uri in self._entity_uris:
             return uri
+
         self.graph.add((uri, RDF.type, ALPACA.DataObjectEntity))
         self.graph.add((uri, ALPACA.hashSource, Literal(info.hash_method)))
         ontology_info = ONTOLOGY_INFORMATION.get(info.type, None)
-        self._add_ontology_information(uri, ontology_info, 'data_object')
-        self._add_entity_metadata(uri, info)
+
+        if ontology_info:
+            self._add_ontology_information(uri, ontology_info, 'data_object')
+
+        self._add_entity_metadata(uri, info, ontology_info)
+
         self._entity_uris.add(uri)
         return uri
 
@@ -198,7 +205,7 @@ class AlpacaProvDocument(object):
                         Literal(info.path, datatype=XSD.string)))
         return uri
 
-    def _add_entity_metadata(self, uri, info):
+    def _add_entity_metadata(self, uri, info, ontology_info=None):
         # Add data object metadata (attributes, annotations) to the entities,
         # using properties from the Alpaca PROV model
         package_name = info.type.split(".")[0]
@@ -320,8 +327,9 @@ class AlpacaProvDocument(object):
                 output_entities.append(cur_entity)
                 self._wasGeneratedBy(entity=cur_entity, activity=cur_activity)
                 self._wasAttributedTo(entity=cur_entity, agent=script_agent)
-                self._add_ontology_information(cur_entity, ontology_info,
-                                               'returns', element=key)
+                if ontology_info:
+                    self._add_ontology_information(cur_entity, ontology_info,
+                                                   'returns', element=key)
 
             # Iterate over the input/output pairs to add the `wasDerived`
             # relationship
