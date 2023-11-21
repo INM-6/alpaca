@@ -440,6 +440,32 @@ class ProvenanceGraphTestCase(unittest.TestCase):
             self.assertTrue("Time Interval" not in node_attrs)
             self.assertTrue("sua" not in node_attrs)
 
+    def test_value_attribute(self):
+        input_file = self.ttl_path / "values.ttl"
+        graph = ProvenanceGraph(input_file, attributes='all',
+                                annotations='all', value_attribute='value')
+
+        node_values_by_id = {
+            "urn:fz-juelich.de:alpaca:object:Python:builtins.int:543211": 1,
+            "urn:fz-juelich.de:alpaca:object:Python:builtins.float:543212": 1.1,
+            "urn:fz-juelich.de:alpaca:object:Python:builtins.str:543213": "test",
+            "urn:fz-juelich.de:alpaca:object:Python:builtins.complex:543214": "(3+5j)",
+            "urn:fz-juelich.de:alpaca:object:Python:builtins.bool:543215": True,
+            "urn:fz-juelich.de:alpaca:object:Python:numpy.float32:543216": 1.2,
+            "urn:fz-juelich.de:alpaca:object:Python:numpy.float64:543217": 1.3,
+            "urn:fz-juelich.de:alpaca:object:Python:numpy.int64:543218": 2,
+            "urn:fz-juelich.de:alpaca:object:Python:numpy.int32:543219": 3,
+            "urn:fz-juelich.de:alpaca:object:Python:numpy.int16:5432110": -4,
+            "urn:fz-juelich.de:alpaca:object:Python:builtins.dict:5432111": "{'id': [1, 2, 3], 'value': {4, 5, 6}}",
+            "urn:fz-juelich.de:alpaca:object:Python:test.InputObject:12345": None,
+            "urn:fz-juelich.de:alpaca:object:Python:test.OutputObject:54321": None,
+        }
+
+        for node, node_attrs in graph.graph.nodes(data=True):
+            if node_attrs['type'] == 'object':
+                expected_value = node_values_by_id[node]
+                self.assertEqual(expected_value, node_attrs.get('value', None))
+
 
 class GraphTimeIntervalTestCase(unittest.TestCase):
 
