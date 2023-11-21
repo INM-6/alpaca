@@ -68,7 +68,7 @@ from copy import deepcopy
 # dictionary.
 VALID_INFORMATION = {
     'data_object': {'namespaces', 'attributes', 'annotations'},
-    'function': {'namespaces', 'arguments', 'returns', 'package'}
+    'function': {'namespaces', 'arguments', 'returns'}
 }
 VALID_OBJECTS = set(VALID_INFORMATION.keys())
 
@@ -156,8 +156,8 @@ class _OntologyInformation(object):
 
     def get_iri(self, information_type, element=None):
         if information_type in VALID_OBJECTS:
-            # Information on 'function', 'data_object' and 'package' are
-            # strings, stored directly as attributes
+            # Information on 'function' and 'data_object' are strings, stored
+            # directly as attributes
             information_value = getattr(self, information_type)
         else:
             # Specific information of 'function' and 'data_object' are
