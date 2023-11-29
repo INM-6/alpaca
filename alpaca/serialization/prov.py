@@ -139,11 +139,15 @@ class AlpacaProvDocument(object):
                         Literal(function_info.version)))
         return uri
 
-    def _add_ontology_information(self, uri, ontology_info, information_type,
-                                  element=None):
-        class_iri = ontology_info.get_uri(information_type, element)
-        if class_iri:
-            self.graph.add((uri, RDF.type, class_iri))
+    def _add_ontology_information(self, target_uri, ontology_info,
+                                  information_type, element=None):
+        class_info = ontology_info.get_uri(information_type, element)
+        if class_info:
+            if isinstance(class_info, list):
+                for class_uri in class_info:
+                    self.graph.add((target_uri, RDF.type, class_uri))
+            else:
+                self.graph.add((target_uri, RDF.type, class_info))
 
     def _add_FunctionExecution(self, script_info, session_id, execution_id,
                                function_info, params, execution_order,

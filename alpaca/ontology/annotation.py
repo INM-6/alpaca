@@ -22,10 +22,13 @@ instances of objects instantiated from a Python class). Specific keys in the
 `__ontology__` dictionary will define the main URI describing either the
 function or the data object:
 
-* 'function' : str
-   A URI to the ontology class representing the Python function.
-* 'data_object' : str
-   A URI to the ontology class representing the Python data object.
+* 'function' : str or list of str
+   A URI to the ontology class representing the Python function. Multiple URIs
+   can be passed as a list, if the function is represented by multiple classes.
+* 'data_object' : str or list of str
+   A URI to the ontology class representing the Python data object. Multiple
+   URIs can be passed as a list, if the object is represented by multiple
+   classes.
 
 Additional annotations can be stored depending on whether a function or data
 object is being annotated.
@@ -35,11 +38,12 @@ dictionary are:
 
 * 'arguments' : dict
    A dictionary where the keys are argument names (cf. the function
-   declaration in the `def` statement) and the values are the URI
-   to the ontology class representing the argument.
+   declaration in the `def` statement) and the values are the URI(s)
+   to the ontology class(es) representing the argument.
 * 'returns' : dict
    A dictionary where the keys are function outputs, and the values define the
-   URIs to the ontology classes that represent each output identified by a key.
+   URI(s) to the ontology class(es) representing each output identified by a
+   key.
    The keys in the `returns` dictionary can have three possible values:
    1. a string with one output name (if this is the name of an argument, cf.
    the function declaration in the `def` statement), which assumes that a
@@ -63,11 +67,11 @@ dictionary are:
 
 * 'attributes' : dict
    A dictionary where the keys are object attribute names and the values are
-   the URI to the ontology class representing the attribute.
+   the URI(s) to the ontology class(es) representing the attribute.
 * 'annotations' : dict
    A dictionary where the keys are annotation names and the values are the
-   URI to the ontology class representing the annotation. Annotations are
-   key-pair values specified in dictionaries stored as one attribute of the
+   URI(s) to the ontology class(es) representing the annotation. Annotations
+   are key-pair values specified in dictionaries stored as one attribute of the
    object (e.g., `obj.annotations`).
 
 Finally, the ontology annotations can be defined using namespaces so that the
@@ -230,8 +234,8 @@ class _OntologyInformation(object):
 
     def get_uri(self, information_type, element=None):
         if information_type in VALID_OBJECTS:
-            # Information on 'function' and 'data_object' are strings, stored
-            # directly as attributes
+            # Information on 'function' and 'data_object' are strings or
+            # lists, stored directly as attributes
             information_value = getattr(self, information_type)
         else:
             # Specific information of 'function' and 'data_object' are
@@ -249,13 +253,26 @@ class _OntologyInformation(object):
             if not information_value:
                 return None
 
-        if (information_value[0], information_value[-1]) == ("<", ">"):
-            # This is a URI
-            return rdflib.URIRef(information_value[1:-1])
+        if not isinstance(information_value, list):
+            information_value = [information_value]
 
-        # If not full URIs, information must be CURIEs. Get the URIRef.
-        prefix, value = information_value.split(":")
-        return self.namespaces[prefix][value]
+        # Process URI(s) to get `rdflib.URIRef` elements, resolving any
+        # namespace.
+        uris = []
+        for uri in information_value:
+            if (uri[0], uri[-1]) == ("<", ">"):
+                # This is a full URI
+                uris.append(rdflib.URIRef(uri[1:-1]))
+            else:
+                # If not full URIs, information must be CURIEs.
+                # Get the `URIRef` from the namespace.
+                prefix, value = uri.split(":")
+                uris.append(self.namespaces[prefix][value])
+
+        if len(uris) == 1:
+            # Return annotation with a single URI directly
+            return uris[0]
+        return uris
 
     def __repr__(self):
         repr_str = "OntologyInformation("

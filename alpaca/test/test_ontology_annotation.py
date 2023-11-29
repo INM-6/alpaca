@@ -55,6 +55,18 @@ process.__wrapped__.__ontology__ = {
 
 
 @Provenance(inputs=['input'])
+def process_one_and_process_two(input, param_1):
+    return OutputObject("SpikeTrain#1", 45)
+
+process_one_and_process_two.__wrapped__.__ontology__ = {
+    "function": ["ontology:Process1Function", "ontology:Process2Function"],
+    "namespaces": EXAMPLE_NS,
+    "arguments": {'param_1': "ontology:Parameter"},
+    "returns": {0: "ontology:ProcessedData"}
+}
+
+
+@Provenance(inputs=['input'])
 def process_multiple(input, param_1):
     return "not_annotated", OutputObject("SpikeTrain#2", 34)
 
@@ -259,6 +271,29 @@ class OntologyAnnotationTestCase(unittest.TestCase):
             "returns={0: 'ontology:ProcessedData'})"
         )
 
+    def test_annotation_function_multiple_annotations(self):
+        self.assertIsNotNone(
+            _OntologyInformation.get_ontology_information(
+                process_one_and_process_two))
+        info = _OntologyInformation(process_one_and_process_two)
+        self.assertListEqual(
+            info.get_uri("function"),
+            [URIRef("http://example.org/ontology#Process1Function"),
+             URIRef("http://example.org/ontology#Process2Function")])
+        self.assertEqual(
+            info.get_uri("arguments", "param_1"),
+            URIRef("http://example.org/ontology#Parameter"))
+        self.assertEqual(
+            info.get_uri("returns", 0),
+            URIRef("http://example.org/ontology#ProcessedData"))
+        self.assertEqual(
+            str(info),
+            "OntologyInformation(function='['ontology:Process1Function', "
+            "'ontology:Process2Function']', "
+            "arguments={'param_1': 'ontology:Parameter'}, "
+            f"namespaces={{'ontology': {repr(self.ONTOLOGY)}}}, "
+            "returns={0: 'ontology:ProcessedData'})")
+
     def test_annotation_function_multiple(self):
         self.assertIsNotNone(
             _OntologyInformation.get_ontology_information(process_multiple))
@@ -366,6 +401,98 @@ class OntologyAnnotationTestCase(unittest.TestCase):
         self.assertTrue((execution_uri,
                          RDF.type,
                          self.ONTOLOGY.ProcessFunction) in prov_graph)
+
+        # Check parameter name
+        parameter_node = list(
+            prov_graph.subjects(RDF.type, self.ONTOLOGY.Parameter))[0]
+        self.assertTrue((parameter_node,
+                         ALPACA.pairName, Literal("param_1")) in prov_graph)
+        self.assertTrue((parameter_node,
+                         ALPACA.pairValue, Literal(34)) in prov_graph)
+
+        # Check returned value
+        output_node = list(
+            prov_graph.subjects(RDF.type, self.ONTOLOGY.ProcessedData))[0]
+        self.assertTrue((output_node,
+                         PROV.wasGeneratedBy, execution_uri) in prov_graph)
+        self.assertTrue((output_node,
+                         RDF.type, ALPACA.DataObjectEntity) in prov_graph)
+        self.assertTrue((output_node,
+                         RDF.type, self.ONTOLOGY.OutputObject) in prov_graph)
+
+        # Check attributes of returned value
+        expected_attributes = {
+            'name': "SpikeTrain#1",
+            'channel': 45,
+        }
+        for attribute in prov_graph.objects(output_node, ALPACA.hasAttribute):
+            name = prov_graph.value(attribute, ALPACA.pairName).toPython()
+            value = prov_graph.value(attribute, ALPACA.pairValue).toPython()
+            self.assertEqual(value, expected_attributes[name])
+
+            # Check if attribute annotation is present for `name`
+            if name == 'name':
+                self.assertTrue((attribute, RDF.type, self.ONTOLOGY.Attribute)
+                                in prov_graph)
+
+        # Check input value
+        input_node = list(
+            prov_graph.subjects(RDF.type, self.ONTOLOGY.InputObject))[0]
+        self.assertTrue((execution_uri, PROV.used, input_node) in prov_graph)
+        self.assertTrue((input_node,
+                         RDF.type, ALPACA.DataObjectEntity) in prov_graph)
+        self.assertTrue((output_node,
+                         PROV.wasDerivedFrom, input_node) in prov_graph)
+
+    def test_provenance_multiple_annotations(self):
+        activate(clear=True)
+        input_object = InputObject()
+        output_object = process_one_and_process_two(input_object, 34)
+        deactivate()
+
+        prov_data = save_provenance()
+
+        # Read PROV information as RDF
+        prov_graph = Graph()
+        with io.StringIO(prov_data) as data_stream:
+            prov_graph.parse(data_stream, format='turtle')
+
+        # Check that the annotations exist (1 per class is expected)
+        self.assertEqual(
+            len(list(prov_graph.triples(
+                (None, RDF.type, self.ONTOLOGY.Parameter)))
+            ), 1)
+        self.assertEqual(
+            len(list(prov_graph.triples(
+                (None, RDF.type, self.ONTOLOGY.Process1Function)))
+            ), 1)
+        self.assertEqual(
+            len(list(prov_graph.triples(
+                (None, RDF.type, self.ONTOLOGY.Process2Function)))
+            ), 1)
+        self.assertEqual(
+            len(list(prov_graph.triples(
+                (None, RDF.type, self.ONTOLOGY.ProcessedData)))
+            ), 1)
+        self.assertEqual(
+            len(list(prov_graph.triples(
+                (None, RDF.type, self.ONTOLOGY.InputObject)))
+            ), 1)
+        self.assertEqual(
+            len(list(prov_graph.triples(
+                (None, RDF.type, self.ONTOLOGY.OutputObject)))
+            ), 1)
+
+        # FunctionExecution is ProcessFunction
+        execution_uri = list(
+            prov_graph.subjects(RDF.type, ALPACA.FunctionExecution))[0]
+        self.assertTrue((execution_uri,
+                         RDF.type,
+                         self.ONTOLOGY.Process1Function) in prov_graph)
+
+        self.assertTrue((execution_uri,
+                         RDF.type,
+                         self.ONTOLOGY.Process2Function) in prov_graph)
 
         # Check parameter name
         parameter_node = list(
