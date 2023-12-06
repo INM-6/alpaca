@@ -61,6 +61,6 @@ Container = namedtuple('Container', 'elements')
 # the disk.
 
 DataObject = namedtuple('DataObject', ('hash', 'hash_method', 'type', 'id',
-                                       'details'))
+                                       'details', 'value'))
 
 File = namedtuple('File', ('hash', 'hash_type', 'path'))

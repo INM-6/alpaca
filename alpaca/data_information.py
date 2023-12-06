@@ -20,6 +20,7 @@ from collections import defaultdict
 
 import joblib
 import numpy as np
+from numbers import Number
 from dill._dill import save_function
 
 from alpaca.alpaca_types import DataObject, File
@@ -120,6 +121,11 @@ class _ObjectInformation(object):
     :func:`hash` function, depending on the `use_builtin_hash` parameter set
     during initialization.
 
+    The values of objects of the builtin types `str`, `bool`, `int`, `complex`
+    and `float` as well as the NumPy numeric types (e.g., `np.float64`) will
+    be stored. Additional object types to be stored (e.g., `builtins.dict`)
+    can be defined with the `store_values` parameter.
+
     The method `info` is called to obtain the provenance information
     associated with the object during tracking, as the `DataObject` named
     tuple. The relevant metadata attributes are also stored in the tuple.
@@ -134,6 +140,13 @@ class _ObjectInformation(object):
         List of package names whose object hashes will be computed using the
         Python builtin `hash` function, instead of `joblib.hash` function.
         Default: None
+    store_values : list, optional
+        List of object types whose values will be stored in the provenance
+        information (e.g., `builtins.dict`). This is in addition to the
+        builtin types `str`, `bool`, `int`, `complex` and `float` as well as
+        the NumPy numeric types (e.g., `np.float64`). The values of these are
+        always stored.
+        Default: None
     """
 
     # This is a list of object attributes that provide relevant provenance
@@ -142,10 +155,12 @@ class _ObjectInformation(object):
                             'id', 'nix_name', 'dimensionality', 'pid',
                             'create_time')
 
-    def __init__(self, use_builtin_hash=None):
+    def __init__(self, use_builtin_hash=None, store_values=None):
         self._hash_memoizer = dict()
         self._use_builtin_hash = copy(use_builtin_hash) \
             if use_builtin_hash is not None else []
+        self._store_values = copy(store_values)\
+            if store_values is not None else []
 
     @staticmethod
     def _get_object_package(obj):
@@ -260,6 +275,11 @@ class _ObjectInformation(object):
                 Reference for the object.
             * details : dict
                 Extended information (metadata) on the object.
+            * value : object
+                For builtin objects (`str`, `int`, `float`, `bool`, `complex`)
+                or equivalent objects (e.g. `numpy.float64`), the value is
+                stored. Additional object types specified with the
+                :attr:`store_values` list will also be stored.
         """
         type_information = type(obj)
         obj_type = f"{type_information.__module__}.{type_information.__name__}"
@@ -269,7 +289,8 @@ class _ObjectInformation(object):
         if obj is None:
             unique_id = uuid.uuid4()
             return DataObject(hash=unique_id, hash_method="UUID",
-                              type=obj_type, id=obj_id, details={})
+                              type=obj_type, id=obj_id, details={},
+                              value=None)
 
         # Here we can extract specific metadata to record
         details = {}
@@ -297,5 +318,13 @@ class _ObjectInformation(object):
             _OntologyInformation.get_ontology_information(obj)):
             ONTOLOGY_INFORMATION[obj_type] = _OntologyInformation(obj)
 
+        # Store object value
+        obj_value = None
+        if isinstance(obj, (str, bool, Number)):
+            obj_value = obj
+        elif obj_type in self._store_values:
+            obj_value = str(obj)
+
         return DataObject(hash=obj_hash, hash_method=hash_method,
-                          type=obj_type, id=obj_id, details=details)
+                          type=obj_type, id=obj_id, details=details,
+                          value=obj_value)
