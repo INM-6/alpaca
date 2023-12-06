@@ -10,6 +10,8 @@ RDF files.
 """
 
 from itertools import product
+import numpy as np
+import numbers
 
 from rdflib import Graph, URIRef, BNode, Literal
 from rdflib.namespace import RDF, PROV, XSD
@@ -58,6 +60,14 @@ class AlpacaProvDocument(object):
     be used only if you want to access the data as an RDF graph or to manually
     control the serialization.
     """
+
+    XSD_TYPES = {
+        numbers.Integral: XSD.integer,
+        numbers.Real: XSD.double,
+        numbers.Complex: XSD.string,
+        str: XSD.string,
+        bool: XSD.boolean,
+    }
 
     def __init__(self):
         self.graph = Graph()
@@ -142,6 +152,30 @@ class AlpacaProvDocument(object):
         return uri
 
     # Entity methods
+    @classmethod
+    def _get_entity_value_datatype(cls, info):
+        value = info.value
+        if value is None:
+            return None
+
+        # Check if builtin type or NumPy dtype
+        value_class = value.__class__ if not isinstance(value, np.number) \
+            else value.dtype.type
+        if value_class in cls.XSD_TYPES:
+            return cls.XSD_TYPES[value_class]
+
+        # Check if object is include in the `store_values` setting.
+        # In this case, they are always stored as strings
+        obj_type = info.type
+        if obj_type in _ALPACA_SETTINGS['store_values']:
+            return XSD.string
+
+        for possible_type in (numbers.Integral, numbers.Real, numbers.Complex):
+            if issubclass(value_class, possible_type):
+                return cls.XSD_TYPES[possible_type]
+
+        # Type not found
+        return None
 
     def _add_DataObjectEntity(self, info):
         # Adds a DataObjectEntity from the Alpaca PROV model
@@ -152,6 +186,12 @@ class AlpacaProvDocument(object):
             return uri
         self.graph.add((uri, RDF.type, ALPACA.DataObjectEntity))
         self.graph.add((uri, ALPACA.hashSource, Literal(info.hash_method)))
+
+        value_datatype = self._get_entity_value_datatype(info)
+        if value_datatype:
+            self.graph.add((uri, PROV.value,
+                            Literal(info.value, datatype=value_datatype)))
+
         self._add_entity_metadata(uri, info)
         self._entity_uris.add(uri)
         return uri
