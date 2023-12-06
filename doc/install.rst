@@ -23,7 +23,7 @@ Alpaca requires `Python <http://python.org/>`_ 3.8 or higher.
 
            .. code-block:: sh
 
-              conda create --name alpaca python=3.9
+              conda create --name alpaca python=3.11
 
         2. Activate your environment:
 
