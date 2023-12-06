@@ -313,17 +313,17 @@ class _ObjectInformation(object):
                                                       obj_id=obj_id,
                                                       package=package)
 
-        # Add ontology information if not present
-        if (not ONTOLOGY_INFORMATION.get(obj_type) and
-            _OntologyInformation.get_ontology_information(obj)):
-            ONTOLOGY_INFORMATION[obj_type] = _OntologyInformation(obj)
-
         # Store object value
         obj_value = None
         if isinstance(obj, (str, bool, Number)):
             obj_value = obj
         elif obj_type in self._store_values:
             obj_value = str(obj)
+
+        # Add ontology information if not present
+        if (not ONTOLOGY_INFORMATION.get(obj_type) and
+            _OntologyInformation.get_ontology_information(obj)):
+            ONTOLOGY_INFORMATION[obj_type] = _OntologyInformation(obj)
 
         return DataObject(hash=obj_hash, hash_method=hash_method,
                           type=obj_type, id=obj_id, details=details,

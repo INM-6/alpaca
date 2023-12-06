@@ -229,18 +229,16 @@ class AlpacaProvDocument(object):
         self.graph.add((uri, RDF.type, ALPACA.DataObjectEntity))
         self.graph.add((uri, ALPACA.hashSource, Literal(info.hash_method)))
 
-        ontology_info = ONTOLOGY_INFORMATION.get(info.type, None)
-        if ontology_info:
-            self._add_ontology_information(uri, ontology_info, 'data_object')
-
-        self._add_entity_metadata(uri, info, ontology_info)
-
         value_datatype = self._get_entity_value_datatype(info)
         if value_datatype:
             self.graph.add((uri, PROV.value,
                             Literal(info.value, datatype=value_datatype)))
 
-        self._add_entity_metadata(uri, info)
+        ontology_info = ONTOLOGY_INFORMATION.get(info.type, None)
+        if ontology_info:
+            self._add_ontology_information(uri, ontology_info, 'data_object')
+
+        self._add_entity_metadata(uri, info, ontology_info)
         self._entity_uris.add(uri)
         return uri
 
