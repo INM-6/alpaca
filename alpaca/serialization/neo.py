@@ -1,11 +1,14 @@
 """
-Module to handle the serialization of Neo objects.
+Module to handle the serialization of Neo objects. This defines plugin
+functions that are used by Alpaca when serializing information from Neo
+objects in the captured provenance.
 
 As Neo provides a specific data model for electrophysiology data, some
-attributes need special handling. The key component is the annotation
+attributes need special handling. The key component is the `annotations`
 dictionary, that cannot be stored as a standard Python attribute as the
 information would not be accessible. A special property `hasAnnotation` is
-used for that case.
+used for those cases, where each key-value pair in the annotations dictionary
+is identified as object metadata.
 
 A special converter for attribute values is also provided, so that they can
 be properly serialized to strings.
@@ -37,31 +40,28 @@ def _neo_to_prov(value, displayed_attributes=DISPLAYED_ATTRIBUTES):
     type_information = type(value)
     neo_class = f"{type_information.__module__}.{type_information.__name__}"
 
-    repr = f"{neo_class}("
-
-    counter = 0
-
+    attr_repr = []
     for attribute in displayed_attributes:
         if hasattr(value, attribute):
-            if counter > 0:
-                repr += ", "
-
             attr_value = getattr(value, attribute)
-            repr += f"{attribute}={_ensure_type(attr_value)}"
+            attr_repr.append(f"{attribute}={_ensure_type(attr_value)}")
 
-            counter += 1
-
-    repr += ")"
-    return repr
+    neo_repr = f"{neo_class}({', '.join(attr_repr)})"
+    return neo_repr
 
 
 def _neo_object_metadata(graph, uri, metadata):
     # Adds metadata of a Neo object to an entity in the RDF graph `graph`.
     # `uri` is the identifier of the object in the graph, and `metadata` is
     # the dictionary of object metadata captured by Alpaca.
+    # Returns a dictionary of attribute/annotation names with blank node
+    # URIs, that are used later for inserting semantic information if
+    # ontology annotations are defined.
 
     from alpaca.serialization.converters import _ensure_type
     from alpaca.serialization.prov import _add_name_value_pair
+
+    metadata_nodes = {'attributes': {}, 'annotations': {}}
 
     for name, value in metadata.items():
 
@@ -73,25 +73,22 @@ def _neo_object_metadata(graph, uri, metadata):
                 # readable name of each Neo object in the list. They will be
                 # enclosed in brackets [] as the value stored in the
                 # serialized file.
-                attr_value = "["
-                counter = 0
+                attr_values = []
                 for item in value:
-                    if counter > 0:
-                        attr_value += ", "
-                    attr_value += _neo_to_prov(item)
-                    counter += 1
-                attr_value += "]"
+                    attr_values.append(_neo_to_prov(item))
+                attr_value = f"[{', '.join(attr_values)}]"
             else:
                 # This is a container Neo object. Just get the readable
                 # name of the object
                 attr_value = _neo_to_prov(value)
 
             # Add the attribute relationship to the object Entity
-            _add_name_value_pair(graph,
-                                 uri=uri,
-                                 predicate=ALPACA.hasAttribute,
-                                 name=name,
-                                 value=attr_value)
+            blank_node = _add_name_value_pair(graph,
+                                              uri=uri,
+                                              predicate=ALPACA.hasAttribute,
+                                              name=name,
+                                              value=attr_value)
+            metadata_nodes['attributes'][name] = blank_node
 
         elif name in ('annotations', 'array_annotations') and \
                 isinstance(value, dict):
@@ -103,19 +100,23 @@ def _neo_object_metadata(graph, uri, metadata):
                 annotation_value = _ensure_type(annotation_value)
 
                 # Add the annotation relationship
-                _add_name_value_pair(graph,
-                                     uri=uri,
-                                     predicate=ALPACA.hasAnnotation,
-                                     name=annotation,
-                                     value=annotation_value)
+                blank_node = _add_name_value_pair(graph,
+                                            uri=uri,
+                                            predicate=ALPACA.hasAnnotation,
+                                            name=annotation,
+                                            value=annotation_value)
+                metadata_nodes['annotations'][name] = blank_node
 
         else:
             # Other attributes, just add them
             value = _ensure_type(value)
 
             # Add attribute relationship
-            _add_name_value_pair(graph,
-                                 uri=uri,
-                                 predicate=ALPACA.hasAttribute,
-                                 name=name,
-                                 value=value)
+            blank_node = _add_name_value_pair(graph,
+                                              uri=uri,
+                                              predicate=ALPACA.hasAttribute,
+                                              name=name,
+                                              value=value)
+            metadata_nodes['attributes'][name] = blank_node
+
+    return metadata_nodes

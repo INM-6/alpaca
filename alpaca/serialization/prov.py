@@ -9,7 +9,7 @@ RDF files.
 
 """
 
-from itertools import product
+from itertools import product, chain
 import numpy as np
 import numbers
 
@@ -21,15 +21,18 @@ from alpaca.serialization.identifiers import (data_object_identifier,
                                               file_identifier,
                                               function_identifier,
                                               script_identifier,
-                                              execution_identifier)
+                                              execution_identifier,
+                                              _get_function_name)
 from alpaca.serialization.converters import _ensure_type
 from alpaca.serialization.neo import _neo_object_metadata
 
 from alpaca.utils.files import _get_prov_file_format
 from alpaca.alpaca_types import DataObject, File, Container
 from alpaca.settings import _ALPACA_SETTINGS
+from alpaca.ontology.annotation import _OntologyInformation, ONTOLOGY_INFORMATION
 
 from tqdm import tqdm
+
 
 def _add_name_value_pair(graph, uri, predicate, name, value):
     # Add a relationship defined by `predicate` using a blank node as object.
@@ -39,6 +42,7 @@ def _add_name_value_pair(graph, uri, predicate, name, value):
     graph.add((blank_node, RDF.type, ALPACA.NameValuePair))
     graph.add((blank_node, ALPACA.pairName, Literal(name)))
     graph.add((blank_node, ALPACA.pairValue, Literal(value)))
+    return blank_node
 
 
 class AlpacaProvDocument(object):
@@ -71,14 +75,23 @@ class AlpacaProvDocument(object):
 
     def __init__(self):
         self.graph = Graph()
-        self.graph.namespace_manager.bind('alpaca', ALPACA)
-        self.graph.namespace_manager.bind('prov', PROV)
+        namespace_manager = self.graph.namespace_manager
+        namespace_manager.bind('alpaca', ALPACA)
+        namespace_manager.bind('prov', PROV)
         self._authority = _ALPACA_SETTINGS['authority']
+
+        # Gets all OntologyInformation objects generated with annotation
+        # information during the run. Update the current graph namespaces
+        # accordingly
+        _OntologyInformation.bind_namespaces(namespace_manager)
 
         # Metadata plugins are used for packages (e.g., Neo) that require
         # special handling of metadata when adding to the PROV records.
         # Plugins are external functions that take the graph, the object URI,
-        # and the metadata dict as parameters.
+        # and the metadata dict as parameters. The function should return a
+        # dictionary mapping all blank nodes generated to represent attributes
+        # and annotations, to allow the use of any semantic information
+        # defined by ontology annotations (i.e., __ontology__ attribute).
         self._metadata_plugins = {
             'neo': _neo_object_metadata
         }
@@ -86,6 +99,14 @@ class AlpacaProvDocument(object):
         # Set to store all entity URIs that are added to the graph, so that
         # there is a fast lookup
         self._entity_uris = set()
+
+        # Store functions that have container output ontology annotations,
+        # To add the identification to the objects after the graph is built
+        self._container_output_functions = {}
+        for obj_type, info in ONTOLOGY_INFORMATION.items():
+            container_returns = info.get_container_returns()
+            if container_returns:
+                self._container_output_functions[obj_type] = container_returns
 
     # PROV relationships methods
 
@@ -128,14 +149,29 @@ class AlpacaProvDocument(object):
                         Literal(function_info.version)))
         return uri
 
+    def _add_ontology_information(self, target_uri, ontology_info,
+                                  information_type, element=None):
+        class_info = ontology_info.get_uri(information_type, element)
+        if class_info:
+            if isinstance(class_info, list):
+                for class_uri in class_info:
+                    self.graph.add((target_uri, RDF.type, class_uri))
+            else:
+                self.graph.add((target_uri, RDF.type, class_info))
+
     def _add_FunctionExecution(self, script_info, session_id, execution_id,
                                function_info, params, execution_order,
-                               code_statement, start, end, function):
+                               code_statement, start, end, function,
+                               ontology_info=None):
         # Adds a FunctionExecution record from the Alpaca PROV model
         uri = URIRef(execution_identifier(
             script_info, function_info, session_id, execution_id,
             self._authority))
         self.graph.add((uri, RDF.type, ALPACA.FunctionExecution))
+
+        if ontology_info:
+            self._add_ontology_information(uri, ontology_info, 'function')
+
         self.graph.add((uri, PROV.startedAtTime,
                         Literal(start, datatype=XSD.dateTime)))
         self.graph.add((uri, PROV.endedAtTime,
@@ -147,8 +183,13 @@ class AlpacaProvDocument(object):
 
         for name, value in params.items():
             value = _ensure_type(value)
-            _add_name_value_pair(self.graph, uri, ALPACA.hasParameter,
-                                 name, value)
+            parameter_node = _add_name_value_pair(self.graph, uri,
+                                                  ALPACA.hasParameter,
+                                                  name, value)
+            if ontology_info:
+                self._add_ontology_information(parameter_node,
+                                               ontology_info, 'arguments',
+                                               name)
         return uri
 
     # Entity methods
@@ -184,6 +225,7 @@ class AlpacaProvDocument(object):
 
         if uri in self._entity_uris:
             return uri
+
         self.graph.add((uri, RDF.type, ALPACA.DataObjectEntity))
         self.graph.add((uri, ALPACA.hashSource, Literal(info.hash_method)))
 
@@ -192,7 +234,11 @@ class AlpacaProvDocument(object):
             self.graph.add((uri, PROV.value,
                             Literal(info.value, datatype=value_datatype)))
 
-        self._add_entity_metadata(uri, info)
+        ontology_info = ONTOLOGY_INFORMATION.get(info.type, None)
+        if ontology_info:
+            self._add_ontology_information(uri, ontology_info, 'data_object')
+
+        self._add_entity_metadata(uri, info, ontology_info)
         self._entity_uris.add(uri)
         return uri
 
@@ -204,7 +250,7 @@ class AlpacaProvDocument(object):
                         Literal(info.path, datatype=XSD.string)))
         return uri
 
-    def _add_entity_metadata(self, uri, info):
+    def _add_entity_metadata(self, uri, info, ontology_info=None):
         # Add data object metadata (attributes, annotations) to the entities,
         # using properties from the Alpaca PROV model
         package_name = info.type.split(".")[0]
@@ -213,17 +259,28 @@ class AlpacaProvDocument(object):
         if package_name in self._metadata_plugins:
             # Handle objects like Neo objects (i.e., to avoid dumping all the
             # information in collections such as `segments` or `events`)
-            self._metadata_plugins[package_name](self.graph, uri, metadata)
+            metadata_nodes = self._metadata_plugins[package_name](
+                self.graph, uri, metadata)
+
+            # Process metadata nodes of the object, if ontology information
+            # defined
+            if ontology_info:
+                for metadata_type, elements in metadata_nodes.items():
+                    for element, node in elements.items():
+                        self._add_ontology_information(node, ontology_info,
+                                                       metadata_type, element)
         else:
             # Add metadata using default handling, i.e., all attributes
             for name, value in metadata.items():
                 # Make sure that types such as list and Quantity are handled
                 value = _ensure_type(value)
 
-                _add_name_value_pair(self.graph, uri=uri,
-                                     predicate=ALPACA.hasAttribute,
-                                     name=name,
-                                     value=value)
+                blank_node = _add_name_value_pair(self.graph, uri=uri,
+                    predicate=ALPACA.hasAttribute, name=name, value=value)
+
+                if ontology_info:
+                    self._add_ontology_information(blank_node, ontology_info,
+                                                   'attributes', name)
 
     def _add_membership(self, container, child, params):
         # Add membership relationships according to the standard PROV model
@@ -274,6 +331,10 @@ class AlpacaProvDocument(object):
             # This is a function execution. Add Function activity
             cur_function = self._add_Function(function_info)
 
+            # ID to identify ontology annotations
+            info_id = _get_function_name(function_info)
+            ontology_info = ONTOLOGY_INFORMATION.get(info_id)
+
             # Get the FunctionExecution node with function parameters and
             # other provenance info
             cur_activity = self._add_FunctionExecution(
@@ -284,7 +345,7 @@ class AlpacaProvDocument(object):
                 code_statement=execution.code_statement,
                 start=execution.time_stamp_start,
                 end=execution.time_stamp_end,
-                function=cur_function,
+                function=cur_function, ontology_info=ontology_info
             )
 
             # Add all the inputs as entities, and create a `used` association
@@ -293,6 +354,8 @@ class AlpacaProvDocument(object):
             input_entities = []
             for key, value in execution.input.items():
                 cur_entities = []
+                has_input_uri = ontology_info and \
+                                bool(ontology_info.get_uri('arguments', key))
 
                 if isinstance(value, Container):
                     # If this is a Container, several objects are inside.
@@ -307,6 +370,10 @@ class AlpacaProvDocument(object):
                     self._used(activity=cur_activity, entity=cur_entity)
                     self._wasAttributedTo(entity=cur_entity,
                                           agent=script_agent)
+                    if has_input_uri:
+                        self._add_ontology_information(cur_entity,
+                                                       ontology_info,
+                                                       'arguments', key)
 
             # Add all the outputs as entities, and create the `wasGenerated`
             # relationship.
@@ -316,6 +383,9 @@ class AlpacaProvDocument(object):
                 output_entities.append(cur_entity)
                 self._wasGeneratedBy(entity=cur_entity, activity=cur_activity)
                 self._wasAttributedTo(entity=cur_entity, agent=script_agent)
+                if ontology_info:
+                    self._add_ontology_information(cur_entity, ontology_info,
+                                                   'returns', element=key)
 
             # Iterate over the input/output pairs to add the `wasDerived`
             # relationship
@@ -326,6 +396,69 @@ class AlpacaProvDocument(object):
 
             # Associate the activity to the script
             self._wasAssociatedWith(activity=cur_activity, agent=script_agent)
+
+    def _add_annotations_for_container_outputs(self):
+        # For functions that the Provenance decorator identified elements
+        # inside returned containers, the elements linked by `prov:hasMember`
+        # functions need to be annotated. The list of functions is already
+        # stored in a search list. Iterate over the nodes of the function
+        # and annotate the correct level of membership
+
+        for info_id, levels in self._container_output_functions.items():
+
+            # Initialize a container to store the URIs of elements of each
+            # output level starting from the function. Since the capture can
+            # ignore root levels, and to avoid recursion, we will map
+            # container entities up to the maximum possible level taken from
+            # the 'returns' annotations. Later, we take the annotations
+            # starting from the deepest level.
+
+            int_levels = list(map(lambda x: len(x), levels))
+            max_level = max(int_levels)
+            elements_by_level = {level: [] for level in range(max_level)}
+
+            # Fetch information on the function, to identify nodes in the graph
+            ontology_info = ONTOLOGY_INFORMATION[info_id]
+            function_type = ontology_info.get_uri('function')
+            executions = self.graph.subjects(RDF.type, function_type)
+
+            # For every execution, get the output nodes
+            # This is the first level
+            for execution in executions:
+                elements_by_level[0].extend(
+                    self.graph.subjects(PROV.wasGeneratedBy, execution))
+
+            # Traverse the remaining levels
+            for level in range(1, max_level):
+                for element in chain(elements_by_level[level-1]):
+                    members = self.graph.objects(element, PROV.hadMember)
+                    elements_by_level[level].extend(members)
+
+            # Go from the deepest annotation level, annotating the deepest
+            # node level with elements
+            level_depth = max_level - 1
+            level_str = '*' * max_level
+            obj_uri = ontology_info.get_uri('returns', level_str)
+
+            while level_depth >= 0:
+                if obj_uri:
+                    has_elements = False
+                    for element in chain(elements_by_level[level_depth]):
+                        has_elements = True
+                        self.graph.add((element, RDF.type, obj_uri))
+                else:
+                    # No annotation requested for this level
+                    # Consider the level traversed
+                    has_elements = True
+
+                if has_elements:
+                    # Fetch annotation information for the parent level
+                    level_str = '*' * (len(level_str) - 1)
+                    obj_uri = ontology_info.get_uri('returns', level_str)
+
+                # If no element found, keep the annotation level, but
+                # try to annotate the elements of an upper node level
+                level_depth -= 1
 
     def add_history(self, script_info, session_id, history,
                     show_progress=False):
@@ -352,6 +485,7 @@ class AlpacaProvDocument(object):
                               disable=not show_progress):
             self._add_function_execution(execution, script_agent, script_info,
                                          session_id)
+        self._add_annotations_for_container_outputs()
 
     def read_records(self, file_name, file_format='turtle'):
         """

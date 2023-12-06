@@ -6,6 +6,8 @@ during the execution of analysis scripts in Python.
 from functools import wraps
 import itertools
 from collections.abc import Iterable
+from collections import defaultdict
+
 from importlib.metadata import version, PackageNotFoundError
 import inspect
 import ast
@@ -18,8 +20,10 @@ from alpaca.data_information import _ObjectInformation, _FileInformation
 from alpaca.code_analysis.ast import _CallAST
 from alpaca.code_analysis.source_code import _SourceCode
 from alpaca.serialization import AlpacaProvDocument
+from alpaca.serialization.identifiers import _get_function_name
 from alpaca.utils.files import RDF_FILE_FORMAT_MAP
 from alpaca.settings import _ALPACA_SETTINGS
+from alpaca.ontology.annotation import _OntologyInformation, ONTOLOGY_INFORMATION
 
 from pprint import pprint
 
@@ -418,6 +422,12 @@ class Provenance(object):
         module_version = self._get_module_version(module)
         function_info = FunctionInfo(name=function_name, module=module,
                                      version=module_version)
+
+        function_id = _get_function_name(function_info)
+        if not ONTOLOGY_INFORMATION.get(function_id):
+            if _OntologyInformation.get_ontology_information(function):
+                ONTOLOGY_INFORMATION[function_id] = \
+                    _OntologyInformation(function)
 
         return source_line, ast_tree, return_targets, function_info
 

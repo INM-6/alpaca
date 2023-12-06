@@ -16,6 +16,7 @@ import numpy as np
 
 from alpaca import Provenance, activate, deactivate
 from alpaca.alpaca_types import FunctionInfo, DataObject
+from alpaca.ontology.annotation import _OntologyInformation
 
 
 # Shortcut for SHA1 hashing using joblib
