@@ -61,6 +61,13 @@ Currently, the following settings can be defined:
         the `builtins.dict` entry. The strings are the full path to the Python
         object, i.e., `[module].[...].[object_class]`.
 
+* **object_attributes**: list of str
+        When capturing the metadata information of data objects, the attributes
+        listed in the list will be extracted if present. This option can be
+        used to force Alpaca to capture important attributes that are not
+        generally stored in the `__dict__` attribute, like dynamically-derived
+        attributes.
+
 
 To set/read a setting, use the function :func:`alpaca_setting`.
 
@@ -72,7 +79,8 @@ To set/read a setting, use the function :func:`alpaca_setting`.
 
 _ALPACA_SETTINGS = {'use_builtin_hash_for_module': [],
                     'authority': "my-authority",
-                    'store_values': []}
+                    'store_values': [],
+                    'object_attributes': []}
 
 
 def alpaca_setting(name, value=None):

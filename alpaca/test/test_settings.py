@@ -44,6 +44,25 @@ class AlpacaSettingsTestCase(unittest.TestCase):
         alpaca_setting(setting_name, cur_setting)
         self.assertEqual(_ALPACA_SETTINGS[setting_name], cur_setting)
 
+    def test_object_attributes(self):
+        setting_name = 'object_attributes'
+
+        cur_setting = alpaca_setting(setting_name)
+        self.assertIsInstance(cur_setting, list)
+
+        new_setting = alpaca_setting(setting_name, ["additional_attr"])
+        self.assertListEqual(new_setting, ["additional_attr"])
+        self.assertEqual(alpaca_setting(setting_name), ["additional_attr"])
+        self.assertEqual(_ALPACA_SETTINGS[setting_name], ["additional_attr"])
+
+        # Test wrong type
+        with self.assertRaises(ValueError):
+            alpaca_setting(setting_name, "test wrong type")
+
+        # Restore value
+        alpaca_setting(setting_name, cur_setting)
+        self.assertEqual(_ALPACA_SETTINGS[setting_name], cur_setting)
+
     def test_wrong_setting_name(self):
         with self.assertRaises(ValueError):
             alpaca_setting("wrong_setting")
