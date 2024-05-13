@@ -14,6 +14,9 @@ class ObjectClass(object):
     """
     Class used to test hashing and getting data from custom objects
     """
+    class_attribute = "class attribute"
+    id = "always captured"
+
     def __init__(self, param):
         self.param = param
         self.attribute = "an object class"
@@ -134,6 +137,37 @@ class ObjectInformationTestCase(unittest.TestCase):
         self.assertEqual(info.hash_method, "joblib_SHA1")
         self.assertDictEqual(info.details, {})
         self.assertEqual(info.value, 5)
+
+    def test_additional_attributes_capture(self):
+        custom_object = ObjectClass(param=7)
+        object_info = _ObjectInformation()
+        object_info_attr = _ObjectInformation(object_attributes=
+                                              ['class_attribute'])
+
+        info = object_info.info(custom_object)
+        info_attr = object_info_attr.info(custom_object)
+
+        # Information check
+        self.assertEqual(info.hash, joblib.hash(custom_object,
+                                                hash_name='sha1'))
+        self.assertEqual(info_attr.hash, joblib.hash(custom_object,
+                                                     hash_name='sha1'))
+
+        # Attributes that should always be captured in the two cases
+        self.assertEqual(info.details['id'], "always captured")
+        self.assertEqual(info_attr.details['id'], "always captured")
+
+        # Instance attributes (from obj __dict__ attribute)
+        self.assertEqual(info.details['param'], 7)
+        self.assertEqual(info_attr.details['param'], 7)
+        self.assertEqual(info.details['attribute'], "an object class")
+        self.assertEqual(info_attr.details['attribute'], "an object class")
+
+        # Additional attribute not captured by the two previous cases unless
+        # specified in the _ObjectInformation class initialization
+        self.assertFalse('class_attribute' in info.details)
+        self.assertEqual(info_attr.details['class_attribute'],
+                         "class attribute")
 
     def test_custom_class(self):
         custom_object_1 = ObjectClass(param=4)

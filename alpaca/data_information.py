@@ -16,7 +16,6 @@ from copy import copy
 from pathlib import Path
 import logging
 from collections.abc import Iterable
-from collections import defaultdict
 
 import joblib
 import numpy as np
@@ -24,7 +23,8 @@ from numbers import Number
 from dill._dill import save_function
 
 from alpaca.alpaca_types import DataObject, File
-from alpaca.ontology.annotation import _OntologyInformation, ONTOLOGY_INFORMATION
+from alpaca.ontology.annotation import (_OntologyInformation,
+                                        ONTOLOGY_INFORMATION)
 
 # Need to use `dill` pickling function to support lambdas.
 # Some objects may have attributes that are lambdas. One example is the
@@ -147,6 +147,9 @@ class _ObjectInformation(object):
         the NumPy numeric types (e.g., `np.float64`). The values of these are
         always stored.
         Default: None
+    object_attributes : list, optional
+        Additional metadata attributes to capture from the objects.
+        Default: None
     """
 
     # This is a list of object attributes that provide relevant provenance
@@ -155,12 +158,21 @@ class _ObjectInformation(object):
                             'id', 'nix_name', 'dimensionality', 'pid',
                             'create_time')
 
-    def __init__(self, use_builtin_hash=None, store_values=None):
+    def __init__(self, use_builtin_hash=None, store_values=None,
+                 object_attributes=None):
         self._hash_memoizer = dict()
         self._use_builtin_hash = copy(use_builtin_hash) \
             if use_builtin_hash is not None else []
         self._store_values = copy(store_values)\
             if store_values is not None else []
+
+        # Define the list of object attributes to be captured.
+        # This is composed by the list with fixed attributes in
+        # `_metadata_attributes` plus the user-defined `object_attributes`.
+        self._object_attributes = list(self._metadata_attributes)
+        if object_attributes:
+            self._object_attributes.extend(object_attributes)
+        self._object_attributes = set(self._object_attributes)
 
     @staticmethod
     def _get_object_package(obj):
@@ -300,9 +312,10 @@ class _ObjectInformation(object):
             # Need to copy otherwise the hashes change
             details = copy(obj.__dict__)
 
-        # Store specific attributes that are relevant for arrays, quantities
-        # Neo objects, and AnalysisObjects
-        for attr in self._metadata_attributes:
+        # Fetch additional attributes if requested, and store specific
+        # attributes that are relevant for arrays, quantities, Neo objects,
+        # and AnalysisObjects
+        for attr in self._object_attributes:
             if hasattr(obj, attr):
                 details[attr] = getattr(obj, attr)
 
