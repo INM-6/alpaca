@@ -6,6 +6,7 @@ import sys
 from io import StringIO
 import tempfile
 from pathlib import Path
+from copy import deepcopy
 
 import rdflib
 from rdflib.compare import graph_diff
@@ -375,6 +376,53 @@ class ProvenanceDecoratorFunctionsTestCase(unittest.TestCase):
 
         none = Provenance._get_module_version(None)
         self.assertEqual(none, "")
+
+
+class ProvenanceDecoratorObjectMetadata(unittest.TestCase):
+
+    def setUp(self):
+        alpaca_setting('object_attributes', ['ndim', 'non_existent'])
+        self.assertListEqual(alpaca_setting('object_attributes'),
+                             ['ndim', 'non_existent'])
+
+    def test_capture_specific_attributes(self):
+        # Equivalent to the simple function test case, but requesting
+        # specific attributes from the NumPy array. There is also a
+        # non-existing attribute to check if no errors are raised
+        activate(clear=True)
+        res = simple_function(TEST_ARRAY, 1, 2)
+        deactivate()
+
+        self.assertEqual(len(Provenance.history), 1)
+
+        array_info_specific_attributes = deepcopy(TEST_ARRAY_INFO)
+        array_info_specific_attributes.details['ndim'] = 1
+
+        expected_output = DataObject(
+            hash=joblib.hash(TEST_ARRAY + 3, hash_name='sha1'),
+            hash_method="joblib_SHA1",
+            type="numpy.ndarray", id=id(res),
+            details={'shape': (3,), 'dtype': np.int64,
+                     'ndim': 1},
+            value=None)
+
+        _check_function_execution(
+            actual=Provenance.history[0],
+            exp_function=FunctionInfo('simple_function',
+                                      'test_decorator', ''),
+            exp_input={'array': array_info_specific_attributes},
+            exp_params={'param1': 1, 'param2': 2},
+            exp_output={0: expected_output},
+            exp_arg_map=['array', 'param1', 'param2'],
+            exp_kwarg_map=[],
+            exp_code_stmnt="res = simple_function(TEST_ARRAY, 1, 2)",
+            exp_return_targets=['res'],
+            exp_order=1,
+            test_case=self)
+
+    def doCleanups(self):
+        alpaca_setting('object_attributes', [])
+        self.assertListEqual(alpaca_setting('object_attributes'), [])
 
 
 class ProvenanceDecoratorInputOutputCombinationsTestCase(unittest.TestCase):
