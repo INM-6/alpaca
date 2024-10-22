@@ -79,6 +79,7 @@ class AlpacaProvDocument(object):
         namespace_manager.bind('alpaca', ALPACA)
         namespace_manager.bind('prov', PROV)
         self._authority = _ALPACA_SETTINGS['authority']
+        self._id_attributes = set(_ALPACA_SETTINGS['use_attributes_in_identifier'])
 
         # Gets all OntologyInformation objects generated with annotation
         # information during the run. Update the current graph namespaces
@@ -221,8 +222,8 @@ class AlpacaProvDocument(object):
     def _add_DataObjectEntity(self, info):
         # Adds a DataObjectEntity from the Alpaca PROV model
         # If the entity already exists, skip it
-        uri = URIRef(data_object_identifier(info, self._authority))
-
+        uri = URIRef(data_object_identifier(info, self._authority,
+                                            self._id_attributes))
         if uri in self._entity_uris:
             return uri
 

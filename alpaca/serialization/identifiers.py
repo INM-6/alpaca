@@ -5,6 +5,7 @@ Alpaca.
 
 import pathlib
 import re
+import joblib
 
 # Values that are used to compose the URNs
 # URNs take the general form "urn:NID:NSS", followed by optional components
@@ -22,10 +23,22 @@ def get_base_urn(authority):
 
 
 # <urn:fz-juelich.de:alpaca:object:Python:neo.core.AnalogSignal:423423432432423432432>
-def data_object_identifier(object_info, authority):
+# <urn:fz-juelich.de:alpaca:object:Python:neo.core.AnalogSignal:423423432432423432432#8497934578934589>
+def data_object_identifier(object_info, authority, id_attributes=None):
     object_hash = object_info.hash
     type_string = object_info.type
-    urn = f"{get_base_urn(authority)}:{NSS_DATA}:Python:{type_string}:{object_hash}"
+
+    # Compute hash for attributes if requested and they are present
+    id_fragment = ""
+    if id_attributes:
+        obj_details = object_info.details
+        use_attrs = sorted(id_attributes.intersection(obj_details))
+        if use_attrs:
+            values = [obj_details[key] for key in use_attrs]
+            attr_hash = joblib.hash(values, hash_name='sha1')
+            id_fragment = f"#{attr_hash}"
+
+    urn = f"{get_base_urn(authority)}:{NSS_DATA}:Python:{type_string}:{object_hash}{id_fragment}"
     return urn
 
 
@@ -81,8 +94,10 @@ def entity_info(identifier):
     info = local_part.split(":")
 
     entity_type = info[0]
+    content_info = info[-1]
+    data_hash = content_info.split('#')[0] if '#' in content_info else content_info
     data = {'type': entity_type,
-            'data_hash': info[-1]}
+            'data_hash': data_hash}
 
     if entity_type == NSS_FILE:
         data['label'] = "File"

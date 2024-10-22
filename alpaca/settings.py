@@ -61,6 +61,15 @@ Currently, the following settings can be defined:
         the `builtins.dict` entry. The strings are the full path to the Python
         object, i.e., `[module].[...].[object_class]`.
 
+* **use_attributes_in_identifier**: list of str
+        When serializing the provenance information, the values of the
+        requested attributes (if available in the object) will be used to
+        build a fragment to the generated URN identifiers (added at the end of
+        the URN preceded with a `#`). This allows disambiguating objects that
+        end up having a similar content hash. If none of the attributes are
+        present in the object, a fragment is not generated. To generate the
+        fragment string, the tuple `(attribute1_value, attribute2_value, ..., attributeN_value)`
+        is hashed using `joblib.hash` function with the SHA1 algorithm.
 
 To set/read a setting, use the function :func:`alpaca_setting`.
 
@@ -72,7 +81,9 @@ To set/read a setting, use the function :func:`alpaca_setting`.
 
 _ALPACA_SETTINGS = {'use_builtin_hash_for_module': [],
                     'authority': "my-authority",
-                    'store_values': []}
+                    'store_values': [],
+                    'use_attributes_in_identifier': [],
+                    }
 
 
 def alpaca_setting(name, value=None):
