@@ -84,7 +84,7 @@ def _add_attribute(data, attr_name, attr_type, attr_value, strip_namespace):
     if not strip_namespace:
         attr_name = f"{ATTR_NAMES[attr_type]}:{attr_name}"
 
-    if attr_name in data:
+    if attr_name in data and data[attr_name] != attr_value:
         raise ValueError(
             "Duplicate property values. Make sure to include the namespaces!")
     data[attr_name] = attr_value
