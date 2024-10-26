@@ -411,10 +411,12 @@ class ProvenanceGraph:
             # Add all the edges from sources to activity and from activity
             # to targets
             for source in source_entities:
-                transformed.add_edge(source, node_id, membership=False)
-                if time_intervals:
-                    _add_gephi_interval(transformed.nodes[source],
-                                    node_data['execution_order'])
+                if not remove_none or (
+                        remove_none and source not in none_nodes):
+                    transformed.add_edge(source, node_id, membership=False)
+                    if time_intervals:
+                        _add_gephi_interval(transformed.nodes[source],
+                                        node_data['execution_order'])
 
             if not remove_none or (remove_none and target not in none_nodes):
                 transformed.add_edge(node_id, target, membership=False)
