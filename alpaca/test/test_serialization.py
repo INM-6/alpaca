@@ -3,6 +3,7 @@ import unittest
 from pathlib import Path
 import tempfile
 import rdflib
+import joblib
 from rdflib.compare import graph_diff
 
 import numpy as np
@@ -13,6 +14,7 @@ from alpaca.alpaca_types import (DataObject, File, FunctionInfo,
                                  FunctionExecution,
                                  Container)
 from alpaca import AlpacaProvDocument, alpaca_setting
+from alpaca.ontology import ALPACA
 from alpaca.serialization.converters import _ensure_type
 from alpaca.serialization.neo import _neo_to_prov
 
@@ -584,6 +586,144 @@ class MultipleMembershipSerializationTestCase(unittest.TestCase):
 
 class NeoMetadataPluginTestCase(unittest.TestCase):
     pass
+
+class AttributesInIdentifierTestCase(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.INPUT_1 = DataObject("12345", "joblib_SHA1", "test.InputObject",
+                                 12345,
+                                 {'annotations': {'id': '345'},
+                                  'name': 'Input #1'},
+                                  None)
+
+        cls.INPUT_2 = DataObject("12345", "joblib_SHA1", "test.InputObject",
+                                 12346,
+                                 {'annotations': {'id': '346'},
+                                  'name': 'Input #2'},
+                                  None)
+
+        cls.function_execution = FunctionExecution(
+            function=TEST_FUNCTION,
+            input={'input_1': cls.INPUT_1,
+                   'input_2': cls.INPUT_2},
+            params={'param_1': 5},
+            output={0: OUTPUT}, call_ast=None,
+            arg_map=['input_1', 'input_2', 'param_1'],
+            kwarg_map=[], return_targets=[],
+            time_stamp_start=TIMESTAMP_START, time_stamp_end=TIMESTAMP_END,
+            execution_id="12345", order=1,
+            code_statement="test_function(input_1, input_2, 5)"
+        )
+        cls.authority = alpaca_setting('authority')
+
+    def setUp(self):
+        alpaca_setting('use_attributes_in_identifier', [])
+
+    def test_use_attribute_in_identifer(self):
+        alpaca_setting('use_attributes_in_identifier', ['name'])
+
+        # Serialize the history using AlpacaProv document
+        alpaca_prov = AlpacaProvDocument()
+        alpaca_prov.add_history(SCRIPT_INFO, SCRIPT_SESSION_ID,
+                                history=[self.function_execution])
+
+        # Check if graph have the distinct input objects
+        rdf_graph = alpaca_prov.graph
+        data_nodes = rdf_graph.subjects(rdflib.RDF.type, ALPACA.DataObjectEntity)
+        input_nodes = [node for node in data_nodes
+                       if "test.InputObject:12345" in str(node)]
+        self.assertEqual(len(input_nodes), 2)
+
+        fragments = sorted([str(node).split("#")[-1] for node in input_nodes])
+        expected_fragments = sorted(
+            [joblib.hash([value], hash_name='sha1')
+             for value in ('Input #1', 'Input #2')])
+        self.assertListEqual(fragments, expected_fragments)
+
+        # Check if the graph have only one output object without fragment
+        expected_output_urn = f"urn:{self.authority}:alpaca:object:Python:test.OutputObject:54321"
+        self.assertTrue((rdflib.URIRef(expected_output_urn), None, None)
+                        in rdf_graph)
+
+    def test_use_annotation_in_identifer(self):
+        alpaca_setting('use_attributes_in_identifier', ['annotations.id'])
+
+        # Serialize the history using AlpacaProv document
+        alpaca_prov = AlpacaProvDocument()
+        alpaca_prov.add_history(SCRIPT_INFO, SCRIPT_SESSION_ID,
+                                history=[self.function_execution])
+
+        # Check if graph have the distinct input objects
+        rdf_graph = alpaca_prov.graph
+        data_nodes = rdf_graph.subjects(rdflib.RDF.type, ALPACA.DataObjectEntity)
+        input_nodes = [node for node in data_nodes
+                       if "test.InputObject:12345" in str(node)]
+        self.assertEqual(len(input_nodes), 2)
+
+        fragments = sorted([str(node).split("#")[-1] for node in input_nodes])
+        expected_fragments = sorted(
+            [joblib.hash([value], hash_name='sha1')
+             for value in ('345', '346')])
+        self.assertListEqual(fragments, expected_fragments)
+
+        # Check if the graph have only one output object without fragment
+        expected_output_urn = f"urn:{self.authority}:alpaca:object:Python:test.OutputObject:54321"
+        self.assertTrue((rdflib.URIRef(expected_output_urn), None, None)
+                        in rdf_graph)
+
+    def test_use_attribute_and_annotation_in_identifer(self):
+        alpaca_setting('use_attributes_in_identifier', ['annotations.id', 'name'])
+
+        # Serialize the history using AlpacaProv document
+        alpaca_prov = AlpacaProvDocument()
+        alpaca_prov.add_history(SCRIPT_INFO, SCRIPT_SESSION_ID,
+                                history=[self.function_execution])
+
+        # Check if graph have the distinct input objects
+        rdf_graph = alpaca_prov.graph
+        data_nodes = rdf_graph.subjects(rdflib.RDF.type, ALPACA.DataObjectEntity)
+        input_nodes = [node for node in data_nodes
+                       if "test.InputObject:12345" in str(node)]
+        self.assertEqual(len(input_nodes), 2)
+
+        fragments = sorted([str(node).split("#")[-1] for node in input_nodes])
+        expected_fragments = sorted(
+            [joblib.hash([attr, annotation], hash_name='sha1')
+             for attr, annotation in zip(('Input #1', 'Input #2'),
+                                         ('345', '346'))]
+        )
+        self.assertListEqual(fragments, expected_fragments)
+
+        # Check if the graph have only one output object without fragment
+        expected_output_urn = f"urn:{self.authority}:alpaca:object:Python:test.OutputObject:54321"
+        self.assertTrue((rdflib.URIRef(expected_output_urn), None, None)
+                        in rdf_graph)
+
+    def test_no_attribute_or_annotation_in_identifer(self):
+
+        # Serialize the history using AlpacaProv document
+        alpaca_prov = AlpacaProvDocument()
+        alpaca_prov.add_history(SCRIPT_INFO, SCRIPT_SESSION_ID,
+                                history=[self.function_execution])
+
+        # Check if graph have only one input object
+        rdf_graph = alpaca_prov.graph
+        data_nodes = rdf_graph.subjects(rdflib.RDF.type, ALPACA.DataObjectEntity)
+        input_nodes = [node for node in data_nodes
+                       if "test.InputObject:12345" in str(node)]
+        self.assertEqual(len(input_nodes), 1)
+
+        self.assertFalse("#" in str(input_nodes[0]))
+
+        # Check if the graph have only one output object without fragment
+        expected_output_urn = f"urn:{self.authority}:alpaca:object:Python:test.OutputObject:54321"
+        self.assertTrue((rdflib.URIRef(expected_output_urn), None, None)
+                        in rdf_graph)
+
+    @classmethod
+    def tearDownClass(cls):
+        alpaca_setting('use_attributes_in_identifier', [])
 
 
 if __name__ == "__main__":

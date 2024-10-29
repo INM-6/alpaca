@@ -25,6 +25,25 @@ class AlpacaSettingsTestCase(unittest.TestCase):
         alpaca_setting(setting_name, cur_setting)
         self.assertListEqual(_ALPACA_SETTINGS[setting_name], cur_setting)
 
+    def test_use_attributes_in_identifier(self):
+        setting_name = 'use_attributes_in_identifier'
+
+        cur_setting = alpaca_setting(setting_name)
+        self.assertIsInstance(cur_setting, list)
+
+        new_setting = alpaca_setting(setting_name, ['obj_attribute'])
+        self.assertListEqual(new_setting, ['obj_attribute'])
+        self.assertListEqual(alpaca_setting(setting_name), ['obj_attribute'])
+        self.assertListEqual(_ALPACA_SETTINGS[setting_name], ['obj_attribute'])
+
+        # Test wrong type
+        with self.assertRaises(ValueError):
+            alpaca_setting(setting_name, "test wrong type")
+
+        # Restore value
+        alpaca_setting(setting_name, cur_setting)
+        self.assertListEqual(_ALPACA_SETTINGS[setting_name], cur_setting)
+
     def test_authority(self):
         setting_name = 'authority'
 
