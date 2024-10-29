@@ -79,7 +79,24 @@ class AlpacaProvDocument(object):
         namespace_manager.bind('alpaca', ALPACA)
         namespace_manager.bind('prov', PROV)
         self._authority = _ALPACA_SETTINGS['authority']
-        self._id_attributes = set(_ALPACA_SETTINGS['use_attributes_in_identifier'])
+
+        # Collect information on the use of attributes and annotations in
+        # identifiers. Currently, only one annotation dictionary is supported.
+        # In the case of annotations, the annotation name is prefixed by the
+        # name of the Python object attribute where the annotations are
+        # accessed (e.g., .annotations['key'] is 'annotations.key')
+        self._id_attributes = set()
+        self._id_annotations = set()
+        self._annotations_attribute = None
+        for key in set(_ALPACA_SETTINGS['use_attributes_in_identifier']):
+            if "." in key:
+                # Annotation
+                annotation_attr, annotation_key = key.split(".")
+                self._annotations_attribute = annotation_attr
+                self._id_annotations.add(annotation_key)
+            else:
+                # Attribute
+                self._id_attributes.add(key)
 
         # Gets all OntologyInformation objects generated with annotation
         # information during the run. Update the current graph namespaces
@@ -223,7 +240,9 @@ class AlpacaProvDocument(object):
         # Adds a DataObjectEntity from the Alpaca PROV model
         # If the entity already exists, skip it
         uri = URIRef(data_object_identifier(info, self._authority,
-                                            self._id_attributes))
+                                            self._id_attributes,
+                                            self._annotations_attribute,
+                                            self._id_annotations))
         if uri in self._entity_uris:
             return uri
 

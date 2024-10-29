@@ -24,17 +24,29 @@ def get_base_urn(authority):
 
 # <urn:fz-juelich.de:alpaca:object:Python:neo.core.AnalogSignal:423423432432423432432>
 # <urn:fz-juelich.de:alpaca:object:Python:neo.core.AnalogSignal:423423432432423432432#8497934578934589>
-def data_object_identifier(object_info, authority, id_attributes=None):
+def data_object_identifier(object_info, authority, id_attributes=None,
+                           annotations_attribute=None, id_annotations=None):
     object_hash = object_info.hash
     type_string = object_info.type
 
     # Compute hash for attributes if requested and they are present
     id_fragment = ""
-    if id_attributes:
+    if id_attributes or id_annotations:
         obj_details = object_info.details
-        use_attrs = sorted(id_attributes.intersection(obj_details))
-        if use_attrs:
-            values = [obj_details[key] for key in use_attrs]
+
+        use_attrs = id_attributes.intersection(obj_details)
+
+        use_annotations = set()
+        if annotations_attribute in obj_details:
+           use_annotations = id_annotations.intersection(
+               obj_details[annotations_attribute])
+
+        if use_attrs or use_annotations:
+            values = [obj_details[key] for key in sorted(use_attrs)]
+            values.extend([obj_details[annotations_attribute][key]
+                               for key in sorted(use_annotations)])
+
+            # Compute all the hash using all values and build fragment
             attr_hash = joblib.hash(values, hash_name='sha1')
             id_fragment = f"#{attr_hash}"
 
